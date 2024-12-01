@@ -31,9 +31,16 @@ namespace Hydra.Utils
             File.WriteAllBytes(filePath, content);
         }
 
-        public static string? GetFileNameWithoutExtension(string? path)
+        public static string? GetFileNameWithoutExtension(string path)
         {
             return Path.GetFileNameWithoutExtension(path);
+        }
+
+        public static string GetFileExtensionWithoutDot(string filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+
+            return extension.TrimStart('.');
         }
     }
 }

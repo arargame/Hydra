@@ -18,9 +18,9 @@ namespace Hydra.Core
 
          DateTime ModifiedDate { get; set; }
 
-        void Initialize();
+        //void Initialize();
 
-        T SetName(string? name);
+        //T SetName(string? name);
     }
 
     public abstract class BaseObject<T> : IBaseObject<T> where T : BaseObject<T>

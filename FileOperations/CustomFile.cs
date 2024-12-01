@@ -17,7 +17,38 @@ namespace Hydra.FileOperations
         Document,
         Unsupported
     }
-    public class CustomFile : BaseObject<CustomFile>
+
+    public interface ICustomFile : IBaseObject<ICustomFile>
+    {
+        string? Extension { get; set; }
+
+        string FullName { get; }
+
+        double LengthAsMb { get; set; }
+
+        double LengthAsGb { get; }
+
+        double LengthAsKb { get; }
+
+        double LengthAsByte { get; }
+
+        byte[]? Data { get; set; }
+
+        string? Path { get; set; }
+
+        string? ContainerName { get; set; }
+
+        string? EntityType { get; set; }
+
+        Guid? EntityId { get; set; }
+
+        FileCategory Category { get; }
+
+        string? Base64String { get; }
+
+        string? DataAsString { get; }
+    }
+    public class CustomFile : BaseObject<CustomFile>,ICustomFile
     {
         public string? Extension { get; set; }
 
@@ -62,25 +93,23 @@ namespace Hydra.FileOperations
 
         public CustomFile(byte[] data, string name)
         {
-            Data = data;
-
-            SetName(name);
+            SetName(name)
+                .SetData(data);
         }
 
         public CustomFile(string path)
         {
             SetPath(path)
-            .SetName(FileHelper.GetFileNameFromPath(Path))
-                .SetData();
-
+            .SetName(FileHelper.GetFileNameFromPath(path))
+            .SetData(path);
 
         }
 
         public override CustomFile SetName(string? name)
         {
 
-            return base.SetName(name)
-                        .SetExtension(NameWithoutExtension);
+            return base.SetName(FileHelper.GetFileNameWithoutExtension(name ?? ""))
+                        .SetExtension(FileHelper.GetFileExtensionWithoutDot(name ?? ""));
         }
 
         public CustomFile SetExtension(string? extension)
@@ -97,7 +126,7 @@ namespace Hydra.FileOperations
             return this;
         }
 
-        public CustomFile SetData(string? path)
+        public CustomFile SetData(string path)
         {
             Data = FileHelper.ReadFileAsBytesFromPath(path);
 
@@ -107,6 +136,27 @@ namespace Hydra.FileOperations
         public CustomFile SetData(byte[]? data)
         {
             Data = data;
+
+            return this;
+        }
+
+        public CustomFile SetContainerName(string containerName)
+        {
+            ContainerName = containerName;
+
+            return this;
+        }
+
+        public CustomFile SetEntityId(Guid entityId)
+        {
+            EntityId = entityId;
+            
+            return this;
+        }
+
+        public CustomFile SetEntityType(string entityType)
+        {
+            EntityType = entityType;
 
             return this;
         }
@@ -142,16 +192,8 @@ namespace Hydra.FileOperations
             }
         }
 
-        public virtual string? NameWithoutExtension
-        {
-            get
-            {
-                return FileHelper.GetFileNameWithoutExtension(Name);
-            }
-        }
 
         private string? _base64String;
-        private string? _dataAsString;
 
         public string? Base64String
         {
@@ -165,6 +207,8 @@ namespace Hydra.FileOperations
             }
         }
 
+
+        private string? _dataAsString;
         public string? DataAsString
         {
             get
@@ -181,6 +225,5 @@ namespace Hydra.FileOperations
         {
             return new MemoryStream(data ?? Array.Empty<byte>());
         }
-
     }
 }
