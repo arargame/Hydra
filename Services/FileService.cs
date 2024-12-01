@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hydra.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,14 @@ namespace Hydra.Services
 {
     public class FileService
     {
+        public byte[] ReadFile(string filePath)
+        {
+            return FileHelper.ReadFileAsBytesFromPath(filePath);
+        }
 
+        public void SaveFile(string filePath, byte[] content)
+        {
+            FileHelper.WriteFile(filePath, content);
+        }
     }
 }

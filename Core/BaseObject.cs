@@ -14,6 +14,10 @@ namespace Hydra.Core
 
         string? Description {  get; set; }
 
+         DateTime AddedDate { get; set; }
+
+         DateTime ModifiedDate { get; set; }
+
         void Initialize();
 
         T SetName(string? name);
@@ -27,6 +31,10 @@ namespace Hydra.Core
 
         public string? Description { get; set; }
 
+        public DateTime AddedDate { get; set; }
+
+        public DateTime ModifiedDate { get; set; }
+
         public BaseObject()
         {
             Initialize();
@@ -36,7 +44,7 @@ namespace Hydra.Core
             Id = Guid.NewGuid();
         }
 
-        public T SetName(string? name)
+        public virtual T SetName(string? name)
         {
             Name = name;
 

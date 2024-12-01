@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="DBAccess\" />
-    <Folder Include="Utils\" />
   </ItemGroup>
 
 </Project>
