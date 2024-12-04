@@ -23,6 +23,34 @@ namespace Hydra.Core
         //T SetName(string? name);
     }
 
+    public interface IHierarchicalObject<T> where T : IHierarchicalObject<T>
+    {
+        Guid? ParentId { get; set; }
+        T? Parent { get; set; }
+        List<T> Children { get; set; }
+
+        IEnumerable<T> GetAncestors()
+        {
+            var current = Parent;
+            while (current != null)
+            {
+                yield return current;
+                current = current.Parent;
+            }
+        }
+
+        IEnumerable<T> GetAllDescendants()
+        {
+            foreach (var child in Children)
+            {
+                yield return child;
+
+                foreach (var descendant in child.GetAllDescendants())
+                    yield return descendant;
+            }
+        }
+    }
+
     public abstract class BaseObject<T> : IBaseObject<T> where T : BaseObject<T>
     {
         public Guid Id { get; set; }
