@@ -16,6 +16,7 @@ namespace Hydra.Background
         Running,
         Stopped,
         Successful,
+        WaitingForParentToComplete,
         WaitingForChildrenToComplete,
         WaitingToRun
     }
@@ -30,6 +31,10 @@ namespace Hydra.Background
         public Automat? Automat { get; set; } = null;
 
         public string? Code { get; set; } = null;
+
+        public Guid? ParentId { get; set; }
+
+        public AutomatJob? Parent { get; set; } = null;
 
         public Guid? ContinueWithId { get; set; }
 
@@ -87,9 +92,14 @@ namespace Hydra.Background
         {
             base.Initialize();
 
-            Timer = new SystemTimer(interval: 100000);
+            IsContinuous = true;
 
+            var interval = 100000;
+
+            Timer = new SystemTimer(interval: interval);
             Timer.Elapsed += Timer_Elapsed;
+
+            SetInterval(interval);
 
             State = AutomatJobState.WaitingToRun;
 
@@ -137,13 +147,20 @@ namespace Hydra.Background
 
                     break;
 
+                case AutomatJobState.WaitingForParentToComplete:
+
+                    if (Parent != null && (Parent.IsCompleted || Parent.State == AutomatJobState.WaitingForChildrenToComplete))
+                        SetState(AutomatJobState.WaitingToRun);
+
+                    break;
+
                 case AutomatJobState.WaitingForChildrenToComplete:
 
                     if (ContinueWith == null)
                         break;
 
-                    if (ContinueWith.State == AutomatJobState.Stopped)
-                        ContinueWith.SetState(AutomatJobState.WaitingToRun);
+                    //if (ContinueWith.State == AutomatJobState.Stopped)
+                    //    ContinueWith.SetState(AutomatJobState.WaitingToRun);
 
                     if (ContinueWith.IsCompleted)
                         SetState(AutomatJobState.Successful);
@@ -175,9 +192,18 @@ namespace Hydra.Background
         {
             ContinueWith = continueWith;
 
-            ContinueWith.SetState(AutomatJobState.Stopped);
+            continueWith.SetParent(this);
 
-            ContinueWith.SetInterval(new TimeSpan((long)Interval * 10000));
+            //ContinueWith.SetInterval(new TimeSpan((long)Interval * 10000));
+
+            return this;
+        }
+
+        public AutomatJob SetParent(AutomatJob parent)
+        {
+            Parent = parent;
+
+            SetState(AutomatJobState.WaitingForParentToComplete);
 
             return this;
         }
@@ -326,7 +352,7 @@ namespace Hydra.Background
 
         public override string ToString()
         {
-            return $"[{Name}][{Code}]/Interval : {Interval}/LastWorkDate : {LastWorkDate}/[NextWorkDate : {NextWorkDate}]";
+            return $"[{Name}][{Code}] / {State} / ParentState : {Parent?.State} / ContunieWithState : {ContinueWith?.State} / Interval : {Interval} / LastWorkDate : {LastWorkDate} / [NextWorkDate : {NextWorkDate}]";
         }
 
     }
