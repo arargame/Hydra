@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -63,6 +64,9 @@ namespace Hydra.Core
 
         public DateTime ModifiedDate { get; set; }
 
+        [NotMapped]
+        public bool IsPersistent = true;
+
         public BaseObject()
         {
             Initialize();
@@ -82,6 +86,13 @@ namespace Hydra.Core
         public override string ToString()
         {
             return $"{Id}/{Name}";
+        }
+
+        public T MakeNonPersistent()
+        {
+            IsPersistent = false;
+
+            return (T)this;
         }
     }
 }

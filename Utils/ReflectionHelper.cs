@@ -65,4 +65,5 @@ namespace Hydra.Utils
             return typeof(TInterface).IsAssignableFrom(instance.GetType());
         }
     }
+}
 

@@ -120,7 +120,7 @@ namespace Hydra.DBAccess
             throw new KeyNotFoundException($"Connection string '{connectionStringName}' not found in the pool.");
         }
 
-        public IDbConnection SetConnectionString(string connectionStringName)
+        public IDbConnection SetConnectionStringByName(string connectionStringName)
         {
             try
             {
@@ -131,6 +131,13 @@ namespace Hydra.DBAccess
                 Console.WriteLine($"Connection string error: {ex.Message}");
                 throw; 
             }
+            return this;
+        }
+
+        public IDbConnection SetConnectionString(string connectionString)
+        {
+            ConnectionString = connectionString;
+
             return this;
         }
 
