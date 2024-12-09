@@ -94,5 +94,27 @@ namespace Hydra.Core
 
             return (T)this;
         }
+
+        public virtual string UniqueProperty
+        {
+            get
+            {
+                return Id.ToString();
+            }
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            var other = (BaseObject<T>)obj;
+            return UniqueProperty == other.UniqueProperty;
+        }
+
+        public override int GetHashCode()
+        {
+            return UniqueProperty?.GetHashCode() ?? 0;
+        }
     }
 }
