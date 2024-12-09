@@ -1,4 +1,5 @@
-﻿using Hydra.Core;
+﻿using Hydra.AddressManagement;
+using Hydra.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,10 @@ namespace Hydra.IdentityAndAccess
 
         public string? PasswordHash { get; set; } = null;
 
-        public string? PhoneNumber { get; set; } = null;
+        public string? NickName { get; set; } = null;
+
+        public Guid? PhoneNumberId { get; set; }
+        public PhoneNumber? PhoneNumber { get; set; } = null;
 
         public bool PhoneNumberConfirmed { get; set; }
 
@@ -26,6 +30,8 @@ namespace Hydra.IdentityAndAccess
         public bool IsAuthenticated { get; set; }
 
         public Guid? PasswordResetValidationToken { get; set; } = null;
+
+        public ICollection<Role> Roles { get; set; } = new List<Role>();
 
         public SystemUser() { }
 
