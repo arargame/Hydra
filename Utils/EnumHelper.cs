@@ -31,7 +31,7 @@ namespace Hydra.Utils
             return (TEnum)Enum.Parse(typeof(TEnum), value, true); 
         }
 
-        public static string GetEnumDescription<TEnum>(TEnum enumValue) where TEnum : Enum
+        public static string GetEnumAttributeString<TEnum>(TEnum enumValue,bool isDisplay = true) where TEnum : Enum
         {
 
             var field = enumValue.GetType().GetField(enumValue.ToString());
