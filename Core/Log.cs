@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Hydra.IdentityAndAccess;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,6 +48,11 @@ namespace Hydra.Core
         public LogType Type { get; set; }
 
         public LogProcessType ProcessType { get; set; }
+
+        public Guid? SessionInformationId { get; set; }
+
+        [ForeignKey("SessionInformationId")]
+        public SessionInformation? SessionInformation { get; set; } = null;
 
 
         public ILog SetLogType(LogType logType)

@@ -1,0 +1,70 @@
+﻿GeoLocation verisini elde etmek için kullanıcıların IP adresi ve tarayıcı bilgileri kullanılarak, kullanıcıların fiziksel konum bilgileri çıkarılabilir. Ancak bunun için genellikle üçüncü parti servisler kullanılır, çünkü IP adresinden tam konum elde etmek doğrudan mümkün değildir. Bunun için IP geolocation API'leri kullanabilirsiniz.
+
+Aşağıda GeoLocation verisini elde etmek için temel bir örnek adım ve kullanabileceğiniz popüler araçları göstereceğim.
+
+1. GeoLocation API Kullanma:
+Birçok GeoLocation API sağlayıcıları, IP adresi üzerinden kullanıcı konum bilgisi sağlar. En yaygın kullanılan API servisleri şunlardır:
+
+ipstack
+IPinfo
+GeoIP2
+ip-api
+Örneğin, ipstack API kullanarak geo-location verisini nasıl alabileceğinizi gösterelim.
+
+a) ipstack API ile GeoLocation Verisi:
+ipstack API'ye kaydolun ve API anahtarınızı (API Key) alın.
+Aşağıda, C# kullanarak ipstack API ile IP'den konum bilgisi almak için bir örnek kod bulunuyor:
+csharp
+Kodu kopyala
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+
+public class GeoLocation
+{
+    public string Country { get; set; }
+    public string Region { get; set; }
+    public string City { get; set; }
+    public string IP { get; set; }
+    public string Continent { get; set; }
+}
+
+public class GeoLocationService
+{
+    private static readonly string apiKey = "YOUR_API_KEY";
+    private static readonly string apiUrl = "http://api.ipstack.com/";
+
+    public static async Task<GeoLocation> GetGeoLocationAsync(string ipAddress)
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            string url = $"{apiUrl}{ipAddress}?access_key={apiKey}";
+
+            HttpResponseMessage response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            // JSON yanıtını GeoLocation nesnesine deserialize et
+            var geoLocation = JsonConvert.DeserializeObject<GeoLocation>(responseBody);
+
+            return geoLocation;
+        }
+    }
+}
+
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        string ip = "8.8.8.8"; // Örnek IP (Google DNS)
+        var geoLocation = await GeoLocationService.GetGeoLocationAsync(ip);
+
+        Console.WriteLine($"Country: {geoLocation.Country}");
+        Console.WriteLine($"Region: {geoLocation.Region}");
+        Console.WriteLine($"City: {geoLocation.City}");
+        Console.WriteLine($"Continent: {geoLocation.Continent}");
+        Console.WriteLine($"IP: {geoLocation.IP}");
+    }
+}
