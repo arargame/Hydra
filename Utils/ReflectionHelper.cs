@@ -64,6 +64,32 @@ namespace Hydra.Utils
         {
             return typeof(TInterface).IsAssignableFrom(instance.GetType());
         }
+
+        public static Type? GetTypeFromAssembly(Type sampleTypeInAssembly,
+                                            string typeName,
+                                            Type? isDerivedFromThisType = null,
+                                            Action<Exception>? logAction = null)
+        {
+            try
+            {
+                Assembly assembly = sampleTypeInAssembly.Assembly;
+
+                var xx = assembly.GetTypes().Where(t => t.Name == typeName);
+
+                Func<Type, Type, bool> isDerivedFrom = new Func<Type, Type, bool>((t, baseType) =>
+                {
+                    return t.BaseType?.Name == baseType.Name;
+                });
+
+                return assembly.GetTypes().FirstOrDefault(t => t.Name == typeName && (isDerivedFromThisType != null ? isDerivedFrom(t, isDerivedFromThisType) : true));
+            }
+            catch (Exception ex)
+            {
+                logAction?.Invoke(ex);
+
+                return null;
+            }
+        }
     }
 }
 
