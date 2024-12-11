@@ -33,13 +33,22 @@ namespace Hydra.Utils
 
         public static string GetEnumAttributeString<TEnum>(TEnum enumValue,bool isDisplay = true) where TEnum : Enum
         {
-
             var field = enumValue.GetType().GetField(enumValue.ToString());
-            var attribute = field?.GetCustomAttribute<DescriptionAttribute>(); 
 
-            
-            return attribute?.Description ?? enumValue.ToString();
+            if (isDisplay)
+            {
+                var displayAttribute = field?.GetCustomAttribute<DisplayAttribute>();
+
+                return displayAttribute?.Name ?? enumValue.ToString();
+            }
+            else
+            {
+                var descriptionAttribute = field?.GetCustomAttribute<DescriptionAttribute>();
+
+                return descriptionAttribute?.Description ?? enumValue.ToString();
+            }
         }
+
 
         public static int ToIntFromString(string value)
         {
@@ -74,17 +83,11 @@ namespace Hydra.Utils
 
                 if (getDisplayName)
                 {
-                    var displayAttribute = enumValue.GetType()
-                                                    .GetMember(enumValue.ToString())
-                                                    .First()
-                                                    .GetCustomAttributes<DisplayAttribute>()
-                                                    .FirstOrDefault();
-
-                    key = displayAttribute != null ? displayAttribute.Name : enumValue.ToString();
+                    key = GetEnumAttributeString(enumValue: (Enum)enumValue, isDisplay: true);
                 }
                 else if (getDescription)
                 {
-                    key = GetEnumDescription((Enum)enumValue); 
+                    key = GetEnumAttributeString(enumValue: (Enum)enumValue, isDisplay: false); 
                 }
                 else
                 {

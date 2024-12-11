@@ -1,0 +1,173 @@
+﻿public Table PrepareQueryStringToSelect(CustomConnection connection = null)
+{
+    var queryToTakeCount = "";
+    var queryToTakeFilteredCount = "";
+
+    try
+    {
+        var topString = "";
+        int counter = 0;
+
+        // Update Join Table Aliases to Ensure Uniqueness
+        foreach (var joinTable in GetAllJoinTables)
+        {
+            if (joinTable.Alias == Name)
+            {
+                counter++;
+                joinTable.Alias = joinTable.Alias + counter;
+            }
+        }
+
+        // Select columns with includes
+        var selectedColumns = GetSelectedMetaColumnsWithIncludes
+                                .Where(sc => !sc.IsFileColumn)
+                                .ToList();
+
+        if (!selectedColumns.Any())
+        {
+            selectedColumns.AddRange(GetDefaultSelectedColumns());
+        }
+
+        HandleDuplicateColumnAliases(selectedColumns);
+
+        var selectedString = BuildSelectedString(selectedColumns);
+        var orderedMetaColumns = GetOrderedMetaColumnsWithIncludes;
+        var getRowNumberOverOrderString = GenerateRowNumberString(orderedMetaColumns);
+
+        if (!HasAnySelectedColumnToGroup)
+        {
+            selectedString += PageSize > 0 ? $",ROW_NUMBER() OVER ({getRowNumberOverOrderString}) AS RowNumber" : null;
+        }
+
+        if (JoinTables.Any())
+        {
+            ApplyJoinFilters();
+        }
+        else
+        {
+            SetFilter();
+        }
+
+        if (!QueryParameters.Any())
+            SetQueryParameters();
+
+        string filterString = Filter != null ? $"where {Filter.PrepareQueryString()}" : null;
+        string joinString = BuildJoinString(GetAllJoinTables);
+
+        var query = $"select {topString} {selectedString} from {Name} {Alias} {joinString} {filterString}";
+
+        if (HasAnySelectedColumnToGroup)
+        {
+            query = AddGroupingToQuery(query, selectedColumns);
+        }
+
+        queryToTakeCount = $"select count(0) from {Name} {Alias} {joinString}";
+        var totalRecordsCount = (int)SqlManager.ExecuteScalar(queryToTakeCount, QueryParameters, connection);
+
+        queryToTakeFilteredCount = $"select count(0) from {Name} {Alias} {joinString} {filterString}";
+        var filteredTotalRecordsCount = (int)SqlManager.ExecuteScalar(queryToTakeFilteredCount, QueryParameters, connection);
+
+        SelectQuery = FinalizeQueryWithPagination(query, totalRecordsCount, filteredTotalRecordsCount);
+    }
+    catch (Exception ex)
+    {
+        var message = $"queryToTakeCount:{queryToTakeCount},queryToTakeFilteredCount:{queryToTakeFilteredCount}";
+        throw;
+    }
+
+    return this;
+}
+
+private List<IMetaColumn> GetDefaultSelectedColumns()
+{
+    var leftTableColumns = SqlManager.SelectColumnNames(Name)
+                          .Select(c => c["COLUMN_NAME"].ToString())
+                          .Select(c => new SelectedColumn(c, c).SetTable(this));
+
+    var joinTableColumns = GetAllJoinTables
+                          .SelectMany(jt => SqlManager.SelectColumnNames(jt.Name)
+                          .Select(c => c["COLUMN_NAME"].ToString())
+                          .Select(c => new SelectedColumn(c, c).SetTable(jt)));
+
+    return leftTableColumns.Union(joinTableColumns).ToList();
+}
+
+private void HandleDuplicateColumnAliases(List<IMetaColumn> selectedColumns)
+{
+    foreach (var group in selectedColumns.GroupBy(sc => sc.Alias))
+    {
+        if (group.Count() > 1)
+        {
+            foreach (var column in group)
+            {
+                if (column.Table.Name != Name)
+                {
+                    column.Alias = $"{column.Table.Name}.{column.Alias}";
+                }
+            }
+        }
+    }
+}
+
+private string BuildSelectedString(List<IMetaColumn> selectedColumns)
+{
+    return selectedColumns.Any()
+        ? string.Join(",", selectedColumns.Select(c => $"{c.Table.Alias}.{c.Name} as [{c.Alias}]"))
+        : "*";
+}
+
+private string GenerateRowNumberString(List<IMetaColumn> orderedMetaColumns)
+{
+    var chanceAlias = (string alias) => !HasAnySelectedColumnToGroup ? alias : "grp0";
+    var orderedString = orderedMetaColumns.Any()
+        ? $"order by {string.Join(",", orderedMetaColumns.Select(c => $"{chanceAlias(c.Table.Alias)}.{c.Name} {c.Direction.ConvertToString()}"))}"
+        : null;
+
+    return string.IsNullOrEmpty(orderedString)
+        ? $"ORDER BY {chanceAlias(Alias)}.Id"
+        : orderedString;
+}
+
+private string BuildJoinString(IEnumerable<JoinTable> joinTables)
+{
+    return string.Join(" ", joinTables.Select(jt => $"{jt.JoinType} join {jt.Name} {jt.Alias} on {jt.ColumnEquality.PrepareQueryString()}"));
+}
+
+private void ApplyJoinFilters()
+{
+    if (GetFilteredMetaColumnsWithIncludes.Count == 1)
+    {
+        SetFilter(GetFilteredMetaColumnsWithIncludes.FirstOrDefault().Filter);
+    }
+    else
+    {
+        var joinFilter = JoinFilter.SetFromColumns(GetFilteredMetaColumnsWithIncludes);
+        SetFilter(joinFilter.FirstOrDefault());
+    }
+}
+
+private string AddGroupingToQuery(string query, List<IMetaColumn> selectedColumns)
+{
+    var groupByColumnsString = string.Join(',', selectedColumns.Select(sc => sc as SelectedColumn).Where(sc => sc.GroupBy).Select(sc => $"grp1.{sc.Alias}"));
+    return $"select grp0.*,ROW_NUMBER() OVER ({GenerateRowNumberString(GetOrderedMetaColumnsWithIncludes)}) AS RowNumber from(select grp1.* from ({query}) grp1 group by {groupByColumnsString}) grp0";
+}
+
+private string FinalizeQueryWithPagination(string query, int totalRecordsCount, int filteredTotalRecordsCount)
+{
+    var aliasList = JoinTables.Select(jt => jt.Alias).Union(new List<string> { Alias }).Distinct();
+    var alias = Helper.GenerateUnusedCharacterInAWord(string.Join("", aliasList));
+    var paginatedQuery = $"select {alias}.* from({query}) {alias} ";
+
+    if (PageSize > 0)
+    {
+        Pagination = new Pagination(PageNumber, PageSize, totalRecordsCount, filteredTotalRecordsCount);
+        paginatedQuery += $"where {alias}.RowNumber between {Pagination.Start} and {Pagination.Finish}";
+    }
+    else
+    {
+        SetPageSize(totalRecordsCount);
+        Pagination = new Pagination(PageNumber, PageSize, totalRecordsCount, filteredTotalRecordsCount);
+    }
+
+    return paginatedQuery;
+}
