@@ -42,6 +42,16 @@ namespace Hydra.DataModels
                 return GetType().Name;
             }
         }
+        public MetaColumn() { }
+
+        public MetaColumn(string name, object? value = null, string? alias = null)
+        {
+            SetName(name);
+
+            SetValue(value);
+
+            SetAlias(string.IsNullOrEmpty(alias) ? Name : alias);
+        }
     }
 
     public class SelectedColumn : MetaColumn

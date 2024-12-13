@@ -142,7 +142,7 @@ namespace Hydra.Services
 
             return result != null && Convert.ToInt32(result) == 1;
         }
-        public static bool CreateView(string query, CustomConnection connection = null)
+        public static bool CreateView(string query, CustomConnection connection)
         {
             string createViewSql;
 

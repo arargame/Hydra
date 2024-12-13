@@ -47,7 +47,7 @@ namespace Hydra.DataModels
 
         public ITable SetAlias(string? alias)
         {
-            if (!string.IsNullOrWhiteSpace(alias) && alias.Contains(" "))
+            if (!string.IsNullOrWhiteSpace(alias) && alias.Contains(' '))
                 throw new ArgumentException("Alias cannot contain spaces.");
 
             Alias = alias;
