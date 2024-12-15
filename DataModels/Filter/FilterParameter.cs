@@ -8,17 +8,17 @@ namespace Hydra.DataModels.Filter
 {
     public interface IFilterParameter
     {
-        IFilter? Filter { get; set; }
+        IQueryableFilter? Filter { get; set; }
         int Index { get; set; }
 
         object? Value { get; set; }
 
-        IFilterParameter SetFilter(IFilter filter);
+        IFilterParameter SetFilter(IQueryableFilter filter);
 
     }
     public class FilterParameter : IFilterParameter
     {
-        public IFilter? Filter { get; set; } = null;
+        public IQueryableFilter? Filter { get; set; } = null;
 
         public int Index { get; set; }
 
@@ -36,7 +36,7 @@ namespace Hydra.DataModels.Filter
             Value = value;
         }
 
-        public IFilterParameter SetFilter(IFilter filter)
+        public IFilterParameter SetFilter(IQueryableFilter filter)
         {
             Filter = filter;
 

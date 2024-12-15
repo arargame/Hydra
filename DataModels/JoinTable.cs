@@ -14,6 +14,8 @@ namespace Hydra.DataModels
 
         JoinType JoinType { get; set; }
 
+        JoinRelationship Relationship { get; set; }
+
         IJoinTable SetLeftTableName(string leftTableName);
 
         IJoinTable SetLeftTable(Table? leftTable);
@@ -28,9 +30,23 @@ namespace Hydra.DataModels
 
         public JoinType JoinType { get; set; } = JoinType.Inner;
 
+        public JoinRelationship? Relationship { get; set; } = null;
+
         public JoinTable()
         {
 
+        }
+
+        public JoinTable On(string leftTableColumnName, string rightTableColumnName)
+        {
+            return On(new JoinRelationship(new MetaColumn(leftTableColumnName).SetTable(LeftTable), new MetaColumn(rightTableColumnName).SetTable(this)));
+        }
+
+        public JoinTable On(JoinRelationship joinRelationship)
+        {
+            Relationship = joinRelationship;
+
+            return this;
         }
 
         public IJoinTable SetLeftTableName(string leftTableName)
