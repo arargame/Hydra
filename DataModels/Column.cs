@@ -89,6 +89,8 @@ namespace Hydra.DataModels
 
         public IColumn SetTable(ITable? table)
         {
+            Table = table;
+
             return this;
         }
 

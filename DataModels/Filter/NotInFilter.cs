@@ -14,7 +14,7 @@ namespace Hydra.DataModels.Filter
 
             AddFilterParameter(filterParameters);
 
-            SetParameterIndex(StartParameterIndex);
+            SetStartParameterIndex(StartParameterIndex);
         }
 
         public NotInFilter(IMetaColumn column, params FilterParameter[] filterParameters) : this(filterParameters)

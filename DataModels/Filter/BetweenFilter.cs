@@ -17,8 +17,8 @@ namespace Hydra.DataModels.Filter
             Initialize();
 
             AddFilterParameter(startFilterParameter, finishFilterParameter);
-            
-            SetParameterIndex(StartParameterIndex);
+
+            SetStartParameterIndex(StartParameterIndex);
 
             StartFilterParameter = startFilterParameter;
 

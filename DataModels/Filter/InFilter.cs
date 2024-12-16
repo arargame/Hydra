@@ -13,7 +13,7 @@ namespace Hydra.DataModels.Filter
             Initialize();
 
             AddFilterParameter(filterParameters)
-            .SetParameterIndex(StartParameterIndex);
+            .SetStartParameterIndex(StartParameterIndex);
         }
 
         public InFilter(IMetaColumn column, params FilterParameter[] filterParameters) : this(filterParameters)

@@ -134,9 +134,8 @@ namespace Hydra.DataModels
                 return GetType().Name;
             }
         }
-        public MetaColumn() { }
 
-        public MetaColumn(string name, object? value = null, string? alias = null)
+        public MetaColumn(string? name, object? value = null, string? alias = null)
         {
             SetName(name);
 
@@ -224,12 +223,12 @@ namespace Hydra.DataModels
     {
         public bool GroupBy { get; set; }
 
-        //public SelectedColumn(string name, string alias = null, bool groupBy = false) : base(name, null, alias)
-        //{
-        //    GroupBy = groupBy;
+        public SelectedColumn(string? name, string? alias = null, bool groupBy = false) : base(name, null, alias)
+        {
+            GroupBy = groupBy;
 
-        //    MakeSelected();
-        //}
+            MakeSelected();
+        }
 
 
         public override string TypeName
@@ -271,10 +270,10 @@ namespace Hydra.DataModels
 
         public class FilteredColumn : MetaColumn
         {
-            //public FilteredColumn(string name, IFilterHasColumn filter) : base(name, filter.GetValue, null)
-            //{
-            //    MakeFiltered(filter);
-            //}
+            public FilteredColumn(string name, IFilter filter) : base(name, filter.GetValue, null)
+            {
+                MakeFiltered(filter);
+            }
 
             public override string TypeName
             {
@@ -287,10 +286,10 @@ namespace Hydra.DataModels
 
         public class OrderedColumn : MetaColumn
         {
-            //public OrderedColumn(string name, string direction) : base(name)
-            //{
-            //    MakeOrdered(direction);
-            //}
+            public OrderedColumn(string? name, string direction = "asc") : base(name)
+            {
+                MakeOrdered(direction);
+            }
 
             public override string TypeName
             {
@@ -305,7 +304,7 @@ namespace Hydra.DataModels
         {
             public string AggregationFunction { get; set; }
 
-            public AggregatedColumn(string aggregationFunction)
+            public AggregatedColumn(string? name,string aggregationFunction) : base(name:name)
             {
                 AggregationFunction = aggregationFunction;
             }
@@ -328,7 +327,7 @@ namespace Hydra.DataModels
         {
             public string Expression { get; set; }
 
-            public CalculatedColumn(string expression)
+            public CalculatedColumn(string? name,string expression) : base(name:name)
             {
                 Expression = expression;
             }
@@ -349,6 +348,11 @@ namespace Hydra.DataModels
 
         public class DistinctColumn : MetaColumn
         {
+            public DistinctColumn(string? name) : base(name: name)
+            {
+
+            }
+
             public override string TypeName
             {
                 get

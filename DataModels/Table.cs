@@ -1,8 +1,10 @@
 ﻿using Hydra.Core;
 using Hydra.DataModels.Filter;
+using Hydra.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,11 +38,15 @@ namespace Hydra.DataModels
 
         IQueryableFilter? Filter { get; set; }
 
+        int PageNumber { get; set; }
+
+        int PageSize { get; set; }
+
         List<IJoinTable> JoinTables { get; set; }
 
         List<IMetaColumn> MetaColumns { get; set; }
 
-        Dictionary<string, object> QueryParameters { get; set; }
+        Dictionary<string, object?> QueryParameters { get; set; }
 
         List<IRow> Rows { get; set; }
 
@@ -51,12 +57,26 @@ namespace Hydra.DataModels
         ITable SetPagination(Pagination pagination);
 
         ITable SetQueryParameters();
+
+        ITable SetPageNumber(int pageNumber);
+
+        ITable SetPageSize(int pageSize);
+
+        ITable SetMetaColumns(params IMetaColumn[] columns);
+
+        ITable SetJoins(Expression<Func<ITable, List<IJoinTable>>> expression);
+
+        ITable SetJoins(params IJoinTable[] joinTables);
+
+        ITable SetFilter(IQueryableFilter? filter = null);
     }
-
-
 
     public class Table : BaseObject<Table>, ITable
     {
+        public readonly int DefaultPageNumber = 1;
+
+        public readonly int DefaultPageSize = 10;
+
         public string? Alias { get; set; } = null;
 
         public string? Query { get; set; } = null;
@@ -64,6 +84,11 @@ namespace Hydra.DataModels
         public Pagination? Pagination { get; set; } = null;
 
         public IQueryableFilter? Filter { get; set; } = null;
+
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+
+        public Expression<Func<ITable, JoinedFiltersGroup>>? ManageFiltersExpression { get; set; } = null;
 
         public List<IJoinTable> GetAllJoinTables
         {
@@ -104,9 +129,48 @@ namespace Hydra.DataModels
 
         public List<IRow> Rows { get; set; } = new List<IRow>();
 
-        public Dictionary<string, object> QueryParameters { get; set; } = new Dictionary<string, object>();
+        public Dictionary<string, object?> QueryParameters { get; set; } = new Dictionary<string, object?>();
 
         public Table() { }
+
+        public Table(string name, string? alias = null)
+        {
+            Name = name;
+
+            Alias = alias ?? Name;
+
+            //Type = Helper.GetTypeFromAssembly(typeof(BaseObject), Name);
+
+            PageNumber = DefaultPageNumber;
+        }
+
+        public static Table Create(string tableName,
+                        string? tableAlias = null,
+                List<IMetaColumn>? metaColumns = null,
+                Expression<Func<ITable, JoinedFiltersGroup>>? expressionToManageFilters = null,
+                Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
+                int? pageNumber = null,
+                int? pageSize = null)
+        {
+            var table = new Table(tableName, tableAlias);
+
+            if (metaColumns != null)
+                table.SetMetaColumns(metaColumns.ToArray());
+
+            if (expressionToManageFilters != null)
+                table.ManageFilters(expressionToManageFilters);
+
+            if (expressionToSetJoins != null)
+                table.SetJoins(expressionToSetJoins);
+
+            if (pageNumber != null)
+                table.SetPageNumber(pageNumber.Value);
+
+            if (pageSize != null)
+                table.SetPageSize(pageSize.Value);
+
+            return table;
+        }
 
         public ITable SetAlias(string? alias)
         {
@@ -182,7 +246,7 @@ namespace Hydra.DataModels
             }
         }
 
-        public Table SetFilter(IQueryableFilter? filter = null)
+        public ITable SetFilter(IQueryableFilter? filter = null)
         {
             if (filter != null)
                 Filter = filter;
@@ -207,12 +271,80 @@ namespace Hydra.DataModels
 
             for (int i = 0; i < Filter.Parameters.Count; i++)
             {
-                QueryParameters.Add(string.Format("@{0}", i), Filter.Parameters[i]);
+                QueryParameters.Add(string.Format("@{0}", i), Filter.Parameters[i].Value);
             }
 
             return this;
         }
 
+        public ITable SetMetaColumns(params IMetaColumn[] columns)
+        {
+            MetaColumns.AddRange(columns);
+
+            foreach (var metaColumn in MetaColumns)
+            {
+                if (metaColumn == null)
+                    continue;
+
+                metaColumn.SetTable(this);
+            }
+
+            return this;
+        }
+
+        public ITable ManageFilters(Expression<Func<ITable, JoinedFiltersGroup>> expression)
+        {
+            if (expression == null)
+                return this;
+
+            ManageFiltersExpression = expression;
+
+            var func = expression.Compile();
+
+            return ManageFiltersWithFunc(expression.Compile());
+        }
+
+        public ITable ManageFiltersWithFunc(Func<ITable, JoinedFiltersGroup> func)
+        {
+            ManageFiltersExpression = t => func(t);
+
+            return SetFilter(func(this));
+        }
+
+        public ITable SetPageNumber(int pageNumber)
+        {
+            PageNumber = pageNumber > 0 ? pageNumber : DefaultPageNumber;
+
+            return this;
+        }
+
+        public ITable SetPageSize(int pageSize)
+        {
+            PageSize = pageSize > 0 ? pageSize : DefaultPageSize;
+
+            return this;
+        }
+        public ITable SetJoins(Expression<Func<ITable, List<IJoinTable>>> expression)
+        {
+            var joinTables = expression.Compile().Invoke(this);
+
+            return SetJoins(joinTables.ToArray());
+        }
+
+        public ITable SetJoins(params IJoinTable[] joinTables)
+        {
+            if (joinTables == null)
+                return this;
+
+            JoinTables.AddRange(joinTables);
+
+            foreach (var joinTable in joinTables)
+            {
+                joinTable.SetLeftTable(this);
+            }
+
+            return this;
+        }
 
     }
 

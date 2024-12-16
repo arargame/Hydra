@@ -1,4 +1,5 @@
-﻿using Hydra.DBAccess;
+﻿using Hydra.DataModels.Filter;
+using Hydra.DBAccess;
 using Hydra.Services;
 using System;
 using System.Collections.Generic;
@@ -14,15 +15,21 @@ namespace Hydra.DataModels
 
         private readonly CustomConnection connection;
 
+        private string? SelectedColumnsString { get; set; } = null;
+
         private string? FilterString { get; set; } = null;
 
-        private string? JoinString { get; set; } = null;
+        private string? JoinedTablesString { get; set; } = null;
 
         private string? QueryToTakeCount { get; set; } = null;
 
         private string? TopString { get; set; } = null;
 
         private int TotalRecordsCount { get; set; }
+
+        private string? QueryToTakeFilteredCount { get; set; } = null;
+
+        private int FilteredTotalRecordsCount { get; set; }
 
         public QueryBuilder(ITable table,CustomConnection connection)
         {
@@ -38,15 +45,15 @@ namespace Hydra.DataModels
             return this;
         }
 
-        public QueryBuilder PrepareJoinString()
+        public QueryBuilder PrepareJoinedTablesString()
         {
-            JoinString = "";
+            JoinedTablesString = "";
 
             var allJoinTables = table.GetAllJoinTables;
 
             foreach (var joinTable in allJoinTables)
             {
-                JoinString += string.Format("{0} join {1} {2} on {3} ", joinTable.JoinType, joinTable.Name, joinTable.Alias, joinTable.Relationship.PrepareQueryString());
+                JoinedTablesString += string.Format("{0} join {1} {2} on {3} ", joinTable.JoinType, joinTable.Name, joinTable.Alias, joinTable.Relationship.PrepareQueryString());
             }
 
             return this; 
@@ -54,14 +61,14 @@ namespace Hydra.DataModels
 
         public QueryBuilder PrepareQueryToTakeCount()
         {
-            QueryToTakeCount = $"select count(0) from {table.Name} {table.Alias} {JoinString}";
+            QueryToTakeCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString}";
 
             return this;
         }
 
         public QueryBuilder ExecuteTotalRecordsCount()
         {
-            TotalRecordsCount = (int)((DatabaseService.ExecuteScalar(QueryToTakeCount, table.QueryParameters, new MsSqlConnection())) ?? 0);
+            TotalRecordsCount = (int)((DatabaseService.ExecuteScalar(query: QueryToTakeCount, parameters:null,connection: connection)) ?? 0);
 
             return this;
         }
@@ -73,26 +80,132 @@ namespace Hydra.DataModels
             return this;
         }
 
+        public QueryBuilder PrepareQueryToTakeFilteredCount()
+        {
+            QueryToTakeFilteredCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString} {FilterString}";
+
+            return this;
+        }
+
+        public QueryBuilder ExecuteFilteredTotalRecordsCount()
+        {
+            FilteredTotalRecordsCount = (int)(DatabaseService.ExecuteScalar(QueryToTakeFilteredCount, table.QueryParameters, connection) ?? 0);
+
+            return this;
+        }
+
+        public QueryBuilder SetTableFilter()
+        {
+            if (table.JoinTables.Any())
+            {
+                if (table.GetFilteredMetaColumnsIncludingJoins.Count == 1)
+                {
+                    table.SetFilter(table.GetFilteredMetaColumnsIncludingJoins.FirstOrDefault()?.Filter);
+                }
+                else
+                {
+                    var joinFilter = JoinedFiltersGroup.SetFromColumns(table.GetFilteredMetaColumnsIncludingJoins);
+
+                    table.SetFilter(joinFilter.FirstOrDefault());
+                }
+            }
+            else
+            {
+                table.SetFilter();
+            }
+
+            return this;
+        }
+
+        public QueryBuilder SetTableQueryParameters()
+        {
+            if (!table.QueryParameters.Any() && table.Filter != null)
+                table.SetQueryParameters();
+
+            return this;
+        }
+
+        public QueryBuilder PrepareSelectedColumnsString()
+        {
+            var selectedColumns = table.GetSelectedMetaColumnsIncludingJoins
+                                               .Where(sc => !sc.IsFileColumn)
+                                               .ToList();
+
+            if (!selectedColumns.Any())
+            {
+                var leftTableSelectedColumnList = (IEnumerable<IMetaColumn>)DatabaseService.SelectColumnNames(table.Name)
+                                                            .Select(c => c["COLUMN_NAME"]?.ToString())
+                                                            .Select(columnName => new SelectedColumn(name: columnName,alias:columnName ).SetTable(table));
+
+                var joinTablesSelectedColumnList = new List<IMetaColumn>();
+
+                foreach (var joinTable in table.GetAllJoinTables)
+                {
+                    joinTablesSelectedColumnList.AddRange((IEnumerable<IMetaColumn>)DatabaseService.SelectColumnNames(joinTable.Name)
+                                                .Select(c => c["COLUMN_NAME"]?.ToString())
+                                                .Select(columnName => new SelectedColumn(name: columnName, alias: columnName)
+                                                .SetTable(joinTable)));
+                }
+
+                selectedColumns.AddRange(leftTableSelectedColumnList.Union(joinTablesSelectedColumnList));
+            }
+
+
+            foreach (var group in selectedColumns.GroupBy(sc => sc.Alias))
+            {
+                if (group.Count() > 1)
+                {
+                    var columnsToChangeAlias = selectedColumns.Where(sc => sc.Alias == group.Key).ToList();
+                    //var columnsToChangeAlias = group.ToList();
+
+                    foreach (var column in columnsToChangeAlias)
+                    {
+                        if (column.Table!=null && column.Table.Name != table.Name)
+                            column.Alias = $"{column.Table?.Name}.{column.Alias}";
+                    }
+                }
+            }
+            
+
+            if (!selectedColumns.Any())
+            {
+                SelectedColumnsString = "*";
+            }
+            else
+            {
+                SelectedColumnsString = string.Join(",", selectedColumns.Select(column => $"{column.Table?.Alias}.{column.Name} as [{column.Alias}]"));
+            }
+
+            return this;
+        }
 
         public QueryBuilder BuildSelectQuery()
         {
-            var query = new StringBuilder();
+            var query = "";
 
 
             try 
             {
+                SetTableFilter();
+
                 BuildTopString();
                 PrepareFilterString();
-                PrepareJoinString();
+                PrepareJoinedTablesString();
                 PrepareQueryToTakeCount();
 
 
-                if (!table.QueryParameters.Any())
-                    table.SetQueryParameters();
+                SetTableQueryParameters();
 
 
                 ExecuteTotalRecordsCount();
 
+                PrepareQueryToTakeFilteredCount();
+                ExecuteFilteredTotalRecordsCount();
+
+
+                PrepareSelectedColumnsString();
+
+                query = $"select {TopString} {SelectedColumnsString} from {table.Name} {table.Alias} {JoinedTablesString} {FilterString}";
 
             }
             catch (Exception ex)

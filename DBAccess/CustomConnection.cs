@@ -186,7 +186,7 @@ namespace Hydra.DBAccess
                 Disconnect();
             }
 
-            Connection?.Dispose();
+            //Connection?.Dispose();
         }
     }
 

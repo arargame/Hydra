@@ -12,7 +12,7 @@ namespace Hydra.Services
         public static bool CheckConnection(CustomConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
-
+   
             try
             {
                 connection.Connect();
