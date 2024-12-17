@@ -179,6 +179,7 @@ namespace Hydra.DataModels
             return this;
         }
 
+        private string GenerateGroupByQuery(IEnumerable<SelectedColumn> selectedColumns, string baseQuery)
         public QueryBuilder BuildSelectQuery()
         {
             var query = "";
