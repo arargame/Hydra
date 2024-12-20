@@ -18,6 +18,7 @@ namespace Hydra.Utils
         public static void SetPropertyValue<T>(T instance, string propertyName, object value)
         {
             var property = instance?.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
             if (property == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
 
@@ -30,6 +31,7 @@ namespace Hydra.Utils
         public static object? GetPropertyValue<T>(T instance, string propertyName)
         {
             var property = instance?.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
             if (property == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
 
@@ -323,7 +325,40 @@ namespace Hydra.Utils
 
             return instance;
         }
+        public static bool IsPropertyFrom<T>(PropertyInfo propertyInfo)
+        {
+            return IsPropertyFrom(typeof(T), propertyInfo);
+        }
 
+        private static readonly ConcurrentDictionary<PropertyInfo, bool> PropertyTypeCache = new();
+
+        public static bool IsPropertyFrom(Type type, PropertyInfo propertyInfo)
+        {
+            if (PropertyTypeCache.TryGetValue(propertyInfo, out var isFromCache))
+            {
+                return isFromCache;
+            }
+
+            bool hasGenericBaseType = false;
+            var propertyType = propertyInfo.PropertyType;
+
+            if (propertyType.GenericTypeArguments.Any())
+            {
+                var genericTypeArgument = propertyType.GenericTypeArguments?.FirstOrDefault();
+
+                if (genericTypeArgument!=null && genericTypeArgument.IsAssignableTo(type))
+                    hasGenericBaseType = true;
+            }
+
+            bool result = (propertyType.IsGenericType &&
+                           hasGenericBaseType &&
+                           propertyType.GetGenericTypeDefinition() == typeof(Nullable<>)) ||
+                          propertyType.Name == type.Name || propertyType.BaseType?.Name == type.Name;
+
+            PropertyTypeCache[propertyInfo] = result;
+
+            return result;
+        }
 
     }
 }
