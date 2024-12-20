@@ -3,10 +3,12 @@ using Hydra.DataModels.Filter;
 using Hydra.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.DataModels
 {
@@ -42,6 +44,8 @@ namespace Hydra.DataModels
 
         int PageSize { get; set; }
 
+        bool HasAnySelectedColumnToGroup { get; }
+
         List<IJoinTable> JoinTables { get; set; }
 
         List<IMetaColumn> MetaColumns { get; set; }
@@ -69,6 +73,10 @@ namespace Hydra.DataModels
         ITable SetJoins(params IJoinTable[] joinTables);
 
         ITable SetFilter(IQueryableFilter? filter = null);
+
+        ITable AddRow(IRow row);
+
+        List<T> Cast<T>() where T : class;
     }
 
     public class Table : BaseObject<Table>, ITable
@@ -118,8 +126,19 @@ namespace Hydra.DataModels
             get
             {
                 return MetaColumns.Where(mc => mc.IsFiltered)
-                                    .Where(mc => (mc.Filter is IsNullFilter || mc.Filter is IsNotNullFilter) || (!mc.Filter.Parameters.Any(p => string.IsNullOrWhiteSpace(p.Value?.ToString()))))
-                                    .ToList();
+                   .Where(mc =>
+                       (mc.Filter is IsNullFilter || mc.Filter is IsNotNullFilter) ||
+                       (mc.Filter?.Parameters?.Any(p => !string.IsNullOrWhiteSpace(p.Value?.ToString())) ?? false))
+                   .ToList();
+            }
+        }
+
+        public bool HasAnySelectedColumnToGroup
+        {
+            get
+            {
+                return GetSelectedMetaColumnsIncludingJoins.OfType<SelectedColumn>()
+                                                            .Any(c => c.GroupBy);
             }
         }
 
@@ -192,6 +211,15 @@ namespace Hydra.DataModels
         public ITable SetPagination(Pagination pagination)
         {
             Pagination = pagination;
+
+            return this;
+        }
+
+        public ITable AddRow(IRow row)
+        {
+            Rows.Add(row);
+
+            row.SetTable(this);
 
             return this;
         }
@@ -344,6 +372,19 @@ namespace Hydra.DataModels
             }
 
             return this;
+        }
+
+        public List<T> Cast<T>() where T : class
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var list = ReflectionHelper.Cast<T>(Rows.Select(r => r.Columns.ToDictionary(c => c.Name!, c => c.Value)).ToList());
+
+            stopwatch.Stop();
+            var x = stopwatch.Elapsed;
+
+            return list;
         }
 
     }

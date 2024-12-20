@@ -30,7 +30,9 @@ namespace Hydra.Services
             }
         }
 
-        public static List<Dictionary<string, object?>> ExecuteQuery(string? query, Dictionary<string, object>? parameters = null, CustomConnection? connection = null)
+        public static List<Dictionary<string, object?>> ExecuteQuery(string? query,
+            Dictionary<string, object?>? parameters = null,
+            CustomConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
 
@@ -72,7 +74,9 @@ namespace Hydra.Services
             }
         }
 
-        public static object? ExecuteScalar(string? query, Dictionary<string, object>? parameters = null, CustomConnection? connection = null)
+        public static object? ExecuteScalar(string? query,
+            Dictionary<string, object?>? parameters = null,
+            CustomConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
 
@@ -98,7 +102,7 @@ namespace Hydra.Services
         }
 
         public static int ExecuteNonQuery(string? query,
-            Dictionary<string, object>? parameters = null,
+            Dictionary<string, object?>? parameters = null,
             CustomConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
@@ -133,7 +137,9 @@ namespace Hydra.Services
             return ExecuteQuery(query, null, connection);
         }
 
-        public static bool Any(string? query, Dictionary<string, object>? parameters = null, CustomConnection? connection = null)
+        public static bool Any(string? query,
+            Dictionary<string, object?>? parameters = null,
+            CustomConnection? connection = null)
         {
             query = $"SELECT 1 FROM ({query}) t";
 
@@ -171,5 +177,30 @@ namespace Hydra.Services
                 return false;
             }
         }
+
+
+        public static readonly Dictionary<string, string> PrimaryKeyCache = new Dictionary<string, string>();
+
+        public static string GetPrimaryKeyName(string tableName, CustomConnection connection)
+        {
+            if (PrimaryKeyCache.ContainsKey(tableName))
+                return PrimaryKeyCache[tableName];
+
+            string query = @"
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                    WHERE TABLE_NAME = @TableName AND CONSTRAINT_NAME LIKE 'PK_%'";
+
+            var parameters = new Dictionary<string, object?>
+            {
+                { "@TableName", tableName }
+            };
+
+            var primaryKey = (DatabaseService.ExecuteScalar(query, parameters, connection) as string) ?? "Id";
+            PrimaryKeyCache[tableName] = primaryKey;
+
+            return primaryKey;
+        }
+
     }
 }

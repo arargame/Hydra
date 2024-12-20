@@ -1,11 +1,14 @@
 ﻿using Hydra.DataModels.Filter;
 using Hydra.DBAccess;
 using Hydra.Services;
+using Hydra.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Hydra.DataModels.SortingFilterDirectionExtension;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Hydra.DataModels
 {
@@ -15,21 +18,23 @@ namespace Hydra.DataModels
 
         private readonly CustomConnection connection;
 
+        private string? TopString { get; set; } = null;
+
         private string? SelectedColumnsString { get; set; } = null;
 
-        private string? FilterString { get; set; } = null;
+        private string? FilteredColumnsString { get; set; } = null;
 
         private string? JoinedTablesString { get; set; } = null;
 
         private string? QueryToTakeCount { get; set; } = null;
-
-        private string? TopString { get; set; } = null;
 
         private int TotalRecordsCount { get; set; }
 
         private string? QueryToTakeFilteredCount { get; set; } = null;
 
         private int FilteredTotalRecordsCount { get; set; }
+
+        private string? SelectQuery { get; set; } = null;
 
         public QueryBuilder(ITable table,CustomConnection connection)
         {
@@ -38,9 +43,9 @@ namespace Hydra.DataModels
             this.connection = connection;
         }
 
-        public QueryBuilder PrepareFilterString()
+        public QueryBuilder PrepareFilteredColumnsString()
         {
-            FilterString = table.Filter != null ? $"where {table.Filter.PrepareQueryString()}" : null;
+            FilteredColumnsString = table.Filter != null ? $"where {table.Filter.PrepareQueryString()}" : null;
 
             return this;
         }
@@ -82,7 +87,7 @@ namespace Hydra.DataModels
 
         public QueryBuilder PrepareQueryToTakeFilteredCount()
         {
-            QueryToTakeFilteredCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString} {FilterString}";
+            QueryToTakeFilteredCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString} {FilteredColumnsString}";
 
             return this;
         }
@@ -133,18 +138,20 @@ namespace Hydra.DataModels
 
             if (!selectedColumns.Any())
             {
-                var leftTableSelectedColumnList = (IEnumerable<IMetaColumn>)DatabaseService.SelectColumnNames(table.Name)
+                var leftTableSelectedColumnList = DatabaseService.SelectColumnNames(table.Name)
                                                             .Select(c => c["COLUMN_NAME"]?.ToString())
-                                                            .Select(columnName => new SelectedColumn(name: columnName,alias:columnName ).SetTable(table));
+                                                            .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(table))
+                                                            .OfType<IMetaColumn>()
+                                                            .ToList();
 
                 var joinTablesSelectedColumnList = new List<IMetaColumn>();
 
                 foreach (var joinTable in table.GetAllJoinTables)
                 {
-                    joinTablesSelectedColumnList.AddRange((IEnumerable<IMetaColumn>)DatabaseService.SelectColumnNames(joinTable.Name)
+                    joinTablesSelectedColumnList.AddRange(DatabaseService.SelectColumnNames(joinTable.Name)
                                                 .Select(c => c["COLUMN_NAME"]?.ToString())
-                                                .Select(columnName => new SelectedColumn(name: columnName, alias: columnName)
-                                                .SetTable(joinTable)));
+                                                .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(joinTable))
+                                                .OfType<IMetaColumn>());
                 }
 
                 selectedColumns.AddRange(leftTableSelectedColumnList.Union(joinTablesSelectedColumnList));
@@ -176,13 +183,48 @@ namespace Hydra.DataModels
                 SelectedColumnsString = string.Join(",", selectedColumns.Select(column => $"{column.Table?.Alias}.{column.Name} as [{column.Alias}]"));
             }
 
+            var orderByString = PrepareRowNumberOrderString(table.GetOrderedMetaColumnsIncludingJoins.OfType<OrderedColumn>(), table.Alias!, table.HasAnySelectedColumnToGroup);
+            SelectedColumnsString += table.PageSize > 0 ? $",ROW_NUMBER() OVER ({orderByString}) AS RowNumber" : null;
+
+
             return this;
         }
 
+        private string PrepareRowNumberOrderString(IEnumerable<OrderedColumn> orderedMetaColumns, string alias, bool hasGroupBy)
+        {
+            string ResolveAlias(string aliasName) => !hasGroupBy ? aliasName : "grp0";
+
+            if (!orderedMetaColumns.Any())
+                return $"ORDER BY {ResolveAlias(alias)}.Id";
+
+            var orderByParts = orderedMetaColumns
+                .Select(c => $"{ResolveAlias(c.Table?.Alias!)}.{c.Name} {c.Direction.ConvertToString()}");
+
+            return $"ORDER BY {string.Join(", ", orderByParts)}";
+        }
+
         private string GenerateGroupByQuery(IEnumerable<SelectedColumn> selectedColumns, string baseQuery)
+        {
+            // GROUP BY yapılacak kolonları seçiyoruz
+            var groupByColumns = selectedColumns
+                .Where(sc => sc.GroupBy)
+                .Select(sc => $"{sc.Table?.Alias}.{sc.Name}")
+                .ToList();
+
+            if (!groupByColumns.Any())
+                return baseQuery; // Eğer grup kolonları yoksa, gruplama yapmadan sorguyu döneriz.
+
+            // GROUP BY ifadelerini oluşturuyoruz
+            var groupByString = string.Join(", ", groupByColumns);
+
+            // İç SELECT sorgusunu oluşturuyoruz
+            return $"SELECT grp0.*, ROW_NUMBER() OVER (ORDER BY grp0.Id ASC) AS RowNumber FROM (SELECT {groupByString}, COUNT(*) AS Total FROM ({baseQuery}) grp1 GROUP BY {groupByString}) grp0";
+        }
+
+
         public QueryBuilder BuildSelectQuery()
         {
-            var query = "";
+            var baseQuery = "";
 
 
             try 
@@ -190,7 +232,7 @@ namespace Hydra.DataModels
                 SetTableFilter();
 
                 BuildTopString();
-                PrepareFilterString();
+                PrepareFilteredColumnsString();
                 PrepareJoinedTablesString();
                 PrepareQueryToTakeCount();
 
@@ -206,7 +248,36 @@ namespace Hydra.DataModels
 
                 PrepareSelectedColumnsString();
 
-                query = $"select {TopString} {SelectedColumnsString} from {table.Name} {table.Alias} {JoinedTablesString} {FilterString}";
+                baseQuery = $"select {TopString} {SelectedColumnsString} from {table.Name} {table.Alias} {JoinedTablesString} {FilteredColumnsString}";
+
+                if (table.HasAnySelectedColumnToGroup)
+                {
+                    baseQuery = GenerateGroupByQuery(table.GetSelectedMetaColumnsIncludingJoins.OfType<SelectedColumn>(), baseQuery);
+                }
+
+                var aliasList = table.JoinTables.Select(jt => jt.Alias).Append(table.Alias).Distinct();
+
+                var unusedAlias = Helper.GenerateUnusedCharacterInAWord(string.Join("", aliasList));
+
+                SelectQuery = $"select {unusedAlias}.* from({baseQuery}) {unusedAlias} ";
+
+                table.SetPageSize(table.PageSize > 0 ? table.PageSize : TotalRecordsCount);
+
+                table.Pagination = new Pagination(table.PageNumber,
+                                                  table.PageSize,
+                                                  TotalRecordsCount,
+                                                  FilteredTotalRecordsCount);
+
+                if (table.PageSize > 0)
+                {
+                    SelectQuery += $"where {unusedAlias}.RowNumber between {table.Pagination.Start} and {table.Pagination.Finish}";
+                }
+
+
+                //SELECT*
+                //FROM TableName
+                //ORDER BY SomeColumn
+                //OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY;
 
             }
             catch (Exception ex)
@@ -266,6 +337,36 @@ namespace Hydra.DataModels
             //}
 
             //return query.ToString();
+
+            return this;
+        }
+
+        public QueryBuilder SetTableRows()
+        {
+            var primaryKey = DatabaseService.GetPrimaryKeyName(table.Name!, connection); 
+
+            var results = DatabaseService.ExecuteQuery(SelectQuery, table.QueryParameters, connection);
+
+            foreach (var result in results)
+            {
+                var columns = result.Select(r => new DataColumn(r.Key, r.Value))
+                                    .Where(dc => table.GetSelectedMetaColumnsIncludingJoins.Any(smc => smc.Alias == dc.Name))
+                                    .ToList();
+
+                var row = new Row().SetTable(table);
+
+                if (result.ContainsKey(primaryKey))
+                {
+                    row.SetPrimaryKey(result[primaryKey]);
+                }
+
+                foreach (var column in columns)
+                {
+                    row.AddColumn(column);
+                }
+
+                table.AddRow(row);
+            }
 
             return this;
         }

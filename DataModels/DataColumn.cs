@@ -16,7 +16,7 @@ namespace Hydra.DataModels
     {
         public DataColumn() { }
 
-        public DataColumn(string name, object value)
+        public DataColumn(string name, object? value)
         {
             SetName(name);
 

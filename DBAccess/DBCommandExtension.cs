@@ -10,7 +10,7 @@ namespace Hydra.DBAccess
 {
     public static class DbCommanExtension
     {
-        public static void AddParameters(this IDbCommand command, Dictionary<string, object> parameters)
+        public static void AddParameters(this IDbCommand command, Dictionary<string, object?> parameters)
         {
             if (command == null)
                 throw new ArgumentNullException(nameof(command));

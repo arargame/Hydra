@@ -65,7 +65,8 @@ namespace Hydra.DataModels
 
         private void CalculateStartAndFinish()
         {
-            Start = (PageNumber - 1) * PageSize;
+            Start = ((PageNumber - 1) * PageSize) + 1;
+
             Finish = PageNumber * PageSize;
 
             if (Finish > TotalRecordsCount)
