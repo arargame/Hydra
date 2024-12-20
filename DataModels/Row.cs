@@ -34,9 +34,6 @@ namespace Hydra.DataModels
 
         public IRow AddColumn(IDataColumn column)
         {
-            if (Table != null && !Table.MetaColumns.Any(mc => mc.Name == column.Name))
-                throw new InvalidOperationException($"Column '{column.Name}' does not exist in the table metadata.");
-
             Columns.Add(column);
 
             column.SetRow(this);

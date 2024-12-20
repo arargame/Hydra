@@ -12,14 +12,6 @@ using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.DataModels
 {
-    public enum JoinType
-    {
-        Inner,
-        Left,
-        Right,
-        Full
-    }
-
     public interface ITable : IBaseObject<ITable>
     {
         string? Alias { get; set; }
@@ -385,6 +377,25 @@ namespace Hydra.DataModels
             var x = stopwatch.Elapsed;
 
             return list;
+        }
+
+        public IFilter GetFilterByColumnName<C, F>(string columnName) where C : IColumn where F : IFilter
+        {
+            return GetFilteredMetaColumns.Where(c => c.IsFiltered 
+                                        && c.GetType().Name == typeof(C).Name 
+                                        && c.Filter?.GetType().Name == typeof(F).Name 
+                                        && c.Name == columnName)
+                                .FirstOrDefault()!
+                                .Filter!;
+        }
+
+        public IFilter GetFilterByColumnName<T>(string columnName) where T : IFilter
+        {
+            return GetFilteredMetaColumns.Where(c => c.IsFiltered 
+                                        && c.Filter?.GetType().Name == typeof(T).Name 
+                                        && c.Name == columnName)
+                            .FirstOrDefault()!
+                            .Filter!;
         }
 
     }

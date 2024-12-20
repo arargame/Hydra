@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace Hydra.DataModels
 {
+    public enum JoinType
+    {
+        Inner,
+        Left,
+        Right,
+        Full
+    }
+
     public interface IJoinTable : ITable
     {
         string? LeftTableName { get; set; }
@@ -14,13 +22,17 @@ namespace Hydra.DataModels
 
         JoinType JoinType { get; set; }
 
-        JoinRelationship Relationship { get; set; }
+        JoinRelationship? Relationship { get; set; }
 
         IJoinTable SetLeftTableName(string leftTableName);
 
         IJoinTable SetLeftTable(Table? leftTable);
 
         IJoinTable SetJoinType(JoinType joinType);
+
+        IJoinTable On(string leftTableColumnName, string rightTableColumnName);
+        IJoinTable On(JoinRelationship joinRelationship);
+        new IJoinTable SetMetaColumns(params IMetaColumn[] columns);
     }
     public class JoinTable : Table, IJoinTable
     {
@@ -32,17 +44,21 @@ namespace Hydra.DataModels
 
         public JoinRelationship? Relationship { get; set; } = null;
 
-        public JoinTable()
+        public JoinTable(string name, string? alias, JoinType joinType) : base(name, alias)
         {
-
+            SetJoinType(joinType);
+        }
+        public JoinTable(Table leftTable, string name, string? alias, JoinType joinType) : base(name, alias)
+        {
+            SetLeftTable(leftTable);
         }
 
-        public JoinTable On(string leftTableColumnName, string rightTableColumnName)
+        public IJoinTable On(string leftTableColumnName, string rightTableColumnName)
         {
             return On(new JoinRelationship(new MetaColumn(leftTableColumnName).SetTable(LeftTable), new MetaColumn(rightTableColumnName).SetTable(this)));
         }
 
-        public JoinTable On(JoinRelationship joinRelationship)
+        public IJoinTable On(JoinRelationship joinRelationship)
         {
             Relationship = joinRelationship;
 
@@ -66,6 +82,13 @@ namespace Hydra.DataModels
         public IJoinTable SetJoinType(JoinType joinType)
         {
             JoinType = joinType;
+
+            return this;
+        }
+
+        public new IJoinTable SetMetaColumns(params IMetaColumn[] columns)
+        {
+            base.SetMetaColumns(columns);
 
             return this;
         }

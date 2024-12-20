@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,12 +13,50 @@ namespace Hydra.Utils
 {
     public static class ReflectionHelper
     {
-        /// <summary>
-        /// Belirtilen tipteki bir nesnenin özelliğine değer atar.
-        /// </summary>
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
+
+        public static PropertyInfo[] GetCachedProperties(Type type)
+        {
+            if (PropertyCache.TryGetValue(type, out var cachedProperties))
+                return cachedProperties;
+
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
+            PropertyCache[type] = properties;
+
+            return properties;
+        }
+
+        public static PropertyInfo? GetPropertyOf(Type type, string propertyName)
+        {
+            return GetCachedProperties(type).FirstOrDefault(p => p.Name == propertyName);
+        }
+
+        public static PropertyInfo? GetPropertyOf<T>(Expression<Func<T, object>> expression) where T : class
+        {
+            return GetPropertyOf<T>(GetMemberName(expression));
+        }
+
+        public static PropertyInfo? GetPropertyOf<T>(string propertyName) where T : class
+        {
+            return GetCachedProperties(typeof(T)).FirstOrDefault(p => p.Name == propertyName);
+        }
+
+        public static PropertyInfo[] GetPropertiesOf(Type type, Action<Exception>? logAction = null)
+        {
+            try
+            {
+                return GetCachedProperties(type);
+            }
+            catch (Exception ex)
+            {
+                logAction?.Invoke(ex);
+            }
+
+            return Array.Empty<PropertyInfo>();
+        }
         public static void SetPropertyValue<T>(T instance, string propertyName, object value)
         {
-            var property = instance?.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var property = GetPropertyOf(typeof(T), propertyName);
 
             if (property == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
@@ -25,12 +64,10 @@ namespace Hydra.Utils
             property.SetValue(instance, value);
         }
 
-        /// <summary>
-        /// Belirtilen tipteki bir nesnenin bir özelliğinin değerini döner.
-        /// </summary>
+
         public static object? GetPropertyValue<T>(T instance, string propertyName)
         {
-            var property = instance?.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var property = GetPropertyOf(typeof(T),propertyName);
 
             if (property == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
@@ -75,28 +112,44 @@ namespace Hydra.Utils
             return typeof(TInterface).IsAssignableFrom(instance.GetType());
         }
 
-        public static Type? GetTypeFromAssembly(Type sampleTypeInAssembly,
-                                            string typeName,
-                                            Type? isDerivedFromThisType = null,
-                                            Action<Exception>? logAction = null)
+        private static readonly ConcurrentDictionary<(Assembly, string), Type?> TypeCache = new();
+
+
+        public static Type? GetTypeFromAssembly(Assembly assembly,
+                                           string typeName,
+                                           Type? isDerivedFromThisType = null,
+                                           Action<Exception>? logAction = null)
         {
             try
             {
-                Assembly assembly = sampleTypeInAssembly.Assembly;
+                if (TypeCache.TryGetValue((assembly, typeName), out var cachedType))
+                    return cachedType;
 
-                Func<Type, Type, bool> isDerivedFrom = new Func<Type, Type, bool>((t, baseType) =>
-                {
-                    return t.BaseType?.Name == baseType.Name;
-                });
 
-                return assembly.GetTypes().FirstOrDefault(t => t.Name == typeName && (isDerivedFromThisType != null ? isDerivedFrom(t, isDerivedFromThisType) : true));
+                Func<Type, Type, bool> isDerivedFrom = (t, baseType) => t.BaseType?.Name == baseType.Name;
+
+                var type = assembly
+                    .GetTypes()
+                    .FirstOrDefault(t => t.Name == typeName && (isDerivedFromThisType != null ? isDerivedFrom(t, isDerivedFromThisType) : true));
+
+    
+                TypeCache[(assembly, typeName)] = type;
+
+                return type;
             }
             catch (Exception ex)
             {
                 logAction?.Invoke(ex);
-
                 return null;
             }
+        }
+
+        public static Type? GetTypeFromAssembly(Type sampleTypeInAssembly,
+                                                string typeName,
+                                                Type? isDerivedFromThisType = null,
+                                                Action<Exception>? logAction = null)
+        {
+            return GetTypeFromAssembly(sampleTypeInAssembly.Assembly, typeName, isDerivedFromThisType, logAction);
         }
 
         private static void SetNavigationProperties<T>(T tInstance, IEnumerable<dynamic> navigationProperties, PropertyInfo[] properties)
@@ -104,6 +157,8 @@ namespace Hydra.Utils
             if (tInstance is null) throw new ArgumentNullException(nameof(tInstance));
             if (navigationProperties is null) throw new ArgumentNullException(nameof(navigationProperties));
             if (properties is null) throw new ArgumentNullException(nameof(properties));
+
+            var assembly = tInstance.GetType().Assembly;
 
             var groups = navigationProperties.GroupBy(np => np.Table);
 
@@ -117,12 +172,11 @@ namespace Hydra.Utils
                     )
                 };
 
-
-                var navigationPropertyType = (Type?)GetTypeFromAssembly(typeof(BaseObject<>), group.Key)
+                var navigationPropertyType = (Type?)GetTypeFromAssembly(assembly, group.Key)
                     ?? throw new InvalidOperationException($"Type for navigation property '{group.Key}' not found.");
 
                 var navigationPropertyObject = InvokeMethod(
-                    invokerType: typeof(Helper),
+                    invokerType: typeof(ReflectionHelper),
                     invokerObject : null,
                     methodName : nameof(ReflectionHelper.Cast),
                     bindingFlags: null,
@@ -203,18 +257,7 @@ namespace Hydra.Utils
             return methodInfo;
         }
 
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
 
-        public static PropertyInfo[] GetCachedProperties(Type type)
-        {
-            if (PropertyCache.TryGetValue(type, out var cachedProperties))
-                return cachedProperties;
-
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
-            PropertyCache[type] = properties;
-
-            return properties;
-        }
 
         public static List<T> Cast<T>(List<Dictionary<string, object?>> rows) where T : class
         {
@@ -359,6 +402,31 @@ namespace Hydra.Utils
 
             return result;
         }
+
+        public static string GetMemberName<T>(Expression<Func<T, object>> expression, bool forThenIncludes = false) where T : class
+        {
+            MemberExpression? memberExpression = null;
+
+            switch (expression.Body)
+            {
+                case UnaryExpression unaryExpression:
+                    memberExpression = unaryExpression.Operand as MemberExpression;
+                    break;
+
+                case MemberExpression directMemberExpression:
+                    memberExpression = directMemberExpression;
+                    break;
+            }
+
+            if (memberExpression == null)
+                throw new InvalidOperationException("Expression is not a valid member access.");
+
+  
+            return forThenIncludes
+                ? $"{typeof(T).Name}.{memberExpression.Member.Name}"
+                : memberExpression.Member.Name;
+        }
+
 
     }
 }
