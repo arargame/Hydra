@@ -6,6 +6,8 @@ Hydra is a powerful framework designed to simplify query generation and executio
 
 Here is an example of how Hydra helps in constructing a query:
 
+![Visual Studio Output](ReadMeContent/Table.png)
+
 ### Code Example
 ```csharp
 var table = new Table(name: "Person.Person", alias: "pper")
@@ -36,7 +38,7 @@ The query retrieves data from the `Person.Person` and `Person.PersonPhone` table
 
 ### Visual Example
 Below is a screenshot of the output in Visual Studio:
-*(You can include the image here.)*
+![Visual Studio Output](ReadMeContent/resultsAsTList.png)
 
 ## Key Features
 - **Dynamic Query Generation:** Write queries in code without sacrificing performance or flexibility.
