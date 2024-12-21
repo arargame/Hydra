@@ -1,5 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.DataModels.Filter;
+using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,7 @@ namespace Hydra.DataModels
         int PageSize { get; set; }
 
         bool HasAnySelectedColumnToGroup { get; }
+        ViewType ViewType { get; set; }
 
         List<IJoinTable> JoinTables { get; set; }
 
@@ -69,6 +71,8 @@ namespace Hydra.DataModels
         ITable AddRow(IRow row);
 
         List<T> Cast<T>() where T : class;
+
+        ITable SetViewType(ViewType viewType);
     }
 
     public class Table : BaseObject<Table>, ITable
@@ -87,6 +91,8 @@ namespace Hydra.DataModels
 
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
+
+        public ViewType ViewType { get; set; }
 
         public Expression<Func<ITable, JoinedFiltersGroup>>? ManageFiltersExpression { get; set; } = null;
 
@@ -212,6 +218,13 @@ namespace Hydra.DataModels
             Rows.Add(row);
 
             row.SetTable(this);
+
+            return this;
+        }
+
+        public ITable SetViewType(ViewType viewType)
+        {
+            ViewType = viewType;
 
             return this;
         }

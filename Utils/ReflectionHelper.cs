@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -65,14 +66,34 @@ namespace Hydra.Utils
         }
 
 
-        public static object? GetPropertyValue<T>(T instance, string propertyName)
+        public static object? GetValueOf<T>(T instance, string propertyName)
         {
-            var property = GetPropertyOf(typeof(T),propertyName);
+            var propertyInfo = GetPropertyOf(typeof(T), propertyName);
 
-            if (property == null)
+            if (propertyInfo == null)
                 throw new ArgumentException($"Property '{propertyName}' not found on type '{typeof(T)}'.");
 
-            return property.GetValue(instance);
+            return propertyInfo.GetValue(instance);
+        }
+
+        public static object? GetValueOf(string propertyName, object obj)
+        {
+            var propertyInfo = GetPropertyOf(obj.GetType(), propertyName);
+
+            if (propertyInfo == null)
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{obj.GetType()}'.");
+
+            return propertyInfo?.GetValue(obj);
+        }
+
+        public static object? GetValueOf(Type type, string propertyName, object obj)
+        {
+            var propertyInfo = GetPropertyOf(type, propertyName);
+
+            if (propertyInfo == null)
+                throw new ArgumentException($"Property '{propertyName}' not found on type '{type}'.");
+
+            return propertyInfo?.GetValue(obj);
         }
 
         public static object? InvokeMethod(Type invokerType,
@@ -132,7 +153,7 @@ namespace Hydra.Utils
                     .GetTypes()
                     .FirstOrDefault(t => t.Name == typeName && (isDerivedFromThisType != null ? isDerivedFrom(t, isDerivedFromThisType) : true));
 
-    
+
                 TypeCache[(assembly, typeName)] = type;
 
                 return type;
@@ -167,8 +188,8 @@ namespace Hydra.Utils
                 var propertyList = new List<Dictionary<string, object>>
                 {
                     group.ToDictionary(
-                        a => (string)a.Property, 
-                        a => a.Value as object ?? DBNull.Value 
+                        a => (string)a.Property,
+                        a => a.Value as object ?? DBNull.Value
                     )
                 };
 
@@ -177,8 +198,8 @@ namespace Hydra.Utils
 
                 var navigationPropertyObject = InvokeMethod(
                     invokerType: typeof(ReflectionHelper),
-                    invokerObject : null,
-                    methodName : nameof(ReflectionHelper.Cast),
+                    invokerObject: null,
+                    methodName: nameof(ReflectionHelper.Cast),
                     bindingFlags: null,
                     argumentTypesOfMethod: new[] { typeof(List<Dictionary<string, object>>) },
                     genericTypes: new[] { navigationPropertyType },
@@ -389,7 +410,7 @@ namespace Hydra.Utils
             {
                 var genericTypeArgument = propertyType.GenericTypeArguments?.FirstOrDefault();
 
-                if (genericTypeArgument!=null && genericTypeArgument.IsAssignableTo(type))
+                if (genericTypeArgument != null && genericTypeArgument.IsAssignableTo(type))
                     hasGenericBaseType = true;
             }
 
@@ -421,10 +442,180 @@ namespace Hydra.Utils
             if (memberExpression == null)
                 throw new InvalidOperationException("Expression is not a valid member access.");
 
-  
+
             return forThenIncludes
                 ? $"{typeof(T).Name}.{memberExpression.Member.Name}"
                 : memberExpression.Member.Name;
+        }
+
+
+        public static T? ShallowCopy<T>(T entity) where T : class
+        {
+            return (T?)ReflectionHelper.InvokeMethod(invokerType: typeof(T),
+                                invokerObject: entity,
+                                methodName: "MemberwiseClone",
+                                bindingFlags: BindingFlags.Instance | BindingFlags.NonPublic,
+                                argumentTypesOfMethod: null,
+                                genericTypes: null,
+                                parameters: null,
+                                logAction: new Action<Exception>((ex) =>
+                                {
+
+                                }));
+        }
+
+        public static T Clone<T>(T source, bool deepClone = false, Func<PropertyInfo, bool>? propertyFilter = null) where T : class, new()
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var sourceType = typeof(T);
+            var target = new T();
+
+            var properties = ReflectionHelper.GetCachedProperties(sourceType);
+
+            foreach (var property in properties)
+            {
+                if (propertyFilter != null && !propertyFilter(property))
+                    continue;
+
+                if (!property.CanRead || !property.CanWrite)
+                    continue;
+
+                var value = property.GetValue(source);
+
+                if (deepClone && value != null && !IsPrimitiveOrString(property.PropertyType))
+                {
+                    var clonedValue = CloneDynamic(value, deepClone, propertyFilter);
+                    property.SetValue(target, clonedValue);
+                }
+                else
+                {
+                    property.SetValue(target, value);
+                }
+            }
+
+            return target;
+        }
+
+
+        private static object? CloneDynamic(object source, bool deepClone, Func<PropertyInfo, bool>? propertyFilter)
+        {
+            var sourceType = source.GetType();
+
+            if (sourceType.IsArray)
+            {
+                var elementType = sourceType.GetElementType()!;
+                var array = (Array)source;
+                var clonedArray = Array.CreateInstance(elementType, array.Length);
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    var value = array.GetValue(i);
+                    clonedArray.SetValue(deepClone && value != null && !IsPrimitiveOrString(elementType)
+                        ? CloneDynamic(value, deepClone, propertyFilter)
+                        : value,
+                        i);
+                }
+
+                return clonedArray;
+            }
+
+            var targetType = Activator.CreateInstance(sourceType);
+            if (targetType == null) return null;
+
+            foreach (var property in ReflectionHelper.GetCachedProperties(sourceType))
+            {
+                if (propertyFilter != null && !propertyFilter(property))
+                    continue;
+
+                if (!property.CanRead || !property.CanWrite)
+                    continue;
+
+                var value = property.GetValue(source);
+                if (deepClone && value != null && !IsPrimitiveOrString(property.PropertyType))
+                {
+                    property.SetValue(targetType, CloneDynamic(value, deepClone, propertyFilter));
+                }
+                else
+                {
+                    property.SetValue(targetType, value);
+                }
+            }
+
+            return targetType;
+        }
+
+        private static bool IsPrimitiveOrString(Type type)
+        {
+            return type.IsPrimitive || type == typeof(string) || type == typeof(decimal);
+        }
+
+        public static bool IsPropertyFrom<T>(PropertyInfo propertyInfo)
+        {
+            return IsPropertyFrom(typeof(T), propertyInfo);
+        }
+
+        public static bool IsPropertyFrom(Type type, PropertyInfo propertyInfo)
+        {
+            var propertyType = propertyInfo.PropertyType;
+
+            // Nullable türün gerçek tipini alın
+            var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+            // Eğer generic argüman varsa, kontrol et
+            if (underlyingType.IsGenericType && underlyingType.GenericTypeArguments.Any())
+            {
+                var genericArgument = underlyingType.GenericTypeArguments.FirstOrDefault();
+                if (genericArgument != null && type.IsAssignableFrom(genericArgument))
+                {
+                    return true;
+                }
+            }
+
+            // Basit tip kontrolü (tam uyum veya base type üzerinden)
+            return type.IsAssignableFrom(underlyingType);
+        }
+
+        public static void SetValueOf(object? obj, string? propertyName, object? value, Action<Exception>? logAction = null)
+        {
+            try
+            {
+                if (obj == null || propertyName == null)
+                {
+                    throw new Exception($"Object or its propertyName is null");
+                }
+
+                var propertyInfo = GetPropertyOf(obj.GetType(), propertyName);
+
+                if (propertyInfo == null)
+                {
+                    throw new Exception($"Property '{propertyName}' is not defined in type '{obj.GetType().Name}'.");
+                }
+
+                if (value != null)
+                {
+                    var propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+
+                    value = propertyType switch
+                    {
+                        Type t when t == typeof(Guid) => Guid.TryParse(value.ToString(), out var guid) ? guid : throw new FormatException($"Invalid Guid format: {value}"),
+                        Type t when t.IsEnum => Enum.TryParse(t, value.ToString(), ignoreCase: true, out var enumValue) ? enumValue : throw new FormatException($"Invalid enum value: {value}"),
+                        Type t when t == typeof(DateTime) => DateTime.TryParse(value.ToString(), out var dt) ? dt : throw new FormatException($"Invalid DateTime format: {value}"),
+                        Type t when t == typeof(bool) => bool.TryParse(value.ToString(), out var boolValue) ? boolValue : throw new FormatException($"Invalid boolean value: {value}"),
+                        Type t when t == typeof(byte[]) => value is string str ? Convert.FromBase64String(str) : throw new FormatException($"Invalid Base64 string: {value}"),
+                        Type t when t == typeof(double) => double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue) ? doubleValue : throw new FormatException($"Invalid double value: {value}"),
+                        Type t when t == typeof(int) => int.TryParse(value.ToString(), out var intValue) ? intValue : throw new FormatException($"Invalid integer value: {value}"),
+                        _ => Convert.ChangeType(value, propertyType)
+                    };
+                }
+
+                propertyInfo.SetValue(obj, value);
+            }
+            catch (Exception ex)
+            {
+                logAction?.Invoke(ex);
+            }
         }
 
 
