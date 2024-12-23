@@ -24,6 +24,10 @@ namespace Hydra.DataModels
 
         JoinRelationship? Relationship { get; set; }
 
+        RelationType RelationType { get; set; }
+
+        int Depth { get; set; }
+
         IJoinTable SetLeftTableName(string leftTableName);
 
         IJoinTable SetLeftTable(Table? leftTable);
@@ -33,6 +37,10 @@ namespace Hydra.DataModels
         IJoinTable On(string leftTableColumnName, string rightTableColumnName);
         IJoinTable On(JoinRelationship joinRelationship);
         new IJoinTable SetMetaColumns(params IMetaColumn[] columns);
+
+        IJoinTable SetDepth(int depth);
+
+        IJoinTable SetRelationType(RelationType relationType);
     }
     public class JoinTable : Table, IJoinTable
     {
@@ -44,16 +52,20 @@ namespace Hydra.DataModels
 
         public JoinRelationship? Relationship { get; set; } = null;
 
-        public JoinTable(string name, string? alias, JoinType joinType) : base(name, alias)
+        public RelationType RelationType { get; set; }
+
+        public int Depth { get; set; }
+
+        public JoinTable(string? name, string? alias, JoinType joinType) : base(name, alias)
         {
             SetJoinType(joinType);
         }
-        public JoinTable(Table leftTable, string name, string? alias, JoinType joinType) : base(name, alias)
+        public JoinTable(Table? leftTable, string? name, string? alias, JoinType joinType) : base(name, alias)
         {
             SetLeftTable(leftTable);
         }
 
-        public IJoinTable On(string leftTableColumnName, string rightTableColumnName)
+        public IJoinTable On(string? leftTableColumnName, string? rightTableColumnName)
         {
             return On(new JoinRelationship(new MetaColumn(leftTableColumnName).SetTable(LeftTable), new MetaColumn(rightTableColumnName).SetTable(this)));
         }
@@ -89,6 +101,20 @@ namespace Hydra.DataModels
         public new IJoinTable SetMetaColumns(params IMetaColumn[] columns)
         {
             base.SetMetaColumns(columns);
+
+            return this;
+        }
+
+        public IJoinTable SetDepth(int depth)
+        {
+            Depth = depth;
+
+            return this;
+        }
+
+        public IJoinTable SetRelationType(RelationType relationType)
+        {
+            RelationType = relationType;
 
             return this;
         }

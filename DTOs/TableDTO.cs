@@ -4,6 +4,7 @@ using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -22,8 +23,6 @@ namespace Hydra.DTOs
         public string Alias { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
-
-        //public List<object> Results { get; set; }
 
         public List<RowDTO> Rows { get; set; }
 
@@ -46,7 +45,7 @@ namespace Hydra.DTOs
         {
             get
             {
-                return Helper.GetTypeFromAssembly(sampleTypeInAssembly: typeof(DTO), typeName: ViewDTOTypeName);
+                return ReflectionHelper.GetTypeFromAssembly(sampleTypeInAssembly: typeof(DTO), typeName: ViewDTOTypeName);
             }
         }
 
@@ -695,18 +694,18 @@ namespace Hydra.DTOs
 
             try
             {
-                var propertyNameForTableNameInDTO = ReflectionHelper.GetMemberName<DTO>(dto => dto.ControllerName);
+                var propertyNameForTableNameInDTO = ReflectionHelper.GetMemberName<ViewDTO>(dto => dto.ControllerName);
 
                 var dtoInstance = ReflectionHelper.InvokeMethod(invokerType: typeof(Helper),
                                                         invokerObject: null,
                                                         methodName: "CreateInstance",
                                                         genericTypes: new[] { dtoType },
-                                                        parameters: new object[]
+                                                        parameters: new object?[]
                                                         {
                                                             null
                                                         });
 
-                if (string.IsNullOrEmpty((dtoInstance as DTO).ControllerName))
+                if (string.IsNullOrEmpty((dtoInstance as ViewDTO).ControllerName))
                     throw new Exception($"Please set the controller name for {dtoType.Name}");
 
                 foreach (var column in allColumns)
@@ -923,13 +922,15 @@ namespace Hydra.DTOs
                 tableDepths[tableName] = currentDepth;
             }
 
-            var relatedColumns = columns.Where(column => column.NavigationColumnInfoDTO.LeftTableName == tableName && column.NavigationColumnInfoDTO.RightTableName != tableName);
+
+            var relatedColumns = columns.Where(column =>column.NavigationColumnInfoDTO!=null && column.NavigationColumnInfoDTO.LeftTableName == tableName && column.NavigationColumnInfoDTO.RightTableName != tableName);
 
             foreach (var relatedColumn in relatedColumns)
             {
-                CalculateTableDepth(columns, tableDepths, relatedColumn.NavigationColumnInfoDTO.RightTableName, currentDepth + 1);
-
-                //currentDepth = Math.Max(currentDepth, CalculateTableDepth(columns,tableDepths, relatedColumn.NavigationColumnInfoDTO.RightTableName, currentDepth + 1));
+                CalculateTableDepth(columns: columns,
+                                    tableDepths: tableDepths,
+                                    tableName: relatedColumn.NavigationColumnInfoDTO!.RightTableName,
+                                    currentDepth: currentDepth + 1);
             }
         }
 

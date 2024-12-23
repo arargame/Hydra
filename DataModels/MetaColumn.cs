@@ -49,6 +49,8 @@ namespace Hydra.DataModels
 
         NavigationColumnInfo? NavigationColumnInfo { get; set; }
 
+        bool CreateResultViewFromThis { get; set; }
+
         bool IsNavigation { get; }
 
         bool BelongsToJoins { get; }
@@ -101,6 +103,8 @@ namespace Hydra.DataModels
         public HtmlInputType HtmlInputType { get; set; }
 
         public NavigationColumnInfo? NavigationColumnInfo { get; set; } = null;
+
+        public bool CreateResultViewFromThis { get; set; }
 
         public bool IsNavigation
         {
@@ -270,7 +274,7 @@ namespace Hydra.DataModels
 
         public class FilteredColumn : MetaColumn
         {
-            public FilteredColumn(string name, IFilter filter) : base(name, filter.GetValue, null)
+            public FilteredColumn(string? name, IFilter filter) : base(name, filter.GetValue, null)
             {
                 MakeFiltered(filter);
             }

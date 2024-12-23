@@ -12,27 +12,27 @@ namespace Hydra.DTOs
     public class JoinTableDTO
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; } = null;
 
-        public string Alias { get; set; }
+        public string? Alias { get; set; } = null;
 
         public JoinType JoinType { get; set; }
 
-        public string LeftTableName { get; set; }
+        public string? LeftTableName { get; set; } = null;
 
-        public string LeftTableColumnName { get; set; }
+        public string? LeftTableColumnName { get; set; } = null;
 
-        public string RightTableName { get; set; }
+        public string? RightTableName { get; set; } = null;
 
-        public string RightTableColumnName { get; set; }
+        public string? RightTableColumnName { get; set; } = null;
 
         public RelationType RelationType { get; set; }
 
         public int Depth { get; set; }
 
-        public List<MetaColumnDTO> MetaColumns { get; set; }
+        public List<MetaColumnDTO> MetaColumns { get; set; } = new();
 
-        public List<JoinTableDTO> JoinTables { get; set; }
+        public List<JoinTableDTO> JoinTables { get; set; } = new();
 
         public List<JoinTableDTO> GetAllJoinTableDTOs
         {
@@ -84,9 +84,9 @@ namespace Hydra.DTOs
         }
 
 
-        public static JoinTable ConvertToJoinTable(JoinTableDTO joinTableDTO, Table leftTable)
+        public static IJoinTable ConvertToJoinTable(JoinTableDTO joinTableDTO, Table leftTable)
         {
-            JoinTable joinTable = new JoinTable(joinTableDTO.Name, joinTableDTO.Alias, joinTableDTO.JoinType)
+            IJoinTable joinTable = new JoinTable(joinTableDTO.Name, joinTableDTO.Alias, joinTableDTO.JoinType)
                                         .On(joinTableDTO.LeftTableColumnName, joinTableDTO.RightTableColumnName)
                                         .SetMetaColumns(joinTableDTO.MetaColumns.Select(mc => MetaColumnDTO.ConvertToColumn(mc)).Where(mc => mc != null).ToArray())
                                         .SetLeftTable(leftTable)
@@ -98,7 +98,7 @@ namespace Hydra.DTOs
             return joinTable;
         }
 
-        public static JoinTableDTO ConvertToJoinTableDTO(JoinTable joinTable)
+        public static JoinTableDTO ConvertToJoinTableDTO(IJoinTable joinTable)
         {
             JoinTableDTO joinTableDTO = new JoinTableDTO()
             {
@@ -112,11 +112,11 @@ namespace Hydra.DTOs
 
                 LeftTableName = joinTable.LeftTable?.Name,
 
-                LeftTableColumnName = joinTable.ColumnEquality?.LeftColumn?.Name,
+                LeftTableColumnName = joinTable.Relationship?.LeftColumn?.Name,
 
                 RightTableName = joinTable.Name,
 
-                RightTableColumnName = joinTable.ColumnEquality?.RightColumn?.Name,
+                RightTableColumnName = joinTable.Relationship?.RightColumn?.Name,
 
                 JoinTables = joinTable.JoinTables.Select(jt => ConvertToJoinTableDTO(jt)).ToList(),
 
@@ -209,14 +209,6 @@ namespace Hydra.DTOs
                 return MetaColumns.Where(mc => mc.TypeName == nameof(FilteredColumn)).OrderBy(mc => mc.FilterDTO.Priority).ToList();
             }
         }
-
-        //public List<ColumnDTO> GetFilteredMetaColumnsExceptForeignKey
-        //{
-        //    get
-        //    {
-        //        return GetFilteredMetaColumns.Where(fc => !fc.IsForeignKey).ToList();
-        //    }
-        //}
 
 
         public List<MetaColumnDTO> GetSelectedMetaColumns

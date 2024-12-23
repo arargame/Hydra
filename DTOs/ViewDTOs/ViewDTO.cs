@@ -260,7 +260,7 @@ namespace Hydra.DTOs.ViewDTOs
             if (isSelectingIdField)
                 idPropertyInfo = selectedPropertyInfo;
             else
-                idPropertyInfo = Helper.GetPropertyOf(type: GetType(),
+                idPropertyInfo = ReflectionHelper.GetPropertyOf(type: GetType(),
                                                             propertyName: $"{rightTableName}_Id");
 
 
@@ -360,7 +360,7 @@ namespace Hydra.DTOs.ViewDTOs
         public virtual DTO LoadConfigurations()
         {
             return this;
-        }ReflectionHelper
+        }
 
         public virtual DTO LoadCollections()
         {
@@ -396,7 +396,7 @@ namespace Hydra.DTOs.ViewDTOs
         {
             bool isInherited = !string.IsNullOrEmpty(inheritingTableName);
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: Helper.GetPropertyOf<ViewDTO>(o => o.Description),
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.Description),
                configurations: new List<IConfiguration>()
                {
                    new EditViewConfiguration(elementType:HtmlElementType.TextArea),
@@ -406,7 +406,7 @@ namespace Hydra.DTOs.ViewDTOs
                }, displayName: "Description");
 
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: Helper.GetPropertyOf<ViewDTO>(o => o.AddedDate),
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.AddedDate),
                configurations: new List<IConfiguration>()
                {
                    new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(BetweenFilter)),
@@ -417,7 +417,7 @@ namespace Hydra.DTOs.ViewDTOs
                },
                displayName: "Added Date");
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: Helper.GetPropertyOf<ViewDTO>(o => o.ModifiedDate),
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.ModifiedDate),
                configurations: new List<IConfiguration>()
                {
                    new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(BetweenFilter)),
@@ -427,7 +427,7 @@ namespace Hydra.DTOs.ViewDTOs
 
                }, displayName: "Modified Date");
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: Helper.GetPropertyOf<ViewDTO>(o => o.IsActive),
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.IsActive),
                configurations: new List<IConfiguration>()
                {
                     new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(EqualFilter)),
@@ -441,7 +441,7 @@ namespace Hydra.DTOs.ViewDTOs
 
                }, displayName: "Active");
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: Helper.GetPropertyOf<ViewDTO>(o => o.IsHidden),
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.IsHidden),
                configurations: new List<IConfiguration>()
                {
                    new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(EqualFilter)),

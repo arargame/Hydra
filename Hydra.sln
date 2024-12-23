@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra", "Hydra.csproj", "{520C5768-7A6C-4CBC-8B21-900A46C96C2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra", "Hydra.csproj", "{520C5768-7A6C-4CBC-8B21-900A46C96C2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.TestProject", "..\Hydra.TestProject\Hydra.TestProject.csproj", "{E8B42B96-CD28-4C69-8FBF-B24C71916858}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra.TestProject", "..\Hydra.TestProject\Hydra.TestProject.csproj", "{E8B42B96-CD28-4C69-8FBF-B24C71916858}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.ConsoleApp", "..\Hydra.ConsoleApp\Hydra.ConsoleApp.csproj", "{14EE4BC2-7742-4BF6-A055-41FCA247D04E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra.ConsoleApp", "..\Hydra.ConsoleApp\Hydra.ConsoleApp.csproj", "{14EE4BC2-7742-4BF6-A055-41FCA247D04E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.Blazor", "..\Hydra.Blazor\Hydra.Blazor.csproj", "{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

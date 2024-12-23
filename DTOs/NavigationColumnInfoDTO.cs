@@ -45,7 +45,7 @@ namespace Hydra.DTOs
             SetAsLink = setAsLink;
         }
 
-        public static NavigationColumnInfoDTO ConvertToNavigationColumnInfoDTO(NavigationColumnInfo navigationColumnInfo)
+        public static NavigationColumnInfoDTO? ConvertToNavigationColumnInfoDTO(NavigationColumnInfo? navigationColumnInfo)
         {
             if (navigationColumnInfo == null)
                 return null;

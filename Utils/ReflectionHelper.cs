@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -551,31 +552,31 @@ namespace Hydra.Utils
             return type.IsPrimitive || type == typeof(string) || type == typeof(decimal);
         }
 
-        public static bool IsPropertyFrom<T>(PropertyInfo propertyInfo)
-        {
-            return IsPropertyFrom(typeof(T), propertyInfo);
-        }
+        //public static bool IsPropertyFrom<T>(PropertyInfo propertyInfo)
+        //{
+        //    return IsPropertyFrom(typeof(T), propertyInfo);
+        //}
 
-        public static bool IsPropertyFrom(Type type, PropertyInfo propertyInfo)
-        {
-            var propertyType = propertyInfo.PropertyType;
+        //public static bool IsPropertyFrom(Type type, PropertyInfo propertyInfo)
+        //{
+        //    var propertyType = propertyInfo.PropertyType;
 
-            // Nullable türün gerçek tipini alın
-            var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        //    // Nullable türün gerçek tipini alın
+        //    var underlyingType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
 
-            // Eğer generic argüman varsa, kontrol et
-            if (underlyingType.IsGenericType && underlyingType.GenericTypeArguments.Any())
-            {
-                var genericArgument = underlyingType.GenericTypeArguments.FirstOrDefault();
-                if (genericArgument != null && type.IsAssignableFrom(genericArgument))
-                {
-                    return true;
-                }
-            }
+        //    // Eğer generic argüman varsa, kontrol et
+        //    if (underlyingType.IsGenericType && underlyingType.GenericTypeArguments.Any())
+        //    {
+        //        var genericArgument = underlyingType.GenericTypeArguments.FirstOrDefault();
+        //        if (genericArgument != null && type.IsAssignableFrom(genericArgument))
+        //        {
+        //            return true;
+        //        }
+        //    }
 
-            // Basit tip kontrolü (tam uyum veya base type üzerinden)
-            return type.IsAssignableFrom(underlyingType);
-        }
+        //    // Basit tip kontrolü (tam uyum veya base type üzerinden)
+        //    return type.IsAssignableFrom(underlyingType);
+        //}
 
         public static void SetValueOf(object? obj, string? propertyName, object? value, Action<Exception>? logAction = null)
         {
@@ -618,6 +619,62 @@ namespace Hydra.Utils
             }
         }
 
+        public static bool IsPropertyNullable(PropertyInfo propertyInfo)
+        {
+            return GetNullablePropertyType(propertyInfo) != null;
+        }
+
+        public static string? GetNullablePropertyName(PropertyInfo propertyInfo)
+        {
+            return GetNullablePropertyType(propertyInfo)?.Name;
+        }
+
+        public static Type? GetNullablePropertyType(PropertyInfo propertyInfo)
+        {
+            return Nullable.GetUnderlyingType(propertyInfo.PropertyType);
+        }
+
+        private static readonly Dictionary<string, object?> _attributeCache = new();
+
+        /// <summary>
+        /// Belirli bir attribute türünü bir property'den alır ve cache'de saklar.
+        /// </summary>
+        /// <typeparam name="T">Attribute türü</typeparam>
+        /// <param name="propertyInfo">Property bilgisi</param>
+        /// <returns>Bulunan attribute ya da null</returns>
+        public static T? GetAttribute<T>(PropertyInfo propertyInfo) where T : Attribute
+        {
+            if (propertyInfo == null) throw new ArgumentNullException(nameof(propertyInfo));
+
+            // Cache anahtarını oluştur
+            var key = $"{propertyInfo.DeclaringType?.FullName}.{propertyInfo.Name}.{typeof(T).FullName}";
+
+            // Cache'de varsa döndür
+            if (_attributeCache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue as T;
+            }
+
+            // Cache'de yoksa attribute'ü bul ve ekle
+            var attribute = propertyInfo.GetCustomAttribute<T>();
+            _attributeCache[key] = attribute;
+
+            return attribute;
+        }
+
+        /// <summary>
+        /// DisplayAttribute varsa adını, yoksa property adını döndürür.
+        /// </summary>
+        /// <param name="propertyInfo">Property bilgisi</param>
+        /// <returns>Display adı ya da property adı</returns>
+        public static string GetDisplayNameOrPropertyName(PropertyInfo propertyInfo)
+        {
+            if (propertyInfo == null) throw new ArgumentNullException(nameof(propertyInfo));
+
+            // DisplayAttribute'u al ve adını döndür, yoksa property adını döndür
+            var displayAttribute = GetAttribute<DisplayAttribute>(propertyInfo);
+            return displayAttribute?.Name ?? propertyInfo.Name;
+        }
 
     }
 }

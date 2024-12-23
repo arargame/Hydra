@@ -13,6 +13,13 @@ using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.DataModels
 {
+    public enum RelationType
+    {
+        OneToMany,
+        ManyToMany,
+        OneToOneOrZero
+    }
+
     public interface ITable : IBaseObject<ITable>
     {
         string? Alias { get; set; }
@@ -410,7 +417,6 @@ namespace Hydra.DataModels
                             .FirstOrDefault()!
                             .Filter!;
         }
-
     }
 
 

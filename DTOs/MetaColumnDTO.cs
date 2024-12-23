@@ -13,7 +13,7 @@ using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.DTOs
 {
-    public class MetaColumnDTO
+    public partial class MetaColumnDTO
     {
         public Guid Id { get; set; }
 
@@ -27,7 +27,7 @@ namespace Hydra.DTOs
 
         public int Priority { get; set; }
 
-        public FilterDTO FilterDTO { get; set; }
+        public FilterDTO? FilterDTO { get; set; } = null;
 
         public bool IsPrimaryKey { get; set; }
 
@@ -39,11 +39,11 @@ namespace Hydra.DTOs
 
         public ColumnValueType ValueType { get; set; }
 
-        public object DefaultValue { get; set; }
+        public object? DefaultValue { get; set; } = null;
 
-        public NavigationColumnInfoDTO NavigationColumnInfoDTO { get; set; }
+        public NavigationColumnInfoDTO? NavigationColumnInfoDTO { get; set; } = null;
 
-        public FileInfoDTO FileInfoDTO { get; set; }
+        public FileInfoDTO? FileInfoDTO { get; set; } = null;
 
         public bool IsDisabled { get; set; }
 
@@ -163,9 +163,6 @@ namespace Hydra.DTOs
         }
 
         [JsonIgnore]
-        public RenderFragment RenderFragment { get; set; }
-
-        [JsonIgnore]
         public object GetFirstValue
         {
             get
@@ -283,7 +280,7 @@ namespace Hydra.DTOs
             return this;
         }
 
-        public MetaColumnDTO SetTableName(string tableName)
+        public MetaColumnDTO SetTableName(string? tableName)
         {
             TableName = tableName;
 
@@ -472,7 +469,7 @@ namespace Hydra.DTOs
                 PropertyTypeName = column.PropertyTypeName,
                 Priority = column.Priority,
                 DefaultValue = column.DefaultValue,
-                GroupBy = (column is SelectedColumn) ? (column as SelectedColumn).GroupBy : false,
+                GroupBy = (column is SelectedColumn) ? (column as SelectedColumn)!.GroupBy : false,
                 CreateResultViewFromThis = column.CreateResultViewFromThis
             };
 
@@ -487,7 +484,7 @@ namespace Hydra.DTOs
 
             switch (columnTypeName)
             {
-                case "FilteredColumn":
+                case nameof(FilteredColumn):
 
                     var filterTypeName = columnDTO.FilterDTO.TypeName;
 
@@ -589,13 +586,13 @@ namespace Hydra.DTOs
 
                     break;
 
-                case "SelectedColumn":
+                case nameof(SelectedColumn):
 
                     column = new SelectedColumn(columnDTO.Name, columnDTO.Alias, columnDTO.GroupBy);
 
                     break;
 
-                case "OrderedColumn":
+                case nameof(OrderedColumn):
 
                     column = new OrderedColumn(columnDTO.Name, columnDTO.Direction.ConvertToString());
 
@@ -654,7 +651,7 @@ namespace Hydra.DTOs
 
             propertyName = string.IsNullOrEmpty(propertyName) ? (BelongsToJoins ? Alias : Name) : propertyName;
 
-            var valueToDisplay = Helper.GetValueOf(result.GetType(), propertyName, result);
+            var valueToDisplay = ReflectionHelper.GetValueOf(result.GetType(), propertyName, result);
 
             return valueToDisplay;
         }

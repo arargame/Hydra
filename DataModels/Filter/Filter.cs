@@ -21,7 +21,7 @@ namespace Hydra.DataModels.Filter
         IQueryableFilter? RootFilter { get; set; }
         //List<IFilterParameter> GetParameters { get; }
 
-        List<IFilterParameter> Parameters { get; set; } 
+        List<IFilterParameter> Parameters { get; set; }
 
         string? PrepareQueryString();
         IQueryableFilter SetRootFilter(IQueryableFilter filter);

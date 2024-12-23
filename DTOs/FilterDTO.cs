@@ -9,22 +9,22 @@ namespace Hydra.DTOs
 {
     public class FilterDTO
     {
-        public string TypeName { get; set; }
+        public string? TypeName { get; set; } = null;
 
-        public string Name { get; set; }
+        public string? Name { get; set; } = null;
 
         public int Priority { get; set; }
 
         public bool CreateFilterComponentFromThis { get; set; } = true;
 
-        public List<FilterParameterDTO> Parameters { get; set; }
+        public List<FilterParameterDTO?> Parameters { get; set; } = new();
 
         public FilterDTO()
         {
 
         }
 
-        public FilterDTO(string typeName, List<object> values, int priority, bool createFilterComponentFromThis)
+        public FilterDTO(string typeName, List<object?> values, int priority, bool createFilterComponentFromThis)
         {
             TypeName = typeName;
 
@@ -36,14 +36,14 @@ namespace Hydra.DTOs
             CreateFilterComponentFromThis = createFilterComponentFromThis;
         }
 
-        public FilterDTO SetParameters(List<object> values)
+        public FilterDTO SetParameters(List<object?> values)
         {
-            Parameters = values.Select(v => new FilterParameterDTO(v)).ToList();
+            Parameters = values.Select(v => new FilterParameterDTO(v)).ToList<FilterParameterDTO?>();
 
             return this;
         }
 
-        public FilterDTO SetParameters(List<FilterParameterDTO> filterParameters)
+        public FilterDTO SetParameters(List<FilterParameterDTO?> filterParameters)
         {
             Parameters = filterParameters;
 
@@ -72,7 +72,7 @@ namespace Hydra.DTOs
         //    return this;
         //}
 
-        public static FilterDTO Create(string typeName, List<FilterParameterDTO> parameters)
+        public static FilterDTO Create(string? typeName, List<FilterParameterDTO?> parameters)
         {
             return new FilterDTO()
             {
@@ -81,12 +81,13 @@ namespace Hydra.DTOs
             };
         }
 
-        public static FilterDTO Create(string typeName, params object[] values)
+        public static FilterDTO Create(string? typeName, params object[] values)
         {
-            return Create(typeName, values.Select(v => new FilterParameterDTO(v)).ToList());
+            return Create(typeName, values.Select(v => new FilterParameterDTO(v))
+                                            .ToList<FilterParameterDTO?>());
         }
 
-        public static FilterDTO ConvertToFilterDTO(IFilter filter)
+        public static FilterDTO? ConvertToFilterDTO(IFilter? filter)
         {
             if (filter == null)
                 return null;

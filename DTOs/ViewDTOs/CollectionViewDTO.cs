@@ -37,7 +37,7 @@ namespace Hydra.DTOs.ViewDTOs
         CollectionViewDTO SetTitle(string? title);
     }
 
-    public class CollectionViewDTO : ViewDTO, ICollectionViewDTO, I
+    public class CollectionViewDTO : ViewDTO, ICollectionViewDTO,ICollectionHandlerDTO
     {
         private string? controllerName { get; set; }
 
@@ -110,7 +110,7 @@ namespace Hydra.DTOs.ViewDTOs
             return this;
         }
 
-        public CollectionViewDTO SetLeftTableName(string leftTableName)
+        public CollectionViewDTO SetLeftTableName(string? leftTableName)
         {
             LeftTableName = leftTableName;
 

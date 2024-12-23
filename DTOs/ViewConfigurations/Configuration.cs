@@ -33,11 +33,11 @@ namespace Hydra.DTOs.ViewConfigurations
 
         string? DisplayName { get; set; }
 
-        AttributeToSelect ToSelect { get; set; }
+        AttributeToSelect? ToSelect { get; set; }
 
-        AttributeToFilter ToFilter { get; set; }
+        AttributeToFilter? ToFilter { get; set; }
 
-        AttributeToOrder ToOrder { get; set; }
+        AttributeToOrder? ToOrder { get; set; }
 
         HtmlElementType ElementType { get; set; }
 
@@ -93,11 +93,11 @@ namespace Hydra.DTOs.ViewConfigurations
 
         public string? DisplayName { get; set; } = null;
 
-        public AttributeToSelect ToSelect { get; set; }
+        public AttributeToSelect? ToSelect { get; set; } = null;
 
-        public AttributeToFilter ToFilter { get; set; }
+        public AttributeToFilter? ToFilter { get; set; } = null;
 
-        public AttributeToOrder ToOrder { get; set; }
+        public AttributeToOrder? ToOrder { get; set; } = null;
 
         public HtmlElementType ElementType { get; set; }
 
@@ -110,7 +110,7 @@ namespace Hydra.DTOs.ViewConfigurations
         public bool CreateResultViewFromThis { get; set; }
 
 
-        public NavigationColumnInfo Navigation { get; set; }
+        public NavigationColumnInfo? Navigation { get; set; } = null;
 
         public bool IsNavigation
         {
@@ -125,7 +125,7 @@ namespace Hydra.DTOs.ViewConfigurations
         {
             get
             {
-                return isPrimaryKey ?? (IsNavigation && Navigation.NameToDisplay == "Id" ? true : false);
+                return isPrimaryKey ?? (IsNavigation && Navigation?.NameToDisplay == "Id" ? true : false);
             }
             set
             {
@@ -136,11 +136,11 @@ namespace Hydra.DTOs.ViewConfigurations
         public Configuration(
             PropertyInfo? propertyInfo,
             ViewType viewType,
-            string viewName,
-            AttributeToSelect toSelect,
-            AttributeToFilter toFilter,
-            AttributeToOrder toOrder,
-            NavigationColumnInfo navigation = null,
+            string? viewName,
+            AttributeToSelect? toSelect,
+            AttributeToFilter? toFilter,
+            AttributeToOrder? toOrder,
+            NavigationColumnInfo? navigation = null,
             HtmlElementType elementType = HtmlElementType.Input,
             HtmlInputType inputType = HtmlInputType.text,
             string? displayName = null,
@@ -177,11 +177,11 @@ namespace Hydra.DTOs.ViewConfigurations
 
         public Configuration(
             ViewType viewType,
-            string viewName,
-            AttributeToSelect toSelect,
-            AttributeToFilter toFilter,
-            AttributeToOrder toOrder,
-            NavigationColumnInfo navigation = null,
+            string? viewName,
+            AttributeToSelect? toSelect,
+            AttributeToFilter? toFilter,
+            AttributeToOrder? toOrder,
+            NavigationColumnInfo? navigation = null,
             HtmlElementType elementType = HtmlElementType.Input,
             HtmlInputType inputType = HtmlInputType.text,
             string? displayName = null,
@@ -211,14 +211,14 @@ namespace Hydra.DTOs.ViewConfigurations
             return this;
         }
 
-        public IConfiguration SetDisplayName(string displayName)
+        public IConfiguration SetDisplayName(string? displayName)
         {
             DisplayName = displayName;
 
             return this;
         }
 
-        public IConfiguration SetNavigationColumnInfo(NavigationColumnInfo navigation)
+        public IConfiguration SetNavigationColumnInfo(NavigationColumnInfo? navigation)
         {
             Navigation = navigation;
 
@@ -345,7 +345,7 @@ namespace Hydra.DTOs.ViewConfigurations
                 IsOrdered = ToOrder != null && ToOrder.IsOrdered,
                 Direction = (ToOrder != null && ToOrder.SortingDirection != null) ? ToOrder.SortingDirection.Value : SortingDirection.Ascending,
                 ValueType = PropertyInfo.GetPrimitiveTypeName(),
-                PropertyTypeName = Helper.IsPropertyNullable(PropertyInfo) ? Helper.GetNullablePropertyName(PropertyInfo) : PropertyInfo.PropertyType.Name,
+                PropertyTypeName = ReflectionHelper.IsPropertyNullable(PropertyInfo) ? ReflectionHelper.GetNullablePropertyName(PropertyInfo) : PropertyInfo.PropertyType.Name,
                 DefaultValue = DefaultValue,
                 TableName = TableName,
                 ViewType = ViewType,
@@ -355,7 +355,7 @@ namespace Hydra.DTOs.ViewConfigurations
 
             if (columnDTO.DefaultValue != null)
             {
-                columnDTO.FilterDTO.SetParameters(new List<object>() { DefaultValue });
+                columnDTO.FilterDTO.SetParameters(new List<object?>() { DefaultValue });
             }
 
             columnDTO.SetAsPrimaryKey(columnDTO.IsNavigation && columnDTO.NavigationColumnInfoDTO?.NameToDisplay == "Id");

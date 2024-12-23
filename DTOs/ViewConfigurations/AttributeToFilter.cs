@@ -8,7 +8,7 @@ namespace Hydra.DTOs.ViewConfigurations
 {
     public class AttributeToFilter
     {
-        public string TypeName { get; set; }
+        public string? TypeName { get; set; } = null;
 
         public int Priority { get; set; }
 
@@ -17,7 +17,7 @@ namespace Hydra.DTOs.ViewConfigurations
         public bool CreateFilterComponentFromThis { get; set; }
 
         public AttributeToFilter() { }
-        public AttributeToFilter(string typeName, int priority = 0, bool isDisabled = false, bool createFilterComponentFromThis = true)
+        public AttributeToFilter(string? typeName, int priority = 0, bool isDisabled = false, bool createFilterComponentFromThis = true)
         {
             SetTypeName(typeName)
                 .SetPripority(priority)
@@ -25,7 +25,7 @@ namespace Hydra.DTOs.ViewConfigurations
                 .SetToCreateFilterComponentFromThis(createFilterComponentFromThis);
         }
 
-        public AttributeToFilter SetTypeName(string typeName)
+        public AttributeToFilter SetTypeName(string? typeName)
         {
             TypeName = typeName;
 

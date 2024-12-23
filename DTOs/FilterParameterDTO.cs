@@ -11,17 +11,20 @@ namespace Hydra.DTOs
     {
         public int Index { get; set; }
 
-        public object Value { get; set; }
+        public object? Value { get; set; } = null;
 
         public FilterParameterDTO() { }
 
-        public FilterParameterDTO(object value)
+        public FilterParameterDTO(object? value)
         {
             SetValue(value);
         }
 
-        public static FilterParameterDTO ConvertToFilterParameterDTO(FilterParameter filterParameter)
+        public static FilterParameterDTO? ConvertToFilterParameterDTO(IFilterParameter? filterParameter)
         {
+            if (filterParameter == null)
+                return null;
+
             var filterParameterDTO = new FilterParameterDTO()
             {
                 Index = filterParameter.Index,
@@ -31,7 +34,7 @@ namespace Hydra.DTOs
             return filterParameterDTO;
         }
 
-        public FilterParameterDTO SetValue(object value)
+        public FilterParameterDTO SetValue(object? value)
         {
             Value = value;
 
