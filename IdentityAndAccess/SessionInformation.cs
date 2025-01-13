@@ -21,6 +21,8 @@ namespace Hydra.IdentityAndAccess
     {
         public SessionType SessionType { get; set; }
 
+        public Guid SystemUserId { get; set; }
+
         [ForeignKey("SystemUserId")]
         public SystemUser? SystemUser { get; set; } = null;
 

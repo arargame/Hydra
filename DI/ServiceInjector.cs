@@ -1,4 +1,5 @@
-﻿using Hydra.DTOs.ViewConfigurations;
+﻿using Hydra.DAL;
+using Hydra.DTOs.ViewConfigurations;
 using Hydra.IdentityAndAccess;
 using System;
 using System.Collections.Generic;
@@ -12,11 +13,11 @@ namespace Hydra.DI
     {
         public UnitOfWork UnitOfWork { get; set; }
 
-        public SessionInformation SessionInformation { get; set; }
+        public SessionInformation? SessionInformation { get; set; } = null;
 
-        public IConfiguration Configuration { get; set; }
+        public IConfiguration? Configuration { get; set; } = null;
 
-        public ServiceInjector(UnitOfWork unitOfWork, SessionInformation sessionInformation, IConfiguration configuration)
+        public ServiceInjector(UnitOfWork unitOfWork, SessionInformation? sessionInformation, IConfiguration? configuration)
         {
             UnitOfWork = unitOfWork;
 

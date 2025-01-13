@@ -83,6 +83,13 @@ namespace Hydra.Core
             return (T)this;
         }
 
+        public T SetDescription(string? description)
+        {
+            Description = description;
+
+            return (T)this;
+        }
+
         public override string ToString()
         {
             return $"{Id}/{Name}";

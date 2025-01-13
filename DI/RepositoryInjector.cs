@@ -15,15 +15,11 @@ namespace Hydra.DI
 
         public LogService LogService { get; set; }
 
-        public SessionInformation SessionInformation { get; set; }
-
-        public RepositoryInjector(DbContext context,LogService logService, SessionInformation sessionInformation)
+        public RepositoryInjector(DbContext context,LogService logService)
         {
             Context = context;
 
             LogService = logService;
-
-            SessionInformation = sessionInformation;
         }
     }
 }

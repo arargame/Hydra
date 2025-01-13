@@ -1,4 +1,5 @@
 ﻿using Hydra.Core;
+using Hydra.IdentityAndAccess;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,11 +21,14 @@ namespace Hydra.Services
 
         private readonly DatabaseService databaseService;
 
-        public LogService(FileService fileService, DatabaseService databaseService)
+        private readonly SessionInformation sessionInformation;
+        public LogService(FileService fileService, DatabaseService databaseService,SessionInformation sessionInformation)
         {
             this.fileService = fileService;
 
             this.databaseService = databaseService;
+
+            this.sessionInformation = sessionInformation;
         }
 
         public void Save(Log log,LogRecordType recordType)

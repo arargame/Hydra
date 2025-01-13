@@ -2,6 +2,7 @@
 using Hydra.DataModels.Filter;
 using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services;
 using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -15,13 +16,14 @@ namespace Hydra.DAL
 {
     public interface IRepository<T> where T : IBaseObject<T>
     {
+        DbContext? Context { get; set; }
         List<Log> Logs { get; set; }
 
         List<ResponseObjectMessage> Messages { get; set; }
 
         IQueryable<T> All(params string[] includes);
 
-        bool Any(Expression<Func<T, bool>> filter = null);
+        bool Any(Expression<Func<T, bool>>? filter = null);
 
         bool Create(T entity);
 
@@ -37,11 +39,11 @@ namespace Hydra.DAL
 
         bool DeleteRange(List<T> entities);
 
-        IQueryable<T> FilterWithDynamicLinq(IFilter filter = null);
+        IQueryable<T> FilterWithDynamicLinq(IFilter? filter = null);
 
         IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters);
 
-        IQueryable<T> FilterWithLinq(Expression<Func<T, bool>> filter = null);
+        IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
 
         T Get(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
 
@@ -59,8 +61,6 @@ namespace Hydra.DAL
 
         void ShowChangeTrackerEntriesStates();
 
-        DbContext Context { get; set; }
-
         RepositoryInjector GetInjector();
 
         string GetContextConnectionString
@@ -73,7 +73,9 @@ namespace Hydra.DAL
 
     public class Repository<T> : IRepository<T> where T : BaseObject<T>
     {
-        public DbContext Context { get; set; }
+        private readonly LogService LogService;
+
+        public DbContext? Context { get; set; } = null;
 
         public string GetContextConnectionString
         {
@@ -98,6 +100,8 @@ namespace Hydra.DAL
             SetContext(injector.Context);
 
             SetSessionInformation(injector.SessionInformation);
+
+            LogService = injector.LogService;
         }
 
         //public Repository(DbContext context, SessionInformation sessionInformation = null) : this(new RepositoryInjector(context, sessionInformation))
@@ -143,7 +147,7 @@ namespace Hydra.DAL
             return asNoTracking ? list.AsNoTracking() : list;
         }
 
-        public Repository<T> SetContext(DbContext context)
+        public IRepository<T> SetContext(DbContext context)
         {
             try
             {
@@ -157,13 +161,6 @@ namespace Hydra.DAL
             catch (Exception ex)
             {
                 //Dosyaya yazan Log mekanizması yazılabilir
-
-                //LogManager.Save(new Log(ex.Message.ToString(),
-                //            LogType.Error,
-                //            entityId.ToString(),
-                //            "userId",
-                //            "Get",
-                //            "IP"));
             }
 
             return this;
