@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 
 namespace Hydra.Core
 {
-    public interface IBaseObject<T> where T : IBaseObject<T>
+    public interface IHasId
     {
         Guid Id { get; set; }
+    }
 
+    public interface IBaseObject<T> : IHasId where T : IBaseObject<T>
+    {
         string? Name { get; set; }
 
         string? Description {  get; set; }

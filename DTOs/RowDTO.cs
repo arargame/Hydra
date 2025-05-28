@@ -42,7 +42,7 @@ namespace Hydra.DTOs
             return Columns.FirstOrDefault(c => c.Name == columnName).Value;
         }
 
-        public static RowDTO ConvertToRowDTO(Row row)
+        public static RowDTO ConvertToRowDTO(IRow row)
         {
             var rowDTO = new RowDTO()
             {
@@ -54,7 +54,7 @@ namespace Hydra.DTOs
             return rowDTO;
         }
 
-        public static Row ConvertToRow(RowDTO rowDTO)
+        public static Row ConvertToRow(RowDTO? rowDTO)
         {
             var row = new Row()
             {
@@ -93,7 +93,7 @@ namespace Hydra.DTOs
         {
             return await Task.Run(() =>
             {
-                var obj = Helper.InvokeMethod(invokerType: typeof(RowDTO),
+                var obj = ReflectionHelper.InvokeMethod(invokerType: typeof(RowDTO),
                                             invokerObject: this,
                                             methodName: "ToObject",
                                             genericTypes: new[]
@@ -105,7 +105,7 @@ namespace Hydra.DTOs
 
                                             });
 
-                Helper.SetValueOf(obj, "Id", this.Id, (ex) =>
+                ReflectionHelper.SetValueOf(obj, "Id", this.Id, (ex) =>
                 {
 
                 });

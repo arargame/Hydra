@@ -11,13 +11,13 @@ namespace Hydra.DTOs
     {
         public Guid Id { get; set; }
 
-        public string TableName { get; set; }
+        public string? TableName { get; set; } = null;
 
-        public string Name { get; set; }
+        public string? Name { get; set; } = null;
 
-        public RowDTO RowDTO { get; set; }
+        public RowDTO? RowDTO { get; set; } = null;
 
-        public object Value { get; set; }
+        public object? Value { get; set; } = null;
 
         public DataColumnDTO SetRowDTO(RowDTO rowDTO)
         {
@@ -39,8 +39,11 @@ namespace Hydra.DTOs
             return dataColumnDTO;
         }
 
-        public static IDataColumn ConvertToDataColumn(DataColumnDTO dataColumnDTO)
+        public static IDataColumn ConvertToDataColumn(DataColumnDTO? dataColumnDTO)
         {
+            if (dataColumnDTO == null)
+                throw new NullReferenceException(nameof(dataColumnDTO));
+
             IDataColumn dataColumn = null;
 
             dataColumn = new DataColumn()

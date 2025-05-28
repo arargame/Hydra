@@ -139,11 +139,11 @@ namespace Hydra.DataModels
             }
         }
 
-        public MetaColumn(string? name, object? value = null, string? alias = null)
+        public MetaColumn(string? name, string? alias = null)
         {
             SetName(name);
 
-            SetValue(value);
+            //SetValue(value);
 
             SetAlias(string.IsNullOrEmpty(alias) ? Name : alias);
         }

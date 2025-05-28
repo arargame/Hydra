@@ -1,10 +1,12 @@
 ﻿using Hydra.Core;
 using Hydra.DataModels.Filter;
 using Hydra.DI;
+using Hydra.Http;
 using Hydra.IdentityAndAccess;
 using Hydra.Services;
 using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,11 +41,11 @@ namespace Hydra.DAL
 
         bool DeleteRange(List<T> entities);
 
-        IQueryable<T> FilterWithDynamicLinq(IFilter? filter = null);
+        //IQueryable<T> FilterWithDynamicLinq(IFilter? filter = null);
 
-        IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters);
+        //IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters);
 
-        IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
+        //IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
 
         T Get(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
 
@@ -61,7 +63,7 @@ namespace Hydra.DAL
 
         void ShowChangeTrackerEntriesStates();
 
-        RepositoryInjector GetInjector();
+        //RepositoryInjector GetInjector();
 
         string GetContextConnectionString
         {
@@ -99,7 +101,7 @@ namespace Hydra.DAL
         {
             SetContext(injector.Context);
 
-            SetSessionInformation(injector.SessionInformation);
+            //SetSessionInformation(injector.SessionInformation);
 
             LogService = injector.LogService;
         }
@@ -110,10 +112,10 @@ namespace Hydra.DAL
         //}
 
 
-        public RepositoryInjector GetInjector()
-        {
-            return new RepositoryInjector(Context, SessionInformation);
-        }
+        //public RepositoryInjector GetInjector()
+        //{
+        //    return new RepositoryInjector(Context, SessionInformation);
+        //}
 
         public IQueryable<T> FromSqlRaw(string sql, bool asNoTracking = true, params object[] parameters)
         {
@@ -125,7 +127,7 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(ex.Message));
+                //LogManager.Save(new Log(ex.Message));
             }
 
             return asNoTracking ? list?.AsNoTracking() : list;
@@ -141,7 +143,7 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(ex.Message));
+                //LogManager.Save(new Log(ex.Message));
             }
 
             return asNoTracking ? list.AsNoTracking() : list;
@@ -191,12 +193,12 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(description: ex.Message.ToString(),
-                            logType: LogType.Error,
-                            entityId: null,
-                            vesselId: null,
-                            processType: LogProcessType.None,
-                            sessionInformation: SessionInformation));
+                //LogManager.Save(new Log(description: ex.Message.ToString(),
+                //            logType: LogType.Error,
+                //            entityId: null,
+                //            vesselId: null,
+                //            processType: LogProcessType.None,
+                //            sessionInformation: SessionInformation));
 
                 throw;
             }
@@ -207,12 +209,12 @@ namespace Hydra.DAL
             return Get(filter: e => e.Id == id, withAllIncludes: withAllIncludes, includes: includes);
         }
 
-        public List<GroupObject> GroupBy(Expression<Func<T, object>> keySelector)
-        {
-            var list = Context.Set<T>().GroupBy(keySelector).Select(g => new GroupObject { Key = g.Key, Count = g.Count() }).ToList();
+        //public List<GroupObject> GroupBy(Expression<Func<T, object>> keySelector)
+        //{
+        //    var list = Context.Set<T>().GroupBy(keySelector).Select(g => new GroupObject { Key = g.Key, Count = g.Count() }).ToList();
 
-            return list;
-        }
+        //    return list;
+        //}
 
         public IQueryable<T> All(params string[] includes)
         {
@@ -239,7 +241,7 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
+                //LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
             }
 
             return isExisted;
@@ -278,24 +280,24 @@ namespace Hydra.DAL
 
                 isInserted = true;
 
-                if (entity.GetType().Name != nameof(Log) && entity.GetType().BaseType.Name != nameof(Log))
-                    Logs.Add(new Log(category: TypeName,
-                            name: null,
-                            description: null,
-                            logType: LogType.Info,
-                            entityId: entity.Id.ToString(),
-                            vesselId: (entity as ISyncObject)?.GetVesselId,
-                            processType: LogProcessType.Create,
-                            sessionInformation: SessionInformation));
+                //if (entity.GetType().Name != nameof(Log) && entity.GetType().BaseType.Name != nameof(Log))
+                //    Logs.Add(new Log(category: TypeName,
+                //            name: null,
+                //            description: null,
+                //            logType: LogType.Info,
+                //            entityId: entity.Id.ToString(),
+                //            vesselId: (entity as ISyncObject)?.GetVesselId,
+                //            processType: LogProcessType.Create,
+                //            sessionInformation: SessionInformation));
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(description: ex.Message.ToString(),
-                    logType: LogType.Error,
-                    entityId: entity.Id.ToString(),
-                    vesselId: (entity as ISyncObject)?.GetVesselId,
-                    processType: LogProcessType.Create,
-                    sessionInformation: SessionInformation));
+                //LogManager.Save(new Log(description: ex.Message.ToString(),
+                //    logType: LogType.Error,
+                //    entityId: entity.Id.ToString(),
+                //    vesselId: (entity as ISyncObject)?.GetVesselId,
+                //    processType: LogProcessType.Create,
+                //    sessionInformation: SessionInformation));
             }
 
             return isInserted;
@@ -318,29 +320,6 @@ namespace Hydra.DAL
 
             return query;
         }
-
-        public IQueryable<T> FilterWithDynamicLinq(IFilter filter = null)
-        {
-            return FilterWithDynamicLinq(filter?.PrepareQueryString(true), filter?.Parameters?.Select(p => p.Value)?.ToArray());
-        }
-
-        public IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters)
-        {
-            IQueryable<T> query = DbSet;
-
-            try
-            {
-                query = !string.IsNullOrEmpty(filter) ? query.Where(filter, parameters) : query;
-            }
-            catch (Exception ex)
-            {
-
-                throw;
-            }
-
-            return query;
-        }
-
 
         public virtual ResponseObjectForUpdate Update(T entity)
         {
@@ -404,18 +383,18 @@ namespace Hydra.DAL
 
                         System.Diagnostics.Debug.WriteLine($"modifiedProperty : {modifiedProperty} \t newValue : {newValue}");
 
-                        if (entity.GetType().Name != nameof(Log) && entity.GetType().BaseType.Name != nameof(Log))
-                            Logs.Add(LogManager.LogToUpdateLog(new Log(category: TypeName,
-                                name: modifiedProperty,
-                                description: null,
-                                logType: LogType.Info,
-                                entityId: entity.Id.ToString(),
-                                vesselId: (entity as ISyncObject)?.GetVesselId,
-                                processType: LogProcessType.Update,
-                                sessionInformation: SessionInformation),
-                                oldValue: oldValue?.ToString(),
-                                newValue: newValue?.ToString(),
-                                rowVersion: entity.RowVersion));
+                        //if (entity.GetType().Name != nameof(Log) && entity.GetType().BaseType.Name != nameof(Log))
+                        //    Logs.Add(LogManager.LogToUpdateLog(new Log(category: TypeName,
+                        //        name: modifiedProperty,
+                        //        description: null,
+                        //        logType: LogType.Info,
+                        //        entityId: entity.Id.ToString(),
+                        //        vesselId: (entity as ISyncObject)?.GetVesselId,
+                        //        processType: LogProcessType.Update,
+                        //        sessionInformation: SessionInformation),
+                        //        oldValue: oldValue?.ToString(),
+                        //        newValue: newValue?.ToString(),
+                        //        rowVersion: entity.RowVersion));
                     }
 
                     ChangeEntityState(entity, EntityState.Modified);
@@ -429,12 +408,12 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(description: ex.Message.ToString(),
-                                    logType: LogType.Error,
-                                    entityId: entity.Id.ToString(),
-                                    vesselId: (entity as ISyncObject)?.GetVesselId,
-                                    processType: LogProcessType.Update,
-                                    sessionInformation: SessionInformation));
+                //LogManager.Save(new Log(description: ex.Message.ToString(),
+                //                    logType: LogType.Error,
+                //                    entityId: entity.Id.ToString(),
+                //                    vesselId: (entity as ISyncObject)?.GetVesselId,
+                //                    processType: LogProcessType.Update,
+                //                    sessionInformation: SessionInformation));
             }
 
 
@@ -485,12 +464,12 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(description: ex.Message.ToString(),
-                                 logType: LogType.Error,
-                                 entityId: null,
-                                 vesselId: null,
-                                 processType: LogProcessType.Delete,
-                                 sessionInformation: SessionInformation));
+                //LogManager.Save(new Log(description: ex.Message.ToString(),
+                //                 logType: LogType.Error,
+                //                 entityId: null,
+                //                 vesselId: null,
+                //                 processType: LogProcessType.Delete,
+                //                 sessionInformation: SessionInformation));
             }
 
 
@@ -522,16 +501,16 @@ namespace Hydra.DAL
                         Description = string.Join(",\n", GetContextChangeTrackerEntries().Select(e => string.Format("{0} : {1}", e.Entity.GetType().Name, e.State)))
                     };
 
-                    //Log nesnesi silindiğinde test edilecek
-                    if (typeof(T).Name != "Log")
-                        Logs.Add(new Log(category: typeof(T).Name,
-                                                    name: null,
-                                                    description: string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description),
-                                                    logType: LogType.Info,
-                                                    entityId: entity.Id.ToString(),
-                                                    vesselId: (entity as ISyncObject)?.GetVesselId,
-                                                    processType: LogProcessType.Delete,
-                                                    sessionInformation: SessionInformation));
+                    ////Log nesnesi silindiğinde test edilecek
+                    //if (typeof(T).Name != "Log")
+                    //    Logs.Add(new Log(category: typeof(T).Name,
+                    //                                name: null,
+                    //                                description: string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description),
+                    //                                logType: LogType.Info,
+                    //                                entityId: entity.Id.ToString(),
+                    //                                vesselId: (entity as ISyncObject)?.GetVesselId,
+                    //                                processType: LogProcessType.Delete,
+                    //                                sessionInformation: SessionInformation));
 
                     Console.WriteLine(string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description));
 
@@ -540,12 +519,12 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(description: ex.Message.ToString(),
-                                                 logType: LogType.Error,
-                                                 entityId: entity.Id.ToString(),
-                                                 vesselId: (entity as ISyncObject)?.GetVesselId,
-                                                 processType: LogProcessType.Delete,
-                                                 sessionInformation: SessionInformation));
+                //LogManager.Save(new Log(description: ex.Message.ToString(),
+                //                                 logType: LogType.Error,
+                //                                 entityId: entity.Id.ToString(),
+                //                                 vesselId: (entity as ISyncObject)?.GetVesselId,
+                //                                 processType: LogProcessType.Delete,
+                //                                 sessionInformation: SessionInformation));
             }
 
             return isDeleted;
@@ -566,7 +545,7 @@ namespace Hydra.DAL
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
+                //LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
             }
 
             return 0;
@@ -595,7 +574,7 @@ namespace Hydra.DAL
             {
                 var entityTypeName = e.Entity.GetType().Name.Contains('_') ? e.Entity.GetType().Name.Split('_')[0] : e.Entity.GetType().Name;
 
-                Console.WriteLine("{0} : {1} ({2})", entityTypeName, e.State, (e.Entity as BaseObject).Id);
+                Console.WriteLine("{0} : {1} ({2})", entityTypeName, e.State, ((IBaseObject<T>)e.Entity).Id);
             }
         }
 

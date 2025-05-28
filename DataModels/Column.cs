@@ -65,13 +65,10 @@ namespace Hydra.DataModels
 
         string? Alias { get; set; }
 
-        object? Value { get; set; }
 
         IColumn SetTable(ITable? table);
 
         IColumn SetAlias(string? alias);
-
-        IColumn SetValue(object? value);
     }
 
 
@@ -82,8 +79,6 @@ namespace Hydra.DataModels
         public IRow? Row { get; set; } = null;
 
         public string? Alias { get; set; } = null;
-
-        public object? Value { get; set; } = null;
 
         public Column() { }
 
@@ -107,13 +102,6 @@ namespace Hydra.DataModels
                 throw new ArgumentException("Alias cannot contain spaces.");
 
             Alias = alias;
-
-            return this;
-        }
-
-        public IColumn SetValue(object? value)
-        {
-            Value = value;
 
             return this;
         }

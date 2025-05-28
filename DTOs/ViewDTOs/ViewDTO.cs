@@ -241,7 +241,7 @@ namespace Hydra.DTOs.ViewDTOs
                                                         bool setAsLink = true,
                                                         string leftTableName = null)
         {
-            columnNameToDisplay = columnNameToDisplay ?? ReflectionHelper.GetMemberName<BaseObject<>>(bo => bo.Id);
+            columnNameToDisplay = columnNameToDisplay ?? nameof(IHasId.Id);
 
             displayName = displayName ?? columnNameToDisplay;
 
@@ -324,7 +324,7 @@ namespace Hydra.DTOs.ViewDTOs
                                                     leftTableKeyName: leftTableKeyName,
                                                     rightTableKeyName: rightTableKeyName,
                                                     rightTableName: rightTableName,
-                                                    columnNameToDisplay: nameof(BaseObject.Id)));
+                                                    columnNameToDisplay: nameof(IHasId.Id)));
 
             return this;
 

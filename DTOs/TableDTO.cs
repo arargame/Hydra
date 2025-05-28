@@ -570,7 +570,7 @@ namespace Hydra.DTOs
 
             if (!Configuration.CacheGroups.Any(cg => cg.ViewName == dtoType.Name && cg.ViewType == viewType))
             {
-                var dtoInstance = Helper.CreateInstance(typeName: dtoType.Name) as ViewDTO;
+                var dtoInstance = ReflectionHelper.CreateInstance(typeName: dtoType.Name) as ViewDTO;
 
                 dtoInstance.LoadConfigurations();
 
@@ -948,12 +948,12 @@ namespace Hydra.DTOs
                 TotalRecordsCount = table.Pagination != null ? table.Pagination.TotalRecordsCount : 0,
                 StartRowNumber = table.Pagination != null ? table.Pagination.Start : 1,
                 FinishRowNumber = table.Pagination != null ? table.Pagination.Finish : 10,
-                Rows = table.GetRows.Select(r => RowDTO.ConvertToRowDTO(r)).ToList(),
+                Rows = table.Rows.Select(r => RowDTO.ConvertToRowDTO(r)).ToList(),
                 MetaColumns = table.MetaColumns.Select(mc => MetaColumnDTO.ConvertToColumnDTO(mc)).ToList(),
                 JoinTables = table.JoinTables.Select(jt => JoinTableDTO.ConvertToJoinTableDTO(jt)).ToList(),
-                HasManyToManyRelationship = table.HasManyToManyRelationship,
+    //            HasManyToManyRelationship = table.HasManyToManyRelationship,
                 ViewType = table.ViewType,
-                RelationType = table.RelationType
+  //              RelationType = table.RelationType
             };
 
             return tableDTO;
@@ -971,8 +971,8 @@ namespace Hydra.DTOs
             table.SetFilter()
                 .SetPageSize(tableDTO.PageSize)
                 .SetPageNumber(tableDTO.PageNumber)
-                .SetViewType(tableDTO.ViewType)
-                .SetRelationType(tableDTO.RelationType);
+                .SetViewType(tableDTO.ViewType);
+  //              .SetRelationType(tableDTO.RelationType);
 
             var subJoinTableDTOs = new List<JoinTableDTO>();
 
@@ -1016,7 +1016,7 @@ namespace Hydra.DTOs
         {
             var rowDTO = new RowDTO().SetTableName(Name);
 
-            var id = ReflectionHelper.GetNullableGuid(Helper.GetValueOf(entity.GetType(), "Id", entity));
+            var id = Helper.GetNullableGuid(ReflectionHelper.GetValueOf(entity.GetType(), "Id", entity));
 
             rowDTO.SetId(id.Value);
 

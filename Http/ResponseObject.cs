@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hydra.DAL
+namespace Hydra.Http
 {
     public interface IResponseObject
     {
         string? ActionName { get; set; }
         Guid Id { get; set; }
-        bool Success { get; set; }
+        bool Success { get; }
         object? Data { get; set; }
         List<ResponseObjectMessage> Messages { get; set; }
         List<ResponseObjectMessage> GetPositiveMessages { get; }
