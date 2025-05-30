@@ -1,6 +1,7 @@
 ﻿using Hydra.DataModels;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
+using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,21 +53,21 @@ namespace Hydra.DTOs.ViewConfigurations
 
         bool CreateResultViewFromThis { get; set; }
 
-        IConfiguration SetPropertyInfo(PropertyInfo propertyInfo);
+        IConfiguration SetPropertyInfo(PropertyInfo? propertyInfo);
 
-        IConfiguration SetDisplayName(string displayName);
+        IConfiguration SetDisplayName(string? displayName);
 
-        IConfiguration SetNavigationColumnInfo(NavigationColumnInfo navigation);
+        IConfiguration SetNavigationColumnInfo(NavigationColumnInfo? navigation);
 
         IConfiguration SetTableName(string? tableName);
 
-        MetaColumnDTO ToColumnDTO(string columnTypeName);
+        MetaColumnDTO ToColumnDTO(string? columnTypeName);
 
         IConfiguration SetPriorityToSelect(int priority);
 
         IConfiguration SetPriorityToFilter(int priority);
 
-        IConfiguration SetDefaultValue(object defaultValue);
+        IConfiguration SetDefaultValue(object? defaultValue);
 
         IConfiguration SetToCreateResultViewFromThis(bool enable);
     }
@@ -204,7 +205,7 @@ namespace Hydra.DTOs.ViewConfigurations
 
         }
 
-        public IConfiguration SetPropertyInfo(PropertyInfo propertyInfo)
+        public IConfiguration SetPropertyInfo(PropertyInfo? propertyInfo)
         {
             PropertyInfo = propertyInfo;
 
@@ -232,28 +233,28 @@ namespace Hydra.DTOs.ViewConfigurations
             return this;
         }
 
-        public Configuration SetViewName(string viewName)
+        public Configuration SetViewName(string? viewName)
         {
             ViewName = viewName;
 
             return this;
         }
 
-        public Configuration SetAttributeToSelect(AttributeToSelect toSelect)
+        public Configuration SetAttributeToSelect(AttributeToSelect? toSelect)
         {
             ToSelect = toSelect;
 
             return this;
         }
 
-        public Configuration SetAttributeToFilter(AttributeToFilter toFilter)
+        public Configuration SetAttributeToFilter(AttributeToFilter? toFilter)
         {
             ToFilter = toFilter;
 
             return this;
         }
 
-        public Configuration SetAttributeToOrder(AttributeToOrder toOrder)
+        public Configuration SetAttributeToOrder(AttributeToOrder? toOrder)
         {
             ToOrder = toOrder;
 
@@ -275,7 +276,7 @@ namespace Hydra.DTOs.ViewConfigurations
         }
 
 
-        public IConfiguration SetDefaultValue(object defaultValue)
+        public IConfiguration SetDefaultValue(object? defaultValue)
         {
             DefaultValue = defaultValue;
 
@@ -325,8 +326,10 @@ namespace Hydra.DTOs.ViewConfigurations
         }
 
 
-        public MetaColumnDTO ToColumnDTO(string columnTypeName)
+        public MetaColumnDTO ToColumnDTO(string? columnTypeName)
         {
+            PropertyInfo = Ensure.NotNull(PropertyInfo,nameof(PropertyInfo));
+
             var columnDTO = new MetaColumnDTO()
             {
                 Name = PropertyName,

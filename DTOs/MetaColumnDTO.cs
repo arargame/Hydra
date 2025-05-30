@@ -105,7 +105,7 @@ namespace Hydra.DTOs
         {
             get
             {
-                return IsNavigation && NavigationColumnInfoDTO.LeftTableName == NavigationColumnInfoDTO.RightTableName;
+                return IsNavigation && NavigationColumnInfoDTO?.LeftTableName == NavigationColumnInfoDTO?.RightTableName;
             }
         }
 
@@ -121,7 +121,7 @@ namespace Hydra.DTOs
         {
             get
             {
-                return (IsNavigation && NavigationColumnInfoDTO.RightTableName == nameof(CustomFile)) || TableName == nameof(CustomFile);
+                return (IsNavigation && NavigationColumnInfoDTO?.RightTableName == nameof(CustomFile)) || TableName == nameof(CustomFile);
             }
         }
 
@@ -163,7 +163,7 @@ namespace Hydra.DTOs
         }
 
         [JsonIgnore]
-        public object GetFirstValue
+        public object? GetFirstValue
         {
             get
             {
@@ -172,7 +172,7 @@ namespace Hydra.DTOs
         }
 
         [JsonIgnore]
-        public List<FilterParameterDTO> GetParameters
+        public List<FilterParameterDTO?>? GetParameters
         {
             get
             {
@@ -315,7 +315,7 @@ namespace Hydra.DTOs
             return this;
         }
 
-        public MetaColumnDTO MakeOrdered(string direction = null, bool isOrderable = true, bool isOrdered = true)
+        public MetaColumnDTO MakeOrdered(string? direction = null, bool isOrderable = true, bool isOrdered = true)
         {
             MakeOrderable(direction, isOrderable);
 
@@ -324,7 +324,7 @@ namespace Hydra.DTOs
             return this;
         }
 
-        public MetaColumnDTO MakeOrderable(string direction = null, bool isOrderable = true)
+        public MetaColumnDTO MakeOrderable(string? direction = null, bool isOrderable = true)
         {
             IsOrderable = isOrderable;
 
@@ -339,17 +339,17 @@ namespace Hydra.DTOs
         }
 
 
-        public string GetControllerNameToNavigate()
+        public string? GetControllerNameToNavigate()
         {
-            string controllerName = "";
+            string? controllerName = "";
 
             try
             {
                 //controllerName = Helper.GetPropertyOf(type: Helper.GetTypeFromAssembly(typeof(BaseObject), NavigationColumnInfoDTO.LeftTableName),
                 //                                propertyName: NavigationColumnInfoDTO.LeftTableKeyName.Replace("Id", "")).PropertyType.Name;
-                controllerName = NavigationColumnInfoDTO.RightTableName;
+                controllerName = NavigationColumnInfoDTO?.RightTableName;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 controllerName = TableName;
             }
@@ -370,7 +370,7 @@ namespace Hydra.DTOs
             };
         }
 
-        public static MetaColumnDTO CreateColumnDTOWithFilter(string name, string alias, int priority, string filterTypeName, int filterPriority, bool createFilterComponentFromThis, List<object> values)
+        public static MetaColumnDTO CreateColumnDTOWithFilter(string name, string alias, int priority, string filterTypeName, int filterPriority, bool createFilterComponentFromThis, List<object?>? values)
         {
             return Create(name: name,
                             alias: alias,

@@ -17,14 +17,14 @@ namespace Hydra.DTOs
 
         public bool CreateFilterComponentFromThis { get; set; } = true;
 
-        public List<FilterParameterDTO?> Parameters { get; set; } = new();
+        public List<FilterParameterDTO?>? Parameters { get; set; } = null;
 
         public FilterDTO()
         {
 
         }
 
-        public FilterDTO(string typeName, List<object?> values, int priority, bool createFilterComponentFromThis)
+        public FilterDTO(string? typeName, List<object?>? values, int priority, bool createFilterComponentFromThis)
         {
             TypeName = typeName;
 

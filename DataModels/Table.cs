@@ -157,7 +157,7 @@ namespace Hydra.DataModels
 
         public Table() { }
 
-        public Table(string name, string? alias = null)
+        public Table(string? name, string? alias = null)
         {
             Name = name;
 

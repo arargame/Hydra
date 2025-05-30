@@ -98,7 +98,7 @@ namespace Hydra.DTOs.ViewDTOs
             return this;
         }
 
-        public ViewDTO SetConfigurationsViaPropertyInfo(PropertyInfo propertyInfo,
+        public ViewDTO SetConfigurationsViaPropertyInfo(PropertyInfo? propertyInfo,
                                                 List<IConfiguration> configurations,
                                                 string? displayName = null,
                                                 NavigationColumnInfo? navigation = null)
@@ -236,10 +236,10 @@ namespace Hydra.DTOs.ViewDTOs
         public ViewDTO SetConfigurationsForNavigations(string leftTableKeyName,
                                                         string rightTableName,
                                                         string rightTableKeyName = "Id",
-                                                        string displayName = null,
-                                                        string columnNameToDisplay = null,
+                                                        string? displayName = null,
+                                                        string? columnNameToDisplay = null,
                                                         bool setAsLink = true,
-                                                        string leftTableName = null)
+                                                        string? leftTableName = null)
         {
             columnNameToDisplay = columnNameToDisplay ?? nameof(IHasId.Id);
 
@@ -253,9 +253,9 @@ namespace Hydra.DTOs.ViewDTOs
             var selectedPropertyInfo = ReflectionHelper.GetPropertyOf(type: GetType(),
                                                             propertyName: $"{rightTableName}_{columnNameToDisplay}");
 
-            PropertyInfo idPropertyInfo = null;
+            PropertyInfo? idPropertyInfo = null;
 
-            var isSelectingIdField = selectedPropertyInfo.Name == $"{rightTableName}_Id";
+            var isSelectingIdField = selectedPropertyInfo?.Name == $"{rightTableName}_Id";
 
             if (isSelectingIdField)
                 idPropertyInfo = selectedPropertyInfo;
