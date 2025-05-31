@@ -28,10 +28,10 @@ namespace Hydra.DAL
             _logger = logger;
         }
 
-        public IRepository<T> LoadRepository<T>(SessionInformation sessionInformation) where T : BaseObject<T>
-        {
-            return new Repository<T>(new RepositoryInjector(Context, sessionInformation));
-        }
+        //public IRepository<T> LoadRepository<T>(SessionInformation sessionInformation) where T : BaseObject<T>
+        //{
+        //    return new Repository<T>(new RepositoryInjector(Context, sessionInformation));
+        //}
 
         public bool Commit()
         {

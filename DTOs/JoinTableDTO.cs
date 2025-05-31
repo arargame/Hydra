@@ -84,7 +84,7 @@ namespace Hydra.DTOs
         }
 
 
-        public static IJoinTable ConvertToJoinTable(JoinTableDTO joinTableDTO, Table leftTable)
+        public static IJoinTable ConvertToJoinTable(JoinTableDTO joinTableDTO, ITable? leftTable)
         {
             IJoinTable joinTable = new JoinTable(joinTableDTO.Name, joinTableDTO.Alias, joinTableDTO.JoinType)
                                         .On(joinTableDTO.LeftTableColumnName, joinTableDTO.RightTableColumnName)

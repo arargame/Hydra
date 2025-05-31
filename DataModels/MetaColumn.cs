@@ -227,7 +227,7 @@ namespace Hydra.DataModels
     {
         public bool GroupBy { get; set; }
 
-        public SelectedColumn(string? name, string? alias = null, bool groupBy = false) : base(name, null, alias)
+        public SelectedColumn(string? name, string? alias = null, bool groupBy = false) : base(name, alias)
         {
             GroupBy = groupBy;
 
@@ -274,7 +274,7 @@ namespace Hydra.DataModels
 
         public class FilteredColumn : MetaColumn
         {
-            public FilteredColumn(string? name, IFilter filter) : base(name, filter.GetValue, null)
+            public FilteredColumn(string? name, IFilter filter) : base(name, null)
             {
                 MakeFiltered(filter);
             }

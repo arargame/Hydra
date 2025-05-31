@@ -10,6 +10,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static Hydra.DataModels.SortingFilterDirectionExtension;
+using Hydra.ValidationManagement.Hydra.ValidationManagement;
+using System.Runtime.Intrinsics;
 
 namespace Hydra.DTOs
 {
@@ -480,53 +482,56 @@ namespace Hydra.DTOs
         {
             var columnTypeName = columnDTO.TypeName;
 
-            IMetaColumn column = null;
+            IMetaColumn? column = null;
 
             switch (columnTypeName)
             {
                 case nameof(FilteredColumn):
 
-                    var filterTypeName = columnDTO.FilterDTO.TypeName;
+                    Ensure.NotNull(columnDTO.FilterDTO,nameof(columnDTO.FilterDTO));
 
-                    if (columnDTO.FilterDTO.Parameters == null || !columnDTO.FilterDTO.Parameters.Any())
+                    var filterTypeName = columnDTO.FilterDTO?.TypeName;
+
+                    if (columnDTO.FilterDTO?.Parameters == null || !columnDTO.FilterDTO.Parameters.Any())
                         break;
 
-                    List<string> values = new List<string>();
+                    var values = columnDTO.FilterDTO?.Parameters.Select(p => p.Value?.ToString()).ToList();
 
-                    values = columnDTO.FilterDTO.Parameters.Select(p => p.Value?.ToString()).ToList();
+                    Ensure.NotNull(values,nameof(values));
+
 
                     switch (filterTypeName)
                     {
 
                         case nameof(BetweenFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new BetweenFilter(new FilterParameter(values[0]), new FilterParameter(values[1])));
+                            column = new FilteredColumn(columnDTO.Name, new BetweenFilter(new FilterParameter(values![0]), new FilterParameter(values[1])));
 
                             break;
 
 
                         case nameof(ContainsFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new ContainsFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new ContainsFilter(values!.First()!));
 
                             break;
 
 
                         case nameof(EqualFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new EqualFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new EqualFilter(values!.First()!));
 
                             break;
 
                         case nameof(GreaterThanFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new GreaterThanFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new GreaterThanFilter(values!.First()!));
 
                             break;
 
                         case nameof(GreaterThanOrEqualFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new GreaterThanOrEqualFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new GreaterThanOrEqualFilter(values!.First()!));
 
                             break;
 
@@ -545,37 +550,37 @@ namespace Hydra.DTOs
 
                         case nameof(InFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new InFilter(values.Select(v => new FilterParameter(v)).ToArray()));
+                            column = new FilteredColumn(columnDTO.Name, new InFilter(values!.Select(v => new FilterParameter(v)).ToArray()));
 
                             break;
 
                         case nameof(LessThanFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new LessThanFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new LessThanFilter(values!.First()!));
 
                             break;
 
                         case nameof(LessThanOrEqualFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new LessThanOrEqualFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new LessThanOrEqualFilter(values!.First()!));
 
                             break;
 
                         case nameof(NotContainsFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new NotContainsFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new NotContainsFilter(values!.First()!));
 
                             break;
 
                         case nameof(NotEqualFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new NotEqualFilter(values.First()));
+                            column = new FilteredColumn(columnDTO.Name, new NotEqualFilter(values!.First()!));
 
                             break;
 
                         case nameof(NotInFilter):
 
-                            column = new FilteredColumn(columnDTO.Name, new NotInFilter(values.Select(v => new FilterParameter(v)).ToArray()));
+                            column = new FilteredColumn(columnDTO.Name, new NotInFilter(values!.Select(v => new FilterParameter(v)).ToArray()));
 
                             break;
 

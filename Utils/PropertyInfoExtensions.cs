@@ -67,60 +67,60 @@ namespace Hydra.Utils
         }
 
 
-        public static MetaColumnDTO ToColumnDTOUsingAttributes(this PropertyInfo pi, string columnTypeName)
-        {
-            var navigation = NavigationAttribute.Get(pi);
+        //public static MetaColumnDTO ToColumnDTOUsingAttributes(this PropertyInfo pi, string columnTypeName)
+        //{
+        //    var navigation = NavigationAttribute.Get(pi);
 
-            var priority = PriorityAttribute.Get(pi);
+        //    var priority = PriorityAttribute.Get(pi);
 
-            var displayName = DisplayNameAttribute.Get(pi);
+        //    var displayName = DisplayNameAttribute.Get(pi);
 
-            var filterType = FilterTypeAttribute.Get(pi);
+        //    var filterType = FilterTypeAttribute.Get(pi);
 
-            var orderableAttribute = columnTypeName == nameof(OrderedColumn) ? OrderableAttribute.Get(pi) : null;
+        //    var orderableAttribute = columnTypeName == nameof(OrderedColumn) ? OrderableAttribute.Get(pi) : null;
 
-            var isOrderedAttribute = columnTypeName == nameof(OrderedColumn) ? IsOrderedAttribute.Get(pi) : null;
+        //    var isOrderedAttribute = columnTypeName == nameof(OrderedColumn) ? IsOrderedAttribute.Get(pi) : null;
 
-            var htmlElementType = ElementTypeAttribute.Get(pi);
+        //    var htmlElementType = ElementTypeAttribute.Get(pi);
 
-            var htmlInputType = InputTypeAttribute.Get(pi);
+        //    var htmlInputType = InputTypeAttribute.Get(pi);
 
-            var defaultValueAttribute = DefaultValueAttribute.Get(pi);
+        //    var defaultValueAttribute = DefaultValueAttribute.Get(pi);
 
-            var columnDTO = new MetaColumnDTO()
-            {
-                Name = pi.Name,
-                TypeName = columnTypeName,
-                DisplayName = displayName?.Text,
-                Priority = (priority?.Value) != null ? (int)(priority?.Value) : 0,
-                IsForeignKey = IsForeignKeyAttribute.Get(pi),
-                HtmlElementType = htmlElementType != null ? htmlElementType.ElementType : HtmlElementType.Input,
-                HtmlInputType = htmlInputType != null ? htmlInputType.InputType : HtmlInputType.text,
-                NavigationColumnInfoDTO = navigation != null ? new NavigationColumnInfoDTO()
-                {
-                    LeftTableName = navigation?.LeftTableName,
-                    LeftTableKeyName = navigation?.LeftTableKeyName,
-                    RightTableKeyName = navigation?.RightTableKeyName,
-                    RightTableName = navigation?.RightTableName,
-                    NameToDisplay = navigation?.ColumnNameToDisplay,
-                    SetAsLink = (bool)(navigation?.SetAsLink)
-                } : null,
-                FilterDTO = new FilterDTO()
-                {
-                    TypeName = filterType?.TypeName,
-                    Priority = filterType != null ? filterType.Priority : 0
-                },
-                IsOrderable = orderableAttribute != null ? orderableAttribute.Enable : false,
-                IsOrdered = isOrderedAttribute != null,
-                Direction = isOrderedAttribute != null ? isOrderedAttribute.SortingDirection : SortingDirection.Ascending,
-                ValueType = pi.GetPrimitiveTypeName(),
-                PropertyTypeName = pi.PropertyType.Name,
-                DefaultValue = defaultValueAttribute?.Value
-            };
+        //    var columnDTO = new MetaColumnDTO()
+        //    {
+        //        Name = pi.Name,
+        //        TypeName = columnTypeName,
+        //        DisplayName = displayName?.Text,
+        //        Priority = (priority?.Value) != null ? (int)(priority?.Value) : 0,
+        //        IsForeignKey = IsForeignKeyAttribute.Get(pi),
+        //        HtmlElementType = htmlElementType != null ? htmlElementType.ElementType : HtmlElementType.Input,
+        //        HtmlInputType = htmlInputType != null ? htmlInputType.InputType : HtmlInputType.text,
+        //        NavigationColumnInfoDTO = navigation != null ? new NavigationColumnInfoDTO()
+        //        {
+        //            LeftTableName = navigation?.LeftTableName,
+        //            LeftTableKeyName = navigation?.LeftTableKeyName,
+        //            RightTableKeyName = navigation?.RightTableKeyName,
+        //            RightTableName = navigation?.RightTableName,
+        //            NameToDisplay = navigation?.ColumnNameToDisplay,
+        //            SetAsLink = (bool)(navigation?.SetAsLink)
+        //        } : null,
+        //        FilterDTO = new FilterDTO()
+        //        {
+        //            TypeName = filterType?.TypeName,
+        //            Priority = filterType != null ? filterType.Priority : 0
+        //        },
+        //        IsOrderable = orderableAttribute != null ? orderableAttribute.Enable : false,
+        //        IsOrdered = isOrderedAttribute != null,
+        //        Direction = isOrderedAttribute != null ? isOrderedAttribute.SortingDirection : SortingDirection.Ascending,
+        //        ValueType = pi.GetPrimitiveTypeName(),
+        //        PropertyTypeName = pi.PropertyType.Name,
+        //        DefaultValue = defaultValueAttribute?.Value
+        //    };
 
-            columnDTO.SetAsPrimaryKey(columnDTO.IsNavigation && columnDTO.NavigationColumnInfoDTO?.NameToDisplay == "Id");
+        //    columnDTO.SetAsPrimaryKey(columnDTO.IsNavigation && columnDTO.NavigationColumnInfoDTO?.NameToDisplay == "Id");
 
-            return columnDTO;
-        }
+        //    return columnDTO;
+        //}
     }
 }

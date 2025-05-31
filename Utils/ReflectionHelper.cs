@@ -1,4 +1,5 @@
 ﻿using Hydra.Core;
+using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -500,53 +501,72 @@ namespace Hydra.Utils
         }
 
 
-        private static object? CloneDynamic(object source, bool deepClone, Func<PropertyInfo, bool>? propertyFilter)
+        public static TTarget Clone<TTarget>(object source, bool deepClone = false, Func<PropertyInfo, bool>? propertyFilter = null)
+        where TTarget : class, new()
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            return (TTarget)CloneDynamic(source, typeof(TTarget), deepClone, propertyFilter)!;
+        }
+
+        public static object? CloneDynamic(object source, bool deepClone = false, Func<PropertyInfo, bool>? propertyFilter = null)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            return CloneDynamic(source, source.GetType(), deepClone, propertyFilter);
+        }
+
+        public static object? CloneDynamic(object source, Type targetType, bool deepClone, Func<PropertyInfo, bool>? propertyFilter)
         {
             var sourceType = source.GetType();
 
-            if (sourceType.IsArray)
+            if (sourceType.IsArray && targetType.IsArray)
             {
                 var elementType = sourceType.GetElementType()!;
-                var array = (Array)source;
-                var clonedArray = Array.CreateInstance(elementType, array.Length);
+                var sourceArray = (Array)source;
+                var clonedArray = Array.CreateInstance(elementType, sourceArray.Length);
 
-                for (int i = 0; i < array.Length; i++)
+                for (int i = 0; i < sourceArray.Length; i++)
                 {
-                    var value = array.GetValue(i);
-                    clonedArray.SetValue(deepClone && value != null && !IsPrimitiveOrString(elementType)
-                        ? CloneDynamic(value, deepClone, propertyFilter)
-                        : value,
-                        i);
+                    var item = sourceArray.GetValue(i);
+                    var clonedItem = deepClone && item != null && !IsPrimitiveOrString(elementType)
+                        ? CloneDynamic(item, elementType, deepClone, propertyFilter)
+                        : item;
+
+                    clonedArray.SetValue(clonedItem, i);
                 }
 
                 return clonedArray;
             }
 
-            var targetType = Activator.CreateInstance(sourceType);
-            if (targetType == null) return null;
+            var target = Activator.CreateInstance(targetType);
+            if (target == null)
+                return null;
 
-            foreach (var property in ReflectionHelper.GetCachedProperties(sourceType))
+            var sourceProperties = ReflectionHelper.GetCachedProperties(sourceType);
+            var targetProperties = ReflectionHelper.GetCachedProperties(targetType).ToDictionary(p => p.Name);
+
+            foreach (var sourceProp in sourceProperties)
             {
-                if (propertyFilter != null && !propertyFilter(property))
+                if (!sourceProp.CanRead || (propertyFilter != null && !propertyFilter(sourceProp)))
                     continue;
 
-                if (!property.CanRead || !property.CanWrite)
+                if (!targetProperties.TryGetValue(sourceProp.Name, out var targetProp) || !targetProp.CanWrite)
                     continue;
 
-                var value = property.GetValue(source);
-                if (deepClone && value != null && !IsPrimitiveOrString(property.PropertyType))
-                {
-                    property.SetValue(targetType, CloneDynamic(value, deepClone, propertyFilter));
-                }
-                else
-                {
-                    property.SetValue(targetType, value);
-                }
+                var value = sourceProp.GetValue(source);
+
+                var clonedValue = (deepClone && value != null && !IsPrimitiveOrString(sourceProp.PropertyType))
+                    ? CloneDynamic(value, targetProp.PropertyType, deepClone, propertyFilter)
+                    : value;
+
+                targetProp.SetValue(target, clonedValue);
             }
 
-            return targetType;
+            return target;
         }
-
         private static bool IsPrimitiveOrString(Type type)
         {
             return type.IsPrimitive || type == typeof(string) || type == typeof(decimal);

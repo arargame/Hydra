@@ -135,9 +135,46 @@ namespace Hydra.DTOs.ViewConfigurations
             return this;
         }
 
-        public CollectionViewConfiguration ConvertToAnotherViewConfiguration(ViewType viewType)
+        //public CollectionViewConfiguration ConvertToAnotherViewConfiguration(ViewType viewType)
+        //{
+        //    var anotherViewConfiguration = ReflectionHelper.Clone<CollectionViewConfiguration>(this);
+
+        //    anotherViewConfiguration.SetPropertyInfo(PropertyInfo);
+
+        //    if (ToSelect != null)
+        //        anotherViewConfiguration.ToSelect = ReflectionHelper.Clone<AttributeToSelect>(ToSelect);
+
+        //    if (ToFilter != null)
+        //        anotherViewConfiguration.ToFilter = ReflectionHelper.Clone<AttributeToFilter>(ToFilter);
+
+        //    if (ToOrder != null)
+        //        anotherViewConfiguration.ToOrder = ReflectionHelper.Clone<AttributeToOrder>(ToOrder);
+
+        //    if (Navigation != null)
+        //        anotherViewConfiguration.Navigation = ReflectionHelper.Clone<NavigationColumnInfo>(Navigation);
+
+        //    anotherViewConfiguration.SetViewType(viewType);
+
+        //    return anotherViewConfiguration;
+        //}
+
+        public Configuration ConvertToAnotherViewConfiguration(ViewType viewType)
         {
-            var anotherViewConfiguration = ReflectionHelper.Clone<CollectionViewConfiguration>(this);
+            Configuration anotherViewConfiguration;
+
+            switch (viewType)
+            {
+                case ViewType.CollectionView:
+                    anotherViewConfiguration = ReflectionHelper.Clone<CollectionViewConfiguration>(this);
+                    break;
+
+                case ViewType.LookupView:
+                    anotherViewConfiguration = ReflectionHelper.Clone<LookupViewConfiguration>(this);
+                    break;
+
+                default:
+                    throw new NotSupportedException($"'{viewType}' tipi desteklenmiyor.");
+            }
 
             anotherViewConfiguration.SetPropertyInfo(PropertyInfo);
 
@@ -159,12 +196,13 @@ namespace Hydra.DTOs.ViewConfigurations
         }
 
 
-        public new ListViewConfiguration SetPropertyInfo(PropertyInfo propertyInfo)
+
+        public new ListViewConfiguration SetPropertyInfo(PropertyInfo? propertyInfo)
         {
             return (ListViewConfiguration)base.SetPropertyInfo(propertyInfo);
         }
 
-        public new ListViewConfiguration SetTableName(string tableName)
+        public new ListViewConfiguration SetTableName(string? tableName)
         {
             return (ListViewConfiguration)base.SetTableName(tableName);
         }

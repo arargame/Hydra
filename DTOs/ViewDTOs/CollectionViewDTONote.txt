@@ -1,0 +1,21 @@
+﻿
+SystemUser ve Role arasında klasik bir many-to-many ilişki var.
+
+Bu ilişkiyi SystemUserRole gibi bağlantı (junction/cross) tablosu üzerinden yönetiyorsun.
+
+Kullanıcı bir SystemUser detayına girdiğinde, onun bağlantılı Role verileri gösterilecek.
+
+Bunu CollectionViewDTO ile tanımlıyorsun, ama bu ilişki bir "cross table" ilişkisi olduğu için IsCrossTable = true.
+
+Blazor'da CollectionView<T> ile bu View temsil ediliyor ve CollectionViewDTO'yu alarak içeride bir TableDTO hazırlıyorsun.
+
+Eğer IsCrossTable true ise:
+
+TableDTO oluşturuluyor.
+
+Ona bir JoinTableDTO ekleniyor (yani cross table ilişkisi tanımlanıyor).
+
+Ve burada şu satır geçiyor:
+
+
+TableDTO.HasManyToManyRelationship = true;

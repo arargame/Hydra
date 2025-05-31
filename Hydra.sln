@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra.ConsoleApp", "..\Hydr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.Blazor", "..\Hydra.Blazor\Hydra.Blazor.csproj", "{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.WebApi", "..\Hydra.WebApi\Hydra.WebApi.csproj", "{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

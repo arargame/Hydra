@@ -385,7 +385,7 @@ namespace Hydra.DTOs.ViewDTOs
             return Configurations.Where(c => c.PropertyName == memberName).ToList();
         }
 
-        public IConfiguration GetConfiguration<T>(Expression<Func<T, object>> expression, ViewType viewType) where T : class
+        public IConfiguration? GetConfiguration<T>(Expression<Func<T, object>> expression, ViewType viewType) where T : class
         {
             var memberName = ReflectionHelper.GetMemberName(expression);
 

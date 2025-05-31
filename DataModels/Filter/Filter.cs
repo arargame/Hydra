@@ -153,7 +153,7 @@ namespace Hydra.DataModels.Filter
 
         public Filter(string columnName, object? value, string? alias = null) : this(value)
         {
-            SetColumn(new MetaColumn(columnName, value, alias));
+            SetColumn(new MetaColumn(columnName, alias));
         }
 
         public Filter(IMetaColumn column, object? value) : this(value)

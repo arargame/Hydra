@@ -2,6 +2,7 @@
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
+using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -639,92 +640,92 @@ namespace Hydra.DTOs
             return allColumns;
         }
 
-        public static List<MetaColumnDTO> ConfigureMetaColumnsUsingAttributes(Type dtoType, Type attributeType)
-        {
-            var properties = dtoType.GetProperties().Where(p => p.CanWrite);
+        //public static List<MetaColumnDTO> ConfigureMetaColumnsUsingAttributes(Type dtoType, Type attributeType)
+        //{
+        //    var properties = dtoType.GetProperties().Where(p => p.CanWrite);
 
-            var predicate = new Func<PropertyInfo, bool>(p => p.CustomAttributes.Any(a => a.AttributeType.Name == attributeType.Name));
+        //    var predicate = new Func<PropertyInfo, bool>(p => p.CustomAttributes.Any(a => a.AttributeType.Name == attributeType.Name));
 
-            var selectedColumns = new List<MetaColumnDTO>();
-            var filteredColumns = new List<MetaColumnDTO>();
-            var orderedColumns = new List<MetaColumnDTO>();
+        //    var selectedColumns = new List<MetaColumnDTO>();
+        //    var filteredColumns = new List<MetaColumnDTO>();
+        //    var orderedColumns = new List<MetaColumnDTO>();
 
-            if (dtoType == null || !properties.Any(predicate))
-            {
-                var counter = 0;
+        //    if (dtoType == null || !properties.Any(predicate))
+        //    {
+        //        var counter = 0;
 
-                selectedColumns = properties.Select(pi => new MetaColumnDTO()
-                {
-                    TypeName = nameof(SelectedColumn),
-                    Name = pi.Name,
-                    Priority = counter++
+        //        selectedColumns = properties.Select(pi => new MetaColumnDTO()
+        //        {
+        //            TypeName = nameof(SelectedColumn),
+        //            Name = pi.Name,
+        //            Priority = counter++
 
-                }).ToList();
-            }
-            else
-            {
-                selectedColumns = properties.Where(predicate)
-                            .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(SelectedColumn)))
-                            .ToList();
+        //        }).ToList();
+        //    }
+        //    else
+        //    {
+        //        selectedColumns = properties.Where(predicate)
+        //                    .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(SelectedColumn)))
+        //                    .ToList();
 
 
-                if (!properties.Where(predicate).Any(pi => pi.Name == "Id"))
-                    selectedColumns.Add(new MetaColumnDTO()
-                    {
-                        TypeName = nameof(SelectedColumn),
-                        Name = "Id",
-                        Priority = 0,
-                        DisplayName = "Id",
-                        IsPrimaryKey = true
-                    });
-            }
+        //        if (!properties.Where(predicate).Any(pi => pi.Name == "Id"))
+        //            selectedColumns.Add(new MetaColumnDTO()
+        //            {
+        //                TypeName = nameof(SelectedColumn),
+        //                Name = "Id",
+        //                Priority = 0,
+        //                DisplayName = "Id",
+        //                IsPrimaryKey = true
+        //            });
+        //    }
 
-            if (dtoType.IsAssignableTo(typeof(IFilterableView)))
-                filteredColumns = properties.Where(predicate)
-                    .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(FilterTypeAttribute).Name))
-                    .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(FilteredColumn)))
-                    .ToList();
+        //    if (dtoType.IsAssignableTo(typeof(IFilterableView)))
+        //        filteredColumns = properties.Where(predicate)
+        //            .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(FilterTypeAttribute).Name))
+        //            .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(FilteredColumn)))
+        //            .ToList();
 
-            orderedColumns = properties.Where(predicate)
-                                        .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(OrderableAttribute).Name))
-                                        .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(OrderedColumn)))
-                                        .ToList();
+        //    orderedColumns = properties.Where(predicate)
+        //                                .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(OrderableAttribute).Name))
+        //                                .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(OrderedColumn)))
+        //                                .ToList();
 
-            var allColumns = selectedColumns.Union(filteredColumns).Union(orderedColumns).ToList();
+        //    var allColumns = selectedColumns.Union(filteredColumns).Union(orderedColumns).ToList();
 
-            try
-            {
-                var propertyNameForTableNameInDTO = ReflectionHelper.GetMemberName<ViewDTO>(dto => dto.ControllerName);
+        //    try
+        //    {
+        //        var propertyNameForTableNameInDTO = ReflectionHelper.GetMemberName<ViewDTO>(dto => dto.ControllerName);
 
-                var dtoInstance = ReflectionHelper.InvokeMethod(invokerType: typeof(Helper),
-                                                        invokerObject: null,
-                                                        methodName: "CreateInstance",
-                                                        genericTypes: new[] { dtoType },
-                                                        parameters: new object?[]
-                                                        {
-                                                            null
-                                                        });
+        //        var dtoInstance = ReflectionHelper.InvokeMethod(invokerType: typeof(Helper),
+        //                                                invokerObject: null,
+        //                                                methodName: "CreateInstance",
+        //                                                genericTypes: new[] { dtoType },
+        //                                                parameters: new object?[]
+        //                                                {
+        //                                                    null
+        //                                                });
 
-                if (string.IsNullOrEmpty((dtoInstance as ViewDTO).ControllerName))
-                    throw new Exception($"Please set the controller name for {dtoType.Name}");
+        //        if (string.IsNullOrEmpty((dtoInstance as ViewDTO).ControllerName))
+        //            throw new Exception($"Please set the controller name for {dtoType.Name}");
 
-                foreach (var column in allColumns)
-                {
-                    column.SetTableName(ReflectionHelper.GetValueOf(propertyNameForTableNameInDTO, dtoInstance).ToString());
+        //        foreach (var column in allColumns)
+        //        {
+        //            column.SetTableName(ReflectionHelper.GetValueOf(propertyNameForTableNameInDTO, dtoInstance).ToString());
 
-                    if (column.IsFilteredColumn && column.DefaultValue != null && column.GetFirstValue == null)
-                    {
-                        column.FilterDTO.SetParameters(new List<object>() { column.DefaultValue });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
+        //            if (column.IsFilteredColumn && column.DefaultValue != null && column.GetFirstValue == null)
+        //            {
+        //                column.FilterDTO.SetParameters(new List<object>() { column.DefaultValue });
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
 
-            }
+        //    }
 
-            return allColumns;
-        }
+        //    return allColumns;
+        //}
 
         public JoinTableDTO GetOrCreateJoinTableDTO(string tableName,
                                                     string alias,
@@ -992,9 +993,11 @@ namespace Hydra.DTOs
 
                 var leftTable = table.GetAllJoinTables.FirstOrDefault(jt => jt.Name == subJoinTableDTO.LeftTableName);
 
+                //Ensure.NotNull(leftTable,nameof(leftTable));
+
                 var addedSubJoinTable = JoinTableDTO.ConvertToJoinTable(joinTableDTO: subJoinTableDTO, leftTable: leftTable);
 
-                leftTable.JoinTables.Add(addedSubJoinTable);
+                leftTable?.JoinTables.Add(addedSubJoinTable);
             }
 
             table.HasManyToManyRelationship = tableDTO.HasManyToManyRelationship;

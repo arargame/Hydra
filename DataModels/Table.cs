@@ -47,6 +47,8 @@ namespace Hydra.DataModels
         bool HasAnySelectedColumnToGroup { get; }
         ViewType ViewType { get; set; }
 
+        bool HasManyToManyRelationship { get; set; }
+
         List<IJoinTable> JoinTables { get; set; }
 
         List<IMetaColumn> MetaColumns { get; set; }
@@ -100,6 +102,8 @@ namespace Hydra.DataModels
         public int PageSize { get; set; }
 
         public ViewType ViewType { get; set; }
+
+        public bool HasManyToManyRelationship { get; set; }
 
         public Expression<Func<ITable, JoinedFiltersGroup>>? ManageFiltersExpression { get; set; } = null;
 
