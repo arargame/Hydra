@@ -8,7 +8,7 @@ namespace Hydra.Http
 {
     public static class MessageProvider
     {
-        public static List<ResponseObjectMessage> GetDefaultMessages(string actionName)
+        public static List<ResponseObjectMessage> GetDefaultMessages(string? actionName)
         {
             return new List<ResponseObjectMessage>
         {

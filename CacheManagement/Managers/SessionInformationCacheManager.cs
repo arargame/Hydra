@@ -1,4 +1,6 @@
 ﻿using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,35 +10,36 @@ using System.Threading.Tasks;
 namespace Hydra.CacheManagement.Managers
 {
 
-    //    var sessionTimeout = TimeSpan.FromMinutes(30);
-    //    var cleanupInterval = TimeSpan.FromMinutes(5);
-    //    var sessionCacheManager = new SessionInformationCacheManager(sessionTimeout, cleanupInterval);
-
     public class SessionInformationCacheManager
     {
-        private readonly TimedCache<Guid, SessionInformation> sessionCache;
-        private readonly TimeSpan sessionTimeout;
+        private readonly IMemoryCache _cache;
+        private readonly TimeSpan _sessionTimeout;
 
-        public SessionInformationCacheManager(TimeSpan sessionTimeout, TimeSpan cleanupInterval)
+        public SessionInformationCacheManager(IMemoryCache cache, TimeSpan sessionTimeout)
         {
-            this.sessionTimeout = sessionTimeout;
-            sessionCache = new TimedCache<Guid, SessionInformation>(cleanupInterval);
+            _cache = cache;
+            _sessionTimeout = sessionTimeout;
         }
 
-        public void Login(SessionInformation sessionInformation)
+        public bool Login(SessionInformation session)
         {
-            sessionCache.Add(sessionInformation.SystemUserId, sessionInformation, sessionTimeout);
+            _cache.Set(session.SystemUserId, session, _sessionTimeout);
+
+            return true;
         }
 
         public bool Logout(Guid userId)
         {
-            sessionCache.Remove(userId);
+            _cache.Remove(userId);
+
             return true;
         }
 
-        public bool TryGetSession(Guid userId, out SessionInformation sessionInformation)
+        public bool TryGetSession(Guid userId, out SessionInformation? session)
         {
-            return sessionCache.TryGet(userId, out sessionInformation);
+            return _cache.TryGetValue(userId, out session);
         }
     }
+
+
 }

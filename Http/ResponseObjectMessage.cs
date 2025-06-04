@@ -14,14 +14,14 @@ namespace Hydra.Http
         public string? RedirectionLink { get; set; } = null;
         public string? RedirectionLinkText { get; set; } = "Back";
 
-        public ResponseObjectMessage(string title, string text, bool showWhenSuccess = true)
+        public ResponseObjectMessage(string? title, string? text, bool showWhenSuccess = true)
         {
             Title = title;
             Text = text;
             ShowWhenSuccess = showWhenSuccess;
         }
 
-        public ResponseObjectMessage SetRedirectionLink(string link, string linkText = "Back")
+        public ResponseObjectMessage SetRedirectionLink(string? link, string? linkText = "Back")
         {
             RedirectionLink = link;
             RedirectionLinkText = linkText;

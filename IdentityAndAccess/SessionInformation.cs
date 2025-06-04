@@ -1,6 +1,7 @@
 ﻿using Hydra.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
@@ -26,7 +27,10 @@ namespace Hydra.IdentityAndAccess
         [ForeignKey("SystemUserId")]
         public SystemUser? SystemUser { get; set; } = null;
 
+        [MaxLength(45)]
         public string? Ip { get; set; } = null;
+
+        [MaxLength(512)]
         public string? UserAgent { get; set; } = null;
         public List<Log> Logs { get; set; } = new List<Log>();
 

@@ -49,7 +49,7 @@ namespace Hydra.Http
             return this;
         }
 
-        public ResponseObject SetActionName(string actionName)
+        public ResponseObject SetActionName(string? actionName)
         {
             ActionName = actionName;
             return this;

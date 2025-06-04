@@ -699,23 +699,30 @@ namespace Hydra.DAL
             return isItNew;
         }
 
-        public static IRepository<T> GetOwnRepository(RepositoryInjector injector) 
+
+        public static IRepository<T>? GetOwnRepository(RepositoryInjector injector) 
         {
-            var repositoryType = ReflectionHelper.GetTypeFromAssembly(typeof(IRepository<>), string.Format("{0}Repository", typeof(T).Name));
+            var repositoryType = ReflectionHelper.GetTypeFromAssembly(typeof(IRepository<>), string.Format("{0}Repository", typeof(T).Name)) ?? typeof(Repository<T>);
 
-            repositoryType = repositoryType ?? typeof(Repository<T>);
-
-            var instance = ReflectionHelper.InvokeMethod(invokerType: typeof(ReflectionHelper),
-                invokerObject: null,
-                methodName: nameof(ReflectionHelper.CreateInstance),
-                genericTypes: new[] { repositoryType },
-                parameters: new object[]
+            var instance = ReflectionHelper.CreateInstance(typeName:nameof(repositoryType),parameters: new object[]
                 {
                     new object[]
                     {
                         injector
                     }
                 });
+
+            //var instance = ReflectionHelper.InvokeMethod(invokerType: typeof(ReflectionHelper),
+            //    invokerObject: null,
+            //    methodName: nameof(ReflectionHelper.CreateInstance),
+            //    genericTypes: new[] { repositoryType },
+            //    parameters: new object[]
+            //    {
+            //        new object[]
+            //        {
+            //            injector
+            //        }
+            //    });
 
             return instance as IRepository<T>;
         }

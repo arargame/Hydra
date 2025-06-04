@@ -14,6 +14,7 @@ namespace Hydra.DAL
 {
     public interface IUnitOfWork : IDisposable
     {
+        DbContext Context { get; }
         bool Commit();
     }
     public class UnitOfWork : IUnitOfWork

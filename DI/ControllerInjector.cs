@@ -14,55 +14,55 @@ namespace Hydra.DI
 {
     public class ControllerInjector : Injector
     {
-        public readonly UnitOfWork UnitOfWork;
+        public readonly UnitOfWork _unitOfWork;
 
-        public readonly IHttpContextAccessor HttpContextAccessor;
+        public readonly IHttpContextAccessor _httpContextAccessor;
 
         public readonly IConfiguration Configuration;
 
-        private readonly SessionInformationCacheManager SessionInformationCacheManager;
+        private readonly SessionInformationCacheManager _cacheManager;
         public ControllerInjector(IHttpContextAccessor httpContextAccessor,
                                 UnitOfWork unitOfWork,
                                 IConfiguration configuration,
                                 SessionInformationCacheManager cacheManager)
         {
-            HttpContextAccessor = httpContextAccessor;
+            _httpContextAccessor = httpContextAccessor;
 
-            UnitOfWork = unitOfWork;
+            _unitOfWork = unitOfWork;
 
             Configuration = configuration;
 
-            SessionInformationCacheManager = cacheManager;
+            _cacheManager = cacheManager;
         }
 
-        public static object GetLastSessionLockObject = new object();
+        //public static object GetLastSessionLockObject = new object();
 
-        public SessionInformation? GetSessionInformation()
-        {
-            var request = HttpContextAccessor.HttpContext.Request;
+        //public SessionInformation? GetSessionInformation()
+        //{
+        //    var request = HttpContextAccessor.HttpContext.Request;
 
-            if (request.Headers.ContainsKey("UserId"))
-            {
-                lock (SessionInformationCacheManager)
-                {
-                    Guid.TryParse(request.Headers["UserId"].FirstOrDefault(), out var userId);
+        //    if (request.Headers.ContainsKey("UserId"))
+        //    {
+        //        lock (SessionInformationCacheManager)
+        //        {
+        //            Guid.TryParse(request.Headers["UserId"].FirstOrDefault(), out var userId);
 
-                    if (SessionInformationCacheManager.TryGetSession(userId, out var sessionInformation))
-                    {
-                        return sessionInformation;
-                    }
-                    else
-                    {
-                        var userService = new SystemUserService(new ServiceInjector(UnitOfWork, null, Configuration));
-                        var session = userService.GetLastSession(userId);
+        //            if (SessionInformationCacheManager.TryGetSession(userId, out var sessionInformation))
+        //            {
+        //                return sessionInformation;
+        //            }
+        //            else
+        //            {
+        //                var userService = new SystemUserService(new ServiceInjector(UnitOfWork, null, Configuration));
+        //                var session = userService.GetLastSession(userId);
 
-                        SessionInformationCacheManager.Login(session);
-                        return session;
-                    }
-                }
-            }
+        //                SessionInformationCacheManager.Login(session);
+        //                return session;
+        //            }
+        //        }
+        //    }
 
-            return null;
-        }
+        //    return null;
+        //}
     }
 }

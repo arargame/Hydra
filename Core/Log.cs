@@ -24,7 +24,9 @@ namespace Hydra.Core
         Create,    
         Read,    
         Update,    
-        Delete    
+        Delete,
+        Login,
+        Logout
     }
 
     public interface ILog
