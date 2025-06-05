@@ -21,21 +21,23 @@ namespace Hydra.Services
 
     public class Service<T> : IService<T> where T : BaseObject<T>
     {
-        private readonly IUnitOfWork UnitOfWork;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public readonly SessionInformation SessionInformation;
+        private readonly ISessionInformation _sessionInformation;
 
-        private readonly IRepositoryFactoryService RepositoryFactory;
+        private readonly IRepositoryFactoryService _repositoryFactory;
 
         public IRepository<T>? Repository { get; set; }
 
-        public Service(IUnitOfWork unitOfWork, IRepositoryFactoryService repositoryFactory,SessionInformation sessionInformation)
+        public Service(IUnitOfWork unitOfWork,
+                IRepositoryFactoryService repositoryFactory,
+                ISessionInformation sessionInformation)
         {
-            UnitOfWork = unitOfWork;
+            _unitOfWork = unitOfWork;
 
-            SessionInformation = sessionInformation;
+            _repositoryFactory = repositoryFactory;
 
-            RepositoryFactory = repositoryFactory;
+            _sessionInformation = sessionInformation;
 
             SetRepository();
         }
@@ -47,7 +49,7 @@ namespace Hydra.Services
 
         public virtual void SetRepository(IRepository<T>? repository = null)
         {
-            Repository = repository ?? RepositoryFactory.CreateRepository<T>(UnitOfWork.Context,SessionInformation);
+            Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context,_sessionInformation);
         }
     }
 }

@@ -16,7 +16,12 @@ namespace Hydra.Services
         Database
     }
 
-    public class LogService
+    public interface ILogService
+    {
+
+    }
+
+    public class LogService : ILogService
     {
         private readonly FileService fileService;
         private readonly DatabaseService databaseService;

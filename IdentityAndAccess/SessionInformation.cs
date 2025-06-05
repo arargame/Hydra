@@ -18,7 +18,35 @@ namespace Hydra.IdentityAndAccess
         Other       
     }
 
-    public class SessionInformation : BaseObject<SessionInformation>
+    public interface ISessionInformation : IBaseObject<ISessionInformation>
+    {
+        SessionType SessionType { get; set; }
+
+        Guid SystemUserId { get; set; }
+
+        SystemUser? SystemUser { get; set; }
+
+        string? Ip { get; set; }
+
+        string? UserAgent { get; set; }
+
+        List<Log> Logs { get; set; }
+
+        DateTime? StartTime { get;}
+
+        DateTime? EndTime { get; }
+
+
+        DateTime? LastActivityTime { get; set; }
+
+        Guid? GeoLocationId { get; set; }
+
+        GeoLocation? GeoLocation { get; set; }
+
+        ISessionInformation SetLastActiviyTime();
+    }
+
+    public class SessionInformation : BaseObject<SessionInformation>, ISessionInformation
     {
         public SessionType SessionType { get; set; }
 
@@ -37,8 +65,21 @@ namespace Hydra.IdentityAndAccess
         [NotMapped]
         public bool IsAuthenticated { get; set; }
 
-        public DateTime StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
+        [NotMapped]
+        public DateTime? StartTime => Logs
+                 .Where(x => x.ProcessType == LogProcessType.Login)
+                 .OrderBy(x => x.AddedDate)
+                 .Select(x => (DateTime?)x.AddedDate)
+                 .FirstOrDefault();
+
+        [NotMapped]
+        public DateTime? EndTime => Logs
+            .Where(x => x.ProcessType == LogProcessType.Logout)
+            .OrderByDescending(x => x.AddedDate)
+            .Select(x => (DateTime?)x.AddedDate)
+            .FirstOrDefault();
+
+        public DateTime? LastActivityTime { get; set; }
 
         public Guid? GeoLocationId { get; set; } 
 
@@ -48,6 +89,13 @@ namespace Hydra.IdentityAndAccess
         public SessionInformation() 
         {
         
+        }
+
+        public ISessionInformation SetLastActiviyTime()
+        {
+            LastActivityTime = DateTime.UtcNow; 
+
+            return this;
         }
     }
 

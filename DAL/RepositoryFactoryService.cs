@@ -14,7 +14,7 @@ namespace Hydra.DAL
 {
     public interface IRepositoryFactoryService
     {
-        IRepository<T>? CreateRepository<T>(DbContext context,SessionInformation sessionInfo) where T : BaseObject<T>;
+        IRepository<T>? CreateRepository<T>(DbContext context,ISessionInformation sessionInfo) where T : BaseObject<T>;
     }
 
     public class RepositoryFactoryService : IRepositoryFactoryService
@@ -26,7 +26,7 @@ namespace Hydra.DAL
             LogService = logService;
         }
 
-        public IRepository<T>? CreateRepository<T>(DbContext context,SessionInformation sessionInfo) where T : BaseObject<T>
+        public IRepository<T>? CreateRepository<T>(DbContext context,ISessionInformation sessionInfo) where T : BaseObject<T>
         {
             var injector = new RepositoryInjector(context, LogService);
 
