@@ -13,22 +13,29 @@ namespace Hydra.DI
     {
         public UnitOfWork UnitOfWork { get; set; }
 
-        public SessionInformation? SessionInformation { get; set; } = null;
+        public IRepositoryFactoryService RepositoryFactory {  get; set; }
 
-        public IConfiguration? Configuration { get; set; } = null;
+        public SessionInformation SessionInformation { get; set; } 
 
-        public ServiceInjector(UnitOfWork unitOfWork, SessionInformation? sessionInformation, IConfiguration? configuration)
+        public IConfiguration Configuration { get; set; } 
+
+        public ServiceInjector(UnitOfWork unitOfWork,
+                            IRepositoryFactoryService repositoryFactory,
+                            SessionInformation sessionInformation,
+                            IConfiguration configuration)
         {
             UnitOfWork = unitOfWork;
+
+            RepositoryFactory = repositoryFactory; 
 
             SessionInformation = sessionInformation;
 
             Configuration = configuration;
         }
 
-        public ServiceInjector(UnitOfWork unitOfWork) : this(unitOfWork, null, null)
-        {
+        //public ServiceInjector(UnitOfWork unitOfWork) : this(unitOfWork, null, null)
+        //{
 
-        }
+        //}
     }
 }

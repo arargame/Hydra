@@ -1,4 +1,5 @@
-﻿using Hydra.DI;
+﻿using Hydra.DAL;
+using Hydra.DI;
 using Hydra.IdentityAndAccess;
 using System;
 using System.Collections.Generic;
@@ -8,13 +9,11 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
-    public class SystemUserService
+    public class SystemUserService : Service<SystemUser>
     {
-        private readonly ServiceInjector injector;
-
-        public SystemUserService(ServiceInjector injector)
+        public SystemUserService(ServiceInjector injector) : base(injector)
         {
-            this.injector = injector;
+            
         }
 
         public SessionInformation GetLastSession(Guid userId)

@@ -33,6 +33,12 @@ namespace Hydra.IdentityAndAccess
 
         public ICollection<Role> Roles { get; set; } = new List<Role>();
 
+        public List<RoleSystemUser> SystemUserRoles { get; set; } = new();
+
+        public List<SystemUserPermission> SystemUserPermissions { get; set; } = new();
+
+        public List<SessionInformation> SessionInformations { get; set; } = new();
+
         public SystemUser() { }
 
         public override string UniqueProperty

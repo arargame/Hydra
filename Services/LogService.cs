@@ -18,7 +18,9 @@ namespace Hydra.Services
 
     public interface ILogService
     {
+        void Save(Log log, LogRecordType recordType);
 
+        List<Log> GetRecentLogs();
     }
 
     public class LogService : ILogService
@@ -84,7 +86,9 @@ namespace Hydra.Services
 
         public List<Log> GetRecentLogs()
         {
-            return memoryCache.TryGetValue(CACHE_KEY, out List<Log> logs) ? logs : new List<Log>();
+            _ = memoryCache.TryGetValue(CACHE_KEY, out List<Log> logs);
+
+            return logs ??  new List<Log>();
         }
     }
 

@@ -18,35 +18,7 @@ namespace Hydra.IdentityAndAccess
         Other       
     }
 
-    public interface ISessionInformation : IBaseObject<ISessionInformation>
-    {
-        SessionType SessionType { get; set; }
-
-        Guid SystemUserId { get; set; }
-
-        SystemUser? SystemUser { get; set; }
-
-        string? Ip { get; set; }
-
-        string? UserAgent { get; set; }
-
-        List<Log> Logs { get; set; }
-
-        DateTime? StartTime { get;}
-
-        DateTime? EndTime { get; }
-
-
-        DateTime? LastActivityTime { get; set; }
-
-        Guid? GeoLocationId { get; set; }
-
-        GeoLocation? GeoLocation { get; set; }
-
-        ISessionInformation SetLastActiviyTime();
-    }
-
-    public class SessionInformation : BaseObject<SessionInformation>, ISessionInformation
+    public class SessionInformation : BaseObject<SessionInformation>
     {
         public SessionType SessionType { get; set; }
 
@@ -91,7 +63,7 @@ namespace Hydra.IdentityAndAccess
         
         }
 
-        public ISessionInformation SetLastActiviyTime()
+        public SessionInformation SetLastActiviyTime()
         {
             LastActivityTime = DateTime.UtcNow; 
 

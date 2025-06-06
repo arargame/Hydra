@@ -1,5 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.DAL;
+using Hydra.DI;
 using Hydra.IdentityAndAccess;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,10 @@ namespace Hydra.Services
 
         IRepository<T>? Repository { get; set; }
 
+        bool HasCache { get; set; }
+
+        bool Create(T entity);
+
         bool Commit();
     }
 
@@ -23,21 +28,21 @@ namespace Hydra.Services
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        private readonly ISessionInformation _sessionInformation;
+        private readonly SessionInformation _sessionInformation;
 
         private readonly IRepositoryFactoryService _repositoryFactory;
 
+        public bool HasCache { get; set; }
+
         public IRepository<T>? Repository { get; set; }
 
-        public Service(IUnitOfWork unitOfWork,
-                IRepositoryFactoryService repositoryFactory,
-                ISessionInformation sessionInformation)
+        public Service(ServiceInjector injector)
         {
-            _unitOfWork = unitOfWork;
+            _unitOfWork = injector.UnitOfWork;
 
-            _repositoryFactory = repositoryFactory;
+            _repositoryFactory = injector.RepositoryFactory;
 
-            _sessionInformation = sessionInformation;
+            _sessionInformation = injector.SessionInformation;
 
             SetRepository();
         }
@@ -50,6 +55,41 @@ namespace Hydra.Services
         public virtual void SetRepository(IRepository<T>? repository = null)
         {
             Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context,_sessionInformation);
+        }
+
+        public virtual bool Create(T entity)
+        {
+            //var isCommitted = Repository.Create(entity) && Commit();
+
+            //try
+            //{
+            //    if (isCommitted)
+            //    {
+            //        var log = Repository.ConsumeLogs().Where(l => l.ProcessType == LogProcessType.Create).SingleOrDefault();
+
+            //        //LogManager.Save(log);
+
+            //        if (log == null)
+            //            return isCommitted;
+
+            //        var logRepository = new LogRepository(Repository.GetInjector());
+
+            //        logRepository.Create(log);
+
+            //        Commit();
+
+            //        if (HasCache)
+            //            Cache<T>.AddObject(entity);
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    LogManager.Save(new Log(ex.Message, entityId: entity.UniqueProperty));
+            //}
+
+            //return isCommitted;
+
+            return false;
         }
     }
 }

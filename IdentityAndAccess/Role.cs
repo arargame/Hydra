@@ -9,7 +9,9 @@ namespace Hydra.IdentityAndAccess
 {
     public class Role : BaseObject<Role>
     {
-        public ICollection<Permission> Permissions { get; set; } = new List<Permission>();
+        public List<RoleSystemUser> RoleSystemUsers { get; set; } = new();
+
+        public List<RolePermission> RolePermissions { get; set; } = new();
         public Role() { }
     }
 }
