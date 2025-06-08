@@ -1,68 +1,47 @@
-﻿using Hydra.CacheManagement.Managers;
-using Hydra.DAL;
+﻿using Hydra.DI.HttpContextDI;
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.IdentityAndAccess;
 using Hydra.Services;
+using Hydra.Services.Core;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.DI
 {
-    public class ControllerInjector : Injector
+    public interface IControllerInjector
     {
-        public readonly UnitOfWork _unitOfWork;
+        IServiceFactory ServiceFactory { get; }
+        ISessionContext SessionContext { get; }
+        //IConfiguration Configuration { get; }
+        //HttpContext HttpContext { get; }
+        IHttpContextAccessorAbstraction HttpContextAccessor { get; }
 
-        public readonly IHttpContextAccessor _httpContextAccessor;
+        ILogService LogService { get; }
+    }
+    public class ControllerInjector : IControllerInjector
+    {
+        public IServiceFactory ServiceFactory { get; }
+        public ISessionContext SessionContext { get; }
+        //public IConfiguration Configuration { get; }
+        //  public IHttpContextAccessor HttpContextAccessor { get; }
+        public IHttpContextAccessorAbstraction HttpContextAccessor { get; }
+        public ILogService LogService { get; }
 
-        public readonly IConfiguration Configuration;
+      //  public HttpContext HttpContext => HttpContextAccessor.HttpContext!;
 
-        private readonly SessionInformationCacheManager _cacheManager;
-        public ControllerInjector(IHttpContextAccessor httpContextAccessor,
-                                UnitOfWork unitOfWork,
-                                IConfiguration configuration,
-                                SessionInformationCacheManager cacheManager)
+
+        public ControllerInjector(
+            IServiceFactory serviceFactory,
+            ISessionContext sessionContext,
+            //            IConfiguration configuration,
+            IHttpContextAccessorAbstraction httpContextAccessor,
+            ILogService logService)
         {
-            _httpContextAccessor = httpContextAccessor;
-
-            _unitOfWork = unitOfWork;
-
-            Configuration = configuration;
-
-            _cacheManager = cacheManager;
+            
+            ServiceFactory = serviceFactory;
+            SessionContext = sessionContext;
+         //   Configuration = configuration;
+            HttpContextAccessor = httpContextAccessor;
+            LogService = logService;
         }
-
-        //public static object GetLastSessionLockObject = new object();
-
-        //public SessionInformation? GetSessionInformation()
-        //{
-        //    var request = HttpContextAccessor.HttpContext.Request;
-
-        //    if (request.Headers.ContainsKey("UserId"))
-        //    {
-        //        lock (SessionInformationCacheManager)
-        //        {
-        //            Guid.TryParse(request.Headers["UserId"].FirstOrDefault(), out var userId);
-
-        //            if (SessionInformationCacheManager.TryGetSession(userId, out var sessionInformation))
-        //            {
-        //                return sessionInformation;
-        //            }
-        //            else
-        //            {
-        //                var userService = new SystemUserService(new ServiceInjector(UnitOfWork, null, Configuration));
-        //                var session = userService.GetLastSession(userId);
-
-        //                SessionInformationCacheManager.Login(session);
-        //                return session;
-        //            }
-        //        }
-        //    }
-
-        //    return null;
-        //}
     }
 }

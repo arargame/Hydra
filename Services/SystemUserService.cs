@@ -1,6 +1,8 @@
 ﻿using Hydra.DAL;
 using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
+using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,20 +13,12 @@ namespace Hydra.Services
 {
     public class SystemUserService : Service<SystemUser>
     {
-        public SystemUserService(ServiceInjector injector) : base(injector)
+        private readonly ICacheService<Guid, SystemUser> _cache;
+        public SystemUserService(ServiceInjector injector, ICacheService<Guid, SystemUser> cache) : base(injector)
         {
-            
-        }
+            HasCache = true;
 
-        public SessionInformation GetLastSession(Guid userId)
-        {
-            return new SessionInformation
-            {
-                SystemUserId = userId,
-                Ip = "127.0.0.1",
-                UserAgent = "Mozilla/5.0",
-                IsAuthenticated = true
-            };
+            _cache = cache;
         }
     }
 }

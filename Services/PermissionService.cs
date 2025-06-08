@@ -1,5 +1,7 @@
 ﻿using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
+using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +12,12 @@ namespace Hydra.Services
 {
     public class PermissionService : Service<Permission>
     {
-        public PermissionService(ServiceInjector injector) : base(injector)
+        private readonly ICacheService<Guid, Permission> _cache;
+        public PermissionService(ServiceInjector injector, ICacheService<Guid, Permission> cache) : base(injector)
         {
             HasCache = true;
+
+            _cache = cache;
         }
     }
 }

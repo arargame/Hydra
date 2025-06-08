@@ -1,5 +1,7 @@
 ﻿using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
+using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +17,17 @@ namespace Hydra.Services
 
         private readonly PermissionService PermissionService;
 
-        public SystemUserPermissionService(ServiceInjector injector) : base(injector)
+        private readonly ICacheService<Guid, SystemUserPermission> _cache;
+
+        public SystemUserPermissionService(ServiceInjector injector, ICacheService<Guid, SystemUserPermission> cache) : base(injector)
         {
             SystemUserService = new SystemUserService(injector);
 
             PermissionService = new PermissionService(injector);
 
             HasCache = true;
+
+            _cache = cache;
         }
 
         public List<SystemUserPermission> GetSystemUserPermission(Expression<Func<SystemUserPermission, bool>> predicate)

@@ -1,5 +1,7 @@
 ﻿using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
+using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +17,17 @@ namespace Hydra.Services
 
         private readonly SystemUserService SystemUserService;
 
-        public RoleSystemUserService(ServiceInjector injector) : base(injector)
+        private readonly ICacheService<Guid, RoleSystemUser> _cache;
+
+        public RoleSystemUserService(ServiceInjector injector, ICacheService<Guid, RoleSystemUser> cache) : base(injector)
         {
             RoleService = new RoleService(injector);
 
             SystemUserService = new SystemUserService(injector);
 
             HasCache = true;
+
+            _cache = cache;
         }
 
         public List<RoleSystemUser> GetRoleSystemUser(Expression<Func<RoleSystemUser, bool>> predicate)
