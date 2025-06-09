@@ -1,14 +1,10 @@
-﻿using Hydra.DI;
+﻿using Hydra.DAL.Core;
+using Hydra.DI;
 using Hydra.IdentityAndAccess;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.DAL.Repositories
 {
+    [RegisterAsRepository(typeof(IRepository<SystemUser>))]
     public class SystemUserRepository : Repository<SystemUser>
     {
         public SystemUserRepository(RepositoryInjector injector)

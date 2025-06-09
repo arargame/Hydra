@@ -14,7 +14,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hydra.DAL
+namespace Hydra.DAL.Core
 {
     public interface IRepository<T> where T : IBaseObject<T>
     {
@@ -615,7 +615,7 @@ namespace Hydra.DAL
                     {
                         i = 0;
 
-                        while (i < first.Length && (first[i] == second[i]))
+                        while (i < first.Length && first[i] == second[i])
                         {
                             i++;
                         }

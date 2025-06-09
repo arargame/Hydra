@@ -175,6 +175,24 @@ namespace Hydra.Utils
             return GetTypeFromAssembly(sampleTypeInAssembly.Assembly, typeName, isDerivedFromThisType, logAction);
         }
 
+        private static readonly ConcurrentDictionary<Assembly, List<Type>> _derivedTypeCache = new();
+
+        public static List<Type> GetDerivedTypes<TBase>(Assembly assembly, bool includeAbstract = false)
+        {
+            if (_derivedTypeCache.TryGetValue(assembly, out var cachedList))
+                return cachedList;
+
+            var baseType = typeof(TBase);
+            var types = assembly.GetTypes()
+                .Where(t =>
+                    baseType.IsAssignableFrom(t) &&
+                    (includeAbstract || (!t.IsAbstract && t.IsClass)))
+                .ToList();
+
+            _derivedTypeCache[assembly] = types;
+            return types;
+        }
+
         private static void SetNavigationProperties<T>(T tInstance, IEnumerable<dynamic> navigationProperties, PropertyInfo[] properties)
         {
             if (tInstance is null) throw new ArgumentNullException(nameof(tInstance));
@@ -694,6 +712,23 @@ namespace Hydra.Utils
             // DisplayAttribute'u al ve adını döndür, yoksa property adını döndür
             var displayAttribute = GetAttribute<DisplayAttribute>(propertyInfo);
             return displayAttribute?.Name ?? propertyInfo.Name;
+        }
+
+        public static T? GetAttribute<T>(Type type) where T : Attribute
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
+            var key = $"{type.FullName}.{typeof(T).FullName}";
+
+            if (_attributeCache.TryGetValue(key, out var cachedValue))
+            {
+                return cachedValue as T;
+            }
+
+            var attribute = type.GetCustomAttribute<T>();
+            _attributeCache[key] = attribute;
+
+            return attribute;
         }
 
     }

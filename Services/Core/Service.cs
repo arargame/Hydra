@@ -1,5 +1,5 @@
 ﻿using Hydra.Core;
-using Hydra.DAL;
+using Hydra.DAL.Core;
 using Hydra.DataModels;
 using Hydra.DataModels.Filter;
 using Hydra.DI;
@@ -18,9 +18,7 @@ using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.Services.Core
 {
-
-
-        public partial class Service<T> : IService<T> where T : BaseObject<T>
+    public partial class Service<T> : IService<T> where T : BaseObject<T>
     {
         private readonly IUnitOfWork _unitOfWork;
 
@@ -52,12 +50,12 @@ namespace Hydra.Services.Core
 
         public virtual void SetRepository(IRepository<T>? repository = null)
         {
-            Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context,_sessionInformation);
+            Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context, _sessionInformation);
         }
 
-        protected ServiceInjector GetInjector()
-        {
-            return new ServiceInjector(_unitOfWork,_repositoryFactory, SessionInformation, Configuration,serviceProvider);
-        }
+        //protected ServiceInjector GetInjector()
+        //{
+        //    return new ServiceInjector(_unitOfWork, _repositoryFactory, SessionInformation, Configuration, serviceProvider);
+        //}
     }
 }

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hydra.DAL
+namespace Hydra.DAL.Core
 {
     public interface IRepositoryFactoryService
     {

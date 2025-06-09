@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
+    [RegisterAsService(typeof(IService<Permission>))]
     public class PermissionService : Service<Permission>
     {
         private readonly ICacheService<Guid, Permission> _cache;

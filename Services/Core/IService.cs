@@ -1,5 +1,5 @@
 ﻿using Hydra.Core;
-using Hydra.DAL;
+using Hydra.DAL.Core;
 using Hydra.DataModels;
 using Hydra.DataModels.Filter;
 using Hydra.DI;

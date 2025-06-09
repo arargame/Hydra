@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
+    [RegisterAsService(typeof(IService<SystemUser>))]
     public class SystemUserService : Service<SystemUser>
     {
         private readonly ICacheService<Guid, SystemUser> _cache;

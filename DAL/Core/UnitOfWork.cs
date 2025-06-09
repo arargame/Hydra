@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 
-namespace Hydra.DAL
+namespace Hydra.DAL.Core
 {
     public interface IUnitOfWork : IDisposable
     {

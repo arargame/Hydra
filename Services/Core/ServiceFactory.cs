@@ -9,7 +9,8 @@ namespace Hydra.Services.Core
 {
     public interface IServiceFactory
     {
-        T GetService<T>();
+        object GetService(Type type);
+        T GetService<T>() where T : notnull;
     }
 
     public class ServiceFactory : IServiceFactory
@@ -21,7 +22,9 @@ namespace Hydra.Services.Core
             _provider = provider;
         }
 
-        public T GetService<T>()
+        public object GetService(Type type) => _provider.GetRequiredService(type);
+
+        public T GetService<T>() where T : notnull
         {
             return _provider.GetRequiredService<T>();
         }

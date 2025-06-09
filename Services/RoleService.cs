@@ -1,4 +1,4 @@
-﻿using Hydra.DAL;
+﻿using Hydra.DAL.Core;
 using Hydra.DI;
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Cache;
@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
+    [RegisterAsService(typeof(IService<Role>))]
     public class RoleService : Service<Role>
     {
         private readonly ICacheService<Guid, Role> _cache;

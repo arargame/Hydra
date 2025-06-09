@@ -1,4 +1,4 @@
-﻿using Hydra.DAL;
+﻿using Hydra.DAL.Core;
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.IdentityAndAccess;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
