@@ -1,0 +1,23 @@
+﻿[HttpPost]
+public async Task<IActionResult> GetPaginated([FromBody] GridRequest request)
+{
+    var query = Service.FilterWithLinq(); // IQueryable<T>
+
+    query = query.ApplyFilters(request.Filters);
+    query = query.ApplySorting(request.Sorting);
+
+    var totalCount = await query.CountAsync();
+
+    var pagedItems = await query
+        .Skip((request.PageIndex - 1) * request.PageSize)
+        .Take(request.PageSize)
+        .Select(x => new MyDto
+        {
+            Id = x.Id,
+            Name = x.Name
+        }).ToListAsync();
+
+    var result = new PaginatedResult<MyDto>(pagedItems, totalCount, request.PageIndex, request.PageSize);
+
+    return Ok(result);
+}

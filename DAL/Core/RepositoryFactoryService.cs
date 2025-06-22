@@ -4,11 +4,6 @@ using Hydra.IdentityAndAccess;
 using Hydra.Services;
 using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.DAL.Core
 {
@@ -19,16 +14,16 @@ namespace Hydra.DAL.Core
 
     public class RepositoryFactoryService : IRepositoryFactoryService
     {
-        private readonly LogService LogService;
+        private readonly LogService _logService;
 
         public RepositoryFactoryService(LogService logService)
         {
-            LogService = logService;
+            _logService = logService;
         }
 
         public IRepository<T>? CreateRepository<T>(DbContext context,SessionInformation sessionInfo) where T : BaseObject<T>
         {
-            var injector = new RepositoryInjector(context, LogService);
+            var injector = new RepositoryInjector(context, _logService);
 
             var repositoryType = ReflectionHelper.GetTypeFromAssembly(typeof(IRepository<>), string.Format("{0}Repository", typeof(T).Name)) ?? typeof(Repository<T>);
 

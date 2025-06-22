@@ -1,6 +1,7 @@
 ﻿using Hydra.Core;
 using Hydra.DI;
 using Hydra.IdentityAndAccess;
+using Hydra.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,18 +16,18 @@ namespace Hydra.DAL.Core
     public interface IUnitOfWork : IDisposable
     {
         DbContext Context { get; }
-        bool Commit();
+        Task<bool> CommitAsync();
     }
     public class UnitOfWork : IUnitOfWork
     {
         private bool _disposed;
         public DbContext Context { get; }
-        private readonly ILogger _logger;
+        private readonly ILogService _logService;
 
-        public UnitOfWork(DbContext context, ILogger logger)
+        public UnitOfWork(DbContext context, ILogService logService)
         {
             Context = context;
-            _logger = logger;
+            _logService = logService;
         }
 
         //public IRepository<T> LoadRepository<T>(SessionInformation sessionInformation) where T : BaseObject<T>
@@ -34,7 +35,7 @@ namespace Hydra.DAL.Core
         //    return new Repository<T>(new RepositoryInjector(Context, sessionInformation));
         //}
 
-        public bool Commit()
+        public async Task<bool> CommitAsync()
         {
             bool isCommitted = false;
             int retryCount = 3;
@@ -43,26 +44,36 @@ namespace Hydra.DAL.Core
             {
                 IsolationLevel = IsolationLevel.ReadCommitted,
                 Timeout = TimeSpan.FromSeconds(30)
-            }))
+            }, TransactionScopeAsyncFlowOption.Enabled))
             {
                 while (retryCount > 0)
                 {
                     try
                     {
-                        Context.SaveChanges();
+                        await Context.SaveChangesAsync();
+
                         transaction.Complete();
+
                         isCommitted = true;
+
                         break;
                     }
                     catch (DbUpdateConcurrencyException ex)
                     {
                         retryCount--;
-                        _logger.LogWarning($"Concurrency exception. Retries left: {retryCount}. Exception: {ex.Message}");
+
+                        await _logService.SaveAsync(new Log(
+                            description: $"Concurrency exception. Retries left: {retryCount}. Exception: {ex.Message}",
+                            logType: LogType.Warning), LogRecordType.Database);
+
                         ResolveConcurrencyConflicts(ex);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError($"Commit failed: {ex.Message}");
+                        await _logService.SaveAsync(new Log(
+                            description: $"Commit failed: {ex.Message}",
+                            logType: LogType.Error), LogRecordType.Database);
+
                         break;
                     }
                 }
@@ -70,6 +81,7 @@ namespace Hydra.DAL.Core
 
             return isCommitted;
         }
+
 
         private void ResolveConcurrencyConflicts(DbUpdateConcurrencyException ex)
         {

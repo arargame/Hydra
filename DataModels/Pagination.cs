@@ -21,6 +21,9 @@ namespace Hydra.DataModels
 
         public int Finish { get; private set; }
 
+        public bool HasPreviousPage => PageNumber > 1;
+        public bool HasNextPage => PageNumber < TotalPagesCount;
+
         public Pagination(int pageNumber, int pageSize, int totalRecordsCount, int filteredTotalRecordsCount = 0)
         {
             PageSize = pageSize;

@@ -61,6 +61,55 @@ namespace Hydra.CacheManagement
             }
         }
 
+        public IEnumerable<TValue> GetAll()
+        {
+            lock (lockObject)
+            {
+                var now = DateTime.UtcNow;
+                return cache
+                    .Where(kvp => kvp.Value.Expiration > now)
+                    .Select(kvp => kvp.Value.Value)
+                    .ToList();
+            }
+        }
+
+        public IEnumerable<TValue> GetAll(Func<TValue, bool> predicate)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            lock (lockObject)
+            {
+                var now = DateTime.UtcNow;
+
+                return cache
+                    .Where(kvp => kvp.Value.Expiration > now)
+                    .Select(kvp => kvp.Value.Value)
+                    .Where(predicate)
+                    .ToList();
+            }
+        }
+
+
+        public bool TryGetAll(Func<TValue, bool> predicate, out List<TValue> values)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            lock (lockObject)
+            {
+                var now = DateTime.UtcNow;
+
+                values = cache
+                    .Where(kvp => kvp.Value.Expiration > now)
+                    .Select(kvp => kvp.Value.Value)
+                    .Where(predicate)
+                    .ToList();
+            }
+
+            return values.Any();
+        }
+
         private void CleanupExpiredItems(object state)
         {
             lock (lockObject)

@@ -1,11 +1,5 @@
-﻿using Hydra.IdentityAndAccess;
-using Hydra.Services;
+﻿using Hydra.Services;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.DI
 {
@@ -13,9 +7,9 @@ namespace Hydra.DI
     {
         public DbContext Context { get; set; }
 
-        public LogService LogService { get; set; }
+        public ILogService LogService { get; set; }
 
-        public RepositoryInjector(DbContext context,LogService logService)
+        public RepositoryInjector(DbContext context,ILogService logService)
         {
             Context = context;
 

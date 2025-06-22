@@ -1,127 +1,115 @@
 ﻿using Hydra.Core;
-using Hydra.DAL.Core;
 using Hydra.DataModels;
 using Hydra.DataModels.Filter;
 using Hydra.DI;
 using Hydra.DTOs;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Hydra.IdentityAndAccess;
+using Hydra.Services.Cache;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
-using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.Services.Core
 {
     public interface IService<T> where T : BaseObject<T>
     {
-        bool HasCache { get; set; }
 
-        IRepository<T>? Repository { get; set; }
+        SessionInformation SessionInformation {  get; }
 
-        bool Any(Expression<Func<T, bool>>? filter = null);
+        ICacheService<Guid, T>? CacheService { get; set; }
+        bool HasCache { get;}
 
-        bool Commit();
+        //ILogService? LogService { get; }
 
-        bool Create(T entity);
+        //IRepository<T>? Repository { get; set; }
+
+        IService<T> AddExtraMessagesToResponseWhenItIsFailed(ResponseObject responseObject);
+        Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null);
+
+        Task<bool> CommitAsync();
+
+        Task<bool> CreateAsync(T entity);
 
         Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>>? expression = null);
 
-        int Count(Expression<Func<T, bool>>? expression = null);
+        Task<int> CountAsync(Expression<Func<T, bool>>? expression = null);
 
-        bool Delete(Expression<Func<T, bool>> filter);
+        IService<T> DisableToCommit();
 
-        bool Delete(T entity);
+        Task<bool> DeleteAsync(Expression<Func<T, bool>> filter);
 
-        bool Delete(Guid id);
+        Task<bool> DeleteAsync(T entity);
 
-        bool DeleteRange(List<T> entities);
+        Task<bool> DeleteAsync(Guid id);
 
-        bool DeleteRange(List<Guid> idList);
+        Task<bool> DeleteRangeAsync(List<T> entities);
 
-        //IQueryable<T> FilterWithDynamicLinq(IFilter filter);
+        Task<bool> DeleteRangeAsync(List<Guid> idList);
 
-        //IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters);
+        IService<T> EnableToCommit();
 
         IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
 
-        T Get(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
-
-        T Get(Expression<Func<T, bool>> filter, params string[] includes);
-
-        T GetById(Guid id, bool withAllIncludes = false, params string[] includes);
-
-        T GetById(Guid id, params string[] includes);
+        Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
+        Task<T?> GetAsync(Expression<Func<T, bool>> filter, params string[] includes);
+        Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes);
+        Task<T?> GetByIdAsync(Guid id, params string[] includes);
 
         string[] GetAllIncludes();
 
         Table GetTable(string? tableName = null, string? alias = null, int? pageSize = null, int? pageNumber = null);
 
-        T GetUnique(T entity, bool withAllIncludes = false, params string[] includes);
+        Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes);
 
-        T GetUnique(T entity, params string[] includes);
+        Task<T?> GetUniqueAsync(T entity, params string[] includes);
 
-        bool IsItNew(T entity);
+        Task<bool> IsItNewAsync(T entity);
 
-        //List<T> SelectWithDynamicLinq(IFilter? filter = null,
-        //    int? countToSkip = null,
-        //    int? countToTake = null,
-        //    List<SelectedColumn>? selectedColumns = null,
-        //    List<OrderedColumn>? orderedColumns = null,
-        //    bool asNoTracking = true,
-        //    bool firstOrDefault = false,
-        //    bool selectDistinct = false,
-        //    params string[] includes);
 
-        List<T> SelectWithLinq(Expression<Func<T, bool>>? filter = null,
-                Expression<Func<T, T>>? selector = null,
-                int? countToSkip = null,
-                int? countToTake = null,
-                bool asNoTracking = true,
-                Func<IQueryable<T>, IQueryable<T>>? actionToOrder = null,
-                bool firstOrDefault = false,
-                bool selectDistinct = false,
-                params string[] includes);
+        Task<List<T>> SelectWithLinqAsync(Expression<Func<T, bool>>? filter = null,
+                                Expression<Func<T, T>>? selector = null,
+                                int? countToSkip = null,
+                                int? countToTake = null,
+                                bool asNoTracking = true,
+                                Func<IQueryable<T>, IQueryable<T>>? actionToOrder = null,
+                                bool firstOrDefault = false,
+                                bool selectDistinct = false,
+                                params string[] includes);
 
-        List<TResult> SelectWithLinq<TResult>(Expression<Func<T, TResult>> selector,
-            Expression<Func<T, bool>>? filter = null,
-            int? countToSkip = null,
-            int? countToTake = null,
-            bool asNoTracking = true,
-            Func<IQueryable<T>, IQueryable<T>>? actionToOrder = null,
-            bool firstOrDefault = false,
-            bool selectDistinct = false,
-            params string[] includes);
+        Task<List<TResult>> SelectWithLinqAsync<TResult>(Expression<Func<T, TResult>> selector,
+                                                Expression<Func<T, bool>>? filter = null,
+                                                int? countToSkip = null,
+                                                int? countToTake = null,
+                                                bool asNoTracking = true,
+                                                Func<IQueryable<T>, IQueryable<T>>? actionToOrder = null,
+                                                bool firstOrDefault = false,
+                                                bool selectDistinct = false,
+                                                params string[] includes);
 
         List<T> SelectWithTable(string? tableName = null,
                                 string? tableAlias = null,
-                        List<IMetaColumn> metaColumns = null,
-                        Expression<Func<Table, JoinFilter>>? expressionToManageFilters = null,
-                        Expression<Func<Table, List<JoinTable>>>? expressionToSetJoins = null,
-                        int? pageNumber = null,
-                        int? pageSize = null);
+                                List<IMetaColumn>? metaColumns = null,
+                                Expression<Func<ITable, IJoinFilter>>? expressionToManageFilters = null,
+                                Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
+                                int? pageNumber = null,
+                                int? pageSize = null);
 
-        List<T2> SelectWithTable<T2>(ref TableDTO tableDTO, ViewType? viewType = null, Type viewDTOTypeToPrepareUsingConfigurations = null, List<MetaColumnDTO> externalMetaColumns = null) where T2 : class;
+        List<T2> SelectWithTable<T2>(ref TableDTO tableDTO,
+                                    ViewType? viewType = null,
+                                    Type? viewDTOTypeToPrepareUsingConfigurations = null,
+                                    List<MetaColumnDTO>? externalMetaColumns = null) where T2 : class;
 
-        List<T> SelectWithTable(Table table);
+        List<T> SelectWithTable(ITable table);
 
-        List<T2> SelectWithTable<T2>(Table table) where T2 : class;
+        List<T2> SelectWithTable<T2>(ITable table) where T2 : class;
 
-        List<T> SelectThenCache(Expression<Func<T, bool>> filter);
+        Task<List<T>> SelectThenCache(Expression<Func<T, bool>> filter);
 
-        ResponseObjectForUpdate Update(T entity);
-
-        T PrepareSample();
+        void SetCacheService(ICacheService<Guid, T> service);
 
         ServiceInjector GetInjector();
 
-        Service<T> DisableToCommit();
-
-        Service<T> EnableToCommit();
-
-        Service<T> AddExtraMessagesToResponseWhenItIsFailed(ResponseObject responseObject);
+        ResponseObjectForUpdate Update(T entity);
     }
 }

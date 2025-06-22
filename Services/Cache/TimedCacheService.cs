@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services.Cache
 {
-    public class TimedCacheService<TKey, TValue> : ICacheService<TKey, TValue>
+    public class TimedCacheService<TKey, TValue> : IQueryableCacheService<TKey, TValue>
             where TKey : notnull
             where TValue : class
     {
@@ -38,6 +38,17 @@ namespace Hydra.Services.Cache
         public void Clear()
         {
             _cache.Clear();
+        }
+
+        public List<TValue> GetObjectList(Func<TValue, bool> predicate)
+        {
+            return _cache.GetAll().Where(predicate).ToList();
+        }
+
+        public bool TryGetAll(Func<TValue, bool> predicate, out List<TValue> values)
+        {
+            values = GetObjectList(predicate);
+            return values.Count > 0;
         }
     }
 

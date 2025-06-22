@@ -2,23 +2,36 @@
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Cache;
 using Hydra.Services.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
     [RegisterAsService(typeof(IService<Permission>))]
     public class PermissionService : Service<Permission>
     {
-        private readonly ICacheService<Guid, Permission> _cache;
-        public PermissionService(ServiceInjector injector, ICacheService<Guid, Permission> cache) : base(injector)
-        {
-            HasCache = true;
+        private readonly SystemUserPermissionService _systemUserPermissionService;
+        private readonly RolePermissionService _rolePermissionService;
 
-            _cache = cache;
+        public PermissionService(
+            ServiceInjector injector,
+            IQueryableCacheService<Guid, Permission> cache,
+            SystemUserPermissionService systemUserPermissionService,
+            RolePermissionService rolePermissionService) : base(injector)
+        {
+            SetCacheService(cache);
+            _systemUserPermissionService = systemUserPermissionService;
+            _rolePermissionService = rolePermissionService;
+        }
+
+
+        public async Task<List<SystemUser>> GetUsersAsync(Guid permissionId)
+        {
+            return await _systemUserPermissionService.GetUsersAsync(permissionId);
+        }
+
+
+        public async Task<List<Role>> GetRolesAsync(Guid permissionId)
+        {
+            return await _rolePermissionService.GetRolesAsync(permissionId);
         }
     }
 }

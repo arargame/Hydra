@@ -2,96 +2,71 @@
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Cache;
 using Hydra.Services.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
+    [RegisterAsService(typeof(IService<RolePermission>))]
     public class RolePermissionService : Service<RolePermission>
     {
-        private readonly RoleService RoleService;
+        private readonly RoleService _roleService;
 
-        private readonly PermissionService PermissionService;
+        private readonly PermissionService _permissionService;
 
-        private readonly ICacheService<Guid, RolePermission> _cache;
-
-        public RolePermissionService(ServiceInjector injector, ICacheService<Guid, RolePermission> cache) : base(injector)
+        public RolePermissionService(ServiceInjector injector,
+                                      ICacheService<Guid, RolePermission> cacheService,
+                                      RoleService roleService,
+                                      PermissionService permissionService) : base(injector)
         {
-            RoleService = new RoleService(injector);
+            _roleService = roleService;
 
-            PermissionService = new PermissionService(injector);
+            _permissionService = permissionService;
 
-            HasCache = true;
-
-            _cache = cache;
+            SetCacheService(cacheService); 
         }
 
-        public List<RolePermission> GetRolePermission(Expression<Func<RolePermission, bool>> predicate)
+        public async Task<List<RolePermission>> GetRolePermissions(Expression<Func<RolePermission, bool>> predicate)
         {
-            var rolePermissions = new List<RolePermission>();
-
-            if (RolePermissionCache.AnyObject(predicate.Compile()))
+            if (CacheService is IQueryableCacheService<Guid, RolePermission> queryableCache &&
+                queryableCache.TryGetAll(predicate.Compile(), out var cachedList))
             {
-                rolePermissions = RolePermissionCache.GetObjectList(predicate.Compile());
-            }
-            else
-            {
-                rolePermissions = SelectThenCache(filter: predicate);
+                return cachedList;
             }
 
-            return rolePermissions;
+            return await SelectThenCache(predicate);
         }
 
-        public List<Role> GetRoles(Guid permissionId)
+        public async Task<List<Role>> GetRolesAsync(Guid permissionId)
         {
-            var rolePermissions = GetRolePermission(rp => rp.PermissionId == permissionId);
-
+            var rolePermissions = await GetRolePermissions(rp => rp.PermissionId == permissionId);
             var roles = new List<Role>();
 
             foreach (var rp in rolePermissions)
             {
-                if (RoleCache.AnyObject(r => r.Id == rp.RoleId))
-                {
-                    roles.Add(RoleCache.GetObjectById(rp.RoleId));
-                }
-                else
-                {
-                    var role = RoleService.SelectThenCache(p => p.Id == rp.RoleId).First();
-
-                    if (role != null)
-                        roles.Add(role);
-                }
+                var role = await _roleService.GetOrSelectThenCacheAsync(rp.RoleId);
+                if (role != null)
+                    roles.Add(role);
             }
 
             return roles;
         }
 
-        public List<Permission> GetPermissions(Guid roleId)
-        {
-            var rolePermissions = GetRolePermission(rp => rp.RoleId == roleId);
 
+
+        public async Task<List<Permission>> GetPermissionsAsync(Guid roleId)
+        {
+            var rolePermissions = await GetRolePermissions(rp => rp.RoleId == roleId);
             var permissions = new List<Permission>();
 
             foreach (var rp in rolePermissions)
             {
-                if (PermissionCache.AnyObject(p => p.Id == rp.PermissionId))
-                {
-                    permissions.Add(PermissionCache.GetObjectById(rp.PermissionId));
-                }
-                else
-                {
-                    var permission = PermissionService.SelectThenCache(p => p.Id == rp.PermissionId).First();
-
-                    if (permission != null)
-                        permissions.Add(permission);
-                }
+                var permission = await _permissionService.GetOrSelectThenCacheAsync(rp.PermissionId);
+                if (permission != null)
+                    permissions.Add(permission);
             }
 
             return permissions;
         }
+
     }
 }

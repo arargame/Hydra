@@ -4,91 +4,64 @@ using Hydra.Services.Cache;
 using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
+    [RegisterAsService(typeof(IService<SystemUserPermission>))]
     public class SystemUserPermissionService : Service<SystemUserPermission>
     {
-        private readonly SystemUserService SystemUserService;
+        private readonly SystemUserService _systemUserService;
+        private readonly PermissionService _permissionService;
 
-        private readonly PermissionService PermissionService;
-
-        private readonly ICacheService<Guid, SystemUserPermission> _cache;
-
-        public SystemUserPermissionService(ServiceInjector injector, ICacheService<Guid, SystemUserPermission> cache) : base(injector)
+        public SystemUserPermissionService(ServiceInjector injector,
+                                           IQueryableCacheService<Guid, SystemUserPermission> cacheService,
+                                           SystemUserService systemUserService,
+                                           PermissionService permissionService) : base(injector)
         {
-            SystemUserService = new SystemUserService(injector);
+            _systemUserService = systemUserService;
+            _permissionService = permissionService;
 
-            PermissionService = new PermissionService(injector);
-
-            HasCache = true;
-
-            _cache = cache;
+            SetCacheService(cacheService);
         }
 
-        public List<SystemUserPermission> GetSystemUserPermission(Expression<Func<SystemUserPermission, bool>> predicate)
+        public async Task<List<SystemUserPermission>> GetSystemUserPermissionsAsync(Expression<Func<SystemUserPermission, bool>> predicate)
         {
-            var systemUserPermissions = new List<SystemUserPermission>();
-
-            if (SystemUserPermissionCache.AnyObject(predicate.Compile()))
+            if (CacheService is IQueryableCacheService<Guid, SystemUserPermission> queryableCache &&
+                queryableCache.TryGetAll(predicate.Compile(), out var cachedList))
             {
-                systemUserPermissions = SystemUserPermissionCache.GetObjectList(predicate.Compile());
-            }
-            else
-            {
-                systemUserPermissions = SelectThenCache(filter: predicate);
+                return cachedList;
             }
 
-            return systemUserPermissions;
+            return await SelectThenCache(predicate);
         }
 
-        public List<SystemUser> GetUsers(Guid permissionId)
+        public async Task<List<SystemUser>> GetUsersAsync(Guid permissionId)
         {
-            var systemUserPermissions = GetSystemUserPermission(up => up.PermissionId == permissionId);
-
+            var systemUserPermissions = await GetSystemUserPermissionsAsync(up => up.PermissionId == permissionId);
             var users = new List<SystemUser>();
 
             foreach (var up in systemUserPermissions)
             {
-                if (SystemUserCache.AnyObject(u => u.Id == up.UserId))
-                {
-                    users.Add(SystemUserCache.GetObjectById(up.UserId));
-                }
-                else
-                {
-                    var user = SystemUserService.SelectThenCache(filter: u => u.Id == up.UserId).First();
-
-                    if (user != null)
-                        users.Add(user);
-                }
+                var user = await _systemUserService.GetOrSelectThenCacheAsync(up.SystemUserId);
+                if (user != null)
+                    users.Add(user);
             }
 
             return users;
         }
 
-        public List<Permission> GetPermissions(Guid userId)
+        public async Task<List<Permission>> GetPermissionsAsync(Guid userId)
         {
-            var systemUserPermissions = GetSystemUserPermission(up => up.UserId == userId);
-
+            var systemUserPermissions = await GetSystemUserPermissionsAsync(up => up.SystemUserId == userId);
             var permissions = new List<Permission>();
 
             foreach (var up in systemUserPermissions)
             {
-                if (PermissionCache.AnyObject(p => p.Id == up.PermissionId))
-                {
-                    permissions.Add(PermissionCache.GetObjectById(up.PermissionId));
-                }
-                else
-                {
-                    var permission = PermissionService.SelectThenCache(filter: p => p.Id == up.PermissionId).First();
-
-                    if (permission != null)
-                        permissions.Add(permission);
-                }
+                var permission = await _permissionService.GetOrSelectThenCacheAsync(up.PermissionId);
+                if (permission != null)
+                    permissions.Add(permission);
             }
 
             return permissions;

@@ -1,20 +1,9 @@
 ﻿using Hydra.Core;
 using Hydra.DAL.Core;
-using Hydra.DataModels;
-using Hydra.DataModels.Filter;
 using Hydra.DI;
-using Hydra.DTOs;
-using Hydra.DTOs.ViewConfigurations;
-using Hydra.DTOs.ViewDTOs;
-using Hydra.Http;
 using Hydra.IdentityAndAccess;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Hydra.Services.Cache;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.Services.Core
 {
@@ -22,15 +11,25 @@ namespace Hydra.Services.Core
     {
         private readonly IUnitOfWork _unitOfWork;
 
+        protected IRepository<T> Repository { get; set; } = null!;
+
+        public ICacheService<Guid, T>? CacheService { get; set; }
+
+        public bool HasCache => CacheService != null;
+
         private readonly SessionInformation _sessionInformation;
+
+        public SessionInformation SessionInformation { get { return _sessionInformation; } }
 
         private readonly IRepositoryFactoryService _repositoryFactory;
 
+        private Lazy<ILogService>? _lazyLogService;
+
+        protected ILogService? LogService => _lazyLogService?.Value;
+
         private string TypeName => typeof(T).Name;
 
-        public bool HasCache { get; set; }
-
-        protected IRepository<T> Repository { get; set; } = null!;
+        public bool EnableForCommitting { get; set; } = true;
 
         public Service(ServiceInjector injector)
         {
@@ -41,11 +40,106 @@ namespace Hydra.Services.Core
             _sessionInformation = injector.SessionInformation;
 
             SetRepository();
+
+            _lazyLogService = injector.ResolveLazy<ILogService>()!;
         }
 
-        public bool Commit()
+
+        public async Task<bool> CommitAsync()
         {
-            return false;
+            try
+            {
+                if (!EnableForCommitting)
+                    return true;
+
+                return await _unitOfWork.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await LogErrorAsync(ex.Message, processType: LogProcessType.Update);
+
+                return false;
+            }
+        }
+
+        public IService<T> DisableToCommit()
+        {
+            EnableForCommitting = false;
+
+            return this;
+        }
+
+        public IService<T> EnableToCommit()
+        {
+            EnableForCommitting = true;
+
+            return this;
+        }
+
+        public async Task<T?> GetOrSelectThenCacheAsync(Guid id)
+        {
+            if (CacheService?.TryGet(id, out var cached) == true)
+                return cached;
+
+            return (await SelectThenCache(e => e.Id == id)).FirstOrDefault();
+        }
+
+        //public ServiceInjector GetInjector()
+        //{
+        //    return new ServiceInjector(UnitOfWork, SessionInformation, Configuration);
+        //}
+
+        protected async Task LogErrorAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        {
+            if (LogService == null) return;
+
+            var log = new Log(
+                description: description,
+                logType: LogType.Error,
+                entityId: entityId?.ToString(),
+                processType: processType,
+                sessionInformation: SessionInformation,
+                frameIndex: 2
+            );
+
+            await LogService.SaveAsync(log, LogRecordType.Database);
+        }
+
+        protected async Task LogInfoAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        {
+            if (LogService == null) return;
+
+            var log = new Log(
+                description: description,
+                logType: LogType.Info,
+                entityId: entityId?.ToString(),
+                processType: processType,
+                sessionInformation: SessionInformation,
+                frameIndex: 2
+            );
+
+            await LogService.SaveAsync(log, LogRecordType.Database);
+        }
+
+        protected async Task LogWarningAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        {
+            if (LogService == null) return;
+
+            var log = new Log(
+                description: description,
+                logType: LogType.Warning,
+                entityId: entityId?.ToString(),
+                processType: processType,
+                sessionInformation: SessionInformation,
+                frameIndex: 2
+            );
+
+            await LogService.SaveAsync(log, LogRecordType.Database);
+        }
+
+        public void SetCacheService(ICacheService<Guid, T> service)
+        {
+            CacheService = service;
         }
 
         public virtual void SetRepository(IRepository<T>? repository = null)

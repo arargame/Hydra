@@ -1,5 +1,4 @@
 ﻿using Hydra.Core;
-using Hydra.DataModels.Filter;
 using Hydra.DI;
 using Hydra.Http;
 using Hydra.IdentityAndAccess;
@@ -7,90 +6,83 @@ using Hydra.Services;
 using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.DAL.Core
 {
     public interface IRepository<T> where T : IBaseObject<T>
     {
-        DbContext? Context { get; set; }
+        //DbContext? Context { get; set; }
+
+        string? GetContextConnectionString
+        {
+            get;
+        }
+
         List<Log> Logs { get; set; }
 
         List<ResponseObjectMessage> Messages { get; set; }
 
         IQueryable<T> All(params string[] includes);
 
-        bool Any(Expression<Func<T, bool>>? filter = null);
+        Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null);
 
-        bool Create(T entity);
+        Task<bool> CreateAsync(T entity);
 
         bool Contains(Expression<Func<T, bool>> predicate);
 
         List<Log> ConsumeLogs();
 
-        int Count(Expression<Func<T, bool>>? predicate = null);
+        Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 
-        ResponseObjectForUpdate Update(T entity);
+        Task<bool> DeleteAsync(T entity);
 
-        bool Delete(T entity);
+        Task<bool> DeleteRangeAsync(List<T> entities);
 
-        bool DeleteRange(List<T> entities);
+        Task<bool> DeleteRangeAsync(List<Guid> idList);
 
-        //IQueryable<T> FilterWithDynamicLinq(IFilter? filter = null);
+        IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
 
-        //IQueryable<T> FilterWithDynamicLinq(string filter, object[] parameters);
+        Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
 
-        //IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
+        Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes);
 
-        T Get(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
-
-        T GetById(Guid id, bool withAllIncludes = false, params string[] includes);
+        T GetEntityFromContext(T entity);
 
         string[] GetAllIncludes();
 
-        IRepository<T> SetContext(DbContext context);
+        Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes);
 
-        T GetUnique(T entity, bool withAllIncludes = false, params string[] includes);
+        Task<bool> IsItNewAsync(T entity);
 
-        bool IsItNew(T entity);
+        void ShowChangeTrackerEntriesStates();
         Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true);
 
 
-        void ShowChangeTrackerEntriesStates();
-
-        //RepositoryInjector GetInjector();
-
-        string GetContextConnectionString
-        {
-            get;
-        }
-
-        T GetEntityFromContext(T entity);
+        ResponseObjectForUpdate Update(T entity);
     }
 
     public class Repository<T> : IRepository<T> where T : BaseObject<T>
     {
-        private readonly LogService LogService;
+        private readonly ILogService LogService;
 
-        public DbContext? Context { get; set; } = null;
+        private readonly DbContext? _context;
 
-        public string GetContextConnectionString
+        //public DbContext? Context { get { return _context; } }
+
+        public string? GetContextConnectionString
         {
             get
             {
-                return Context.Database.GetDbConnection().ConnectionString;
+                return _context.Database.GetDbConnection().ConnectionString;
             }
         }
 
         public SessionInformation SessionInformation;
 
-        protected DbSet<T> DbSet;
-        public bool ProxyCreationEnabled { get; set; }
+        private readonly DbSet<T> _dbSet;
+
         public List<Log> Logs { get; set; } = new List<Log>();
 
         public List<ResponseObjectMessage> Messages { get; set; } = new List<ResponseObjectMessage>();
@@ -99,23 +91,56 @@ namespace Hydra.DAL.Core
 
         public Repository(RepositoryInjector injector)
         {
-            SetContext(injector.Context);
+            _context = injector.Context;
 
-            //SetSessionInformation(injector.SessionInformation);
+            _dbSet = injector.Context.Set<T>();
 
             LogService = injector.LogService;
         }
 
-        //public Repository(DbContext context, SessionInformation sessionInformation = null) : this(new RepositoryInjector(context, sessionInformation))
-        //{
+        public IQueryable<T> All(params string[] includes)
+        {
+            IQueryable<T> query = _dbSet;
 
-        //}
+            if (includes != null && includes.Any())
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+
+            return query;
+        }
+
+        public virtual async Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null)
+        {
+            return filter == null
+                ? await _dbSet.AnyAsync()
+                : await _dbSet.AnyAsync(filter);
+        }
+
+        public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            return await query.CountAsync();
+        }
+
+      
+
+        public IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (filter != null)
+                query = query.Where(filter);
+
+            return query;
+        }
 
 
-        //public RepositoryInjector GetInjector()
-        //{
-        //    return new RepositoryInjector(Context, SessionInformation);
-        //}
 
         public IQueryable<T> FromSqlRaw(string sql, bool asNoTracking = true, params object[] parameters)
         {
@@ -123,7 +148,7 @@ namespace Hydra.DAL.Core
 
             try
             {
-                list = DbSet.FromSqlRaw(sql, parameters);
+                list = _dbSet.FromSqlRaw(sql, parameters);
             }
             catch (Exception ex)
             {
@@ -149,65 +174,102 @@ namespace Hydra.DAL.Core
             return asNoTracking ? list.AsNoTracking() : list;
         }
 
-        public IRepository<T> SetContext(DbContext context)
+        public virtual async Task<bool> CreateAsync(T entity)
         {
             try
             {
-                if (context == null)
-                    throw new ArgumentNullException("context");
+                var existingEntity = await GetExistingEntityAsync(entity, throwException: false);
 
-                Context = context;
+                if (existingEntity != null)
+                {
+                    Logs.Add(new Log("Record already exists", LogType.Warning, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                    return false;
+                }
 
-                DbSet = context.Set<T>();
+                entity.Id = entity.Id == Guid.Empty ? Guid.NewGuid() : entity.Id;
+                entity.AddedDate = DateTime.Now;
+                entity.ModifiedDate = DateTime.Now;
+
+                ChangeEntityState(entity, EntityState.Added);
+
+                if (!(entity is Log))
+                {
+                    Logs.Add(new Log($"{TypeName} created", LogType.Info, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
-                //Dosyaya yazan Log mekanizması yazılabilir
+                Logs.Add(new Log(ex.Message, LogType.Error, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                return false;
+            }
+        }
+
+        public virtual Task<bool> DeleteAsync(T entity)
+        {
+            if (_context?.Entry(entity).State == EntityState.Detached)
+            {
+                _dbSet.Attach(entity);
             }
 
-            return this;
+            ChangeEntityState(entity, EntityState.Deleted);
+
+            return Task.FromResult(true);
         }
 
-        public Repository<T> SetSessionInformation(SessionInformation sessionInformation)
+        public virtual async Task<bool> DeleteRangeAsync(List<Guid> idList)
         {
-            SessionInformation = sessionInformation;
+            var entities = _dbSet.Where(e => idList.Contains(e.Id)).ToList();
 
-            return this;
+            return await DeleteRangeAsync(entities);
         }
 
-        public T Get(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes)
+        public virtual Task<bool> DeleteRangeAsync(List<T> entities)
+        {
+            if (entities == null || !entities.Any())
+                return Task.FromResult(false);
+
+            foreach (var entity in entities)
+            {
+                if (_context?.Entry(entity).State == EntityState.Detached)
+                {
+                    _dbSet.Attach(entity);
+                }
+
+                ChangeEntityState(entity, EntityState.Deleted);
+            }
+
+            return Task.FromResult(true);
+        }
+
+        public virtual async Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes)
         {
             try
             {
-                IQueryable<T> query = DbSet;
+                IQueryable<T> query = _dbSet;
 
                 includes = withAllIncludes ? GetAllIncludes() : includes;
 
                 if (includes != null && includes.Any())
+                {
                     foreach (var include in includes)
-                    {
                         query = query.Include(include);
-                    }
+                }
 
-                return query.SingleOrDefault(filter);
+                return await query.SingleOrDefaultAsync(filter);
             }
-            catch (Exception ex)
+            catch
             {
-                //LogManager.Save(new Log(description: ex.Message.ToString(),
-                //            logType: LogType.Error,
-                //            entityId: null,
-                //            vesselId: null,
-                //            processType: LogProcessType.None,
-                //            sessionInformation: SessionInformation));
-
                 throw;
             }
         }
 
-        public T GetById(Guid id, bool withAllIncludes = false, params string[] includes)
+        public virtual async Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes)
         {
-            return Get(filter: e => e.Id == id, withAllIncludes: withAllIncludes, includes: includes);
+            return await GetAsync(e => e.Id == id, withAllIncludes, includes);
         }
+
 
         //public List<GroupObject> GroupBy(Expression<Func<T, object>> keySelector)
         //{
@@ -216,109 +278,51 @@ namespace Hydra.DAL.Core
         //    return list;
         //}
 
-        public IQueryable<T> All(params string[] includes)
+        public async Task<T?> GetExistingEntityAsync(T entity, bool throwException = true, bool withAllIncludes = false)
         {
-            IQueryable<T> query = DbSet;
+            var entityFromContext = GetEntityFromContext(entity);
+            if (entityFromContext != null)
+                return entityFromContext;
 
-            if (includes != null && includes.Any())
-                foreach (var include in includes)
-                {
-                    query = query.Include(include);
-                }
+            var uniqueEntity = await GetUniqueAsync(entity, withAllIncludes);
+            if (uniqueEntity == null && throwException)
+                throw new Exception("There is no such entity in either Db or Context");
 
-            return query;
-        }
-
-        public virtual bool Any(Expression<Func<T, bool>> filter = null)
-        {
-            var isExisted = false;
-
-            try
-            {
-                IQueryable<T> query = DbSet;
-
-                isExisted = query.Any(filter);
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
-            }
-
-            return isExisted;
-        }
-
-        public virtual bool Create(T entity)
-        {
-            bool isInserted = false;
-
-            try
-            {
-                var existingEntity = GetExistingEntity(entity, throwException: false);
-
-                if (existingEntity != null)
-                {
-                    var state2 = GetAsEntityEntry(existingEntity);
-
-                    var alreadyExitsMessage = "This record already exists in the database";
-
-                    Messages.Add(new ResponseObjectMessage(title: "Availability", text: alreadyExitsMessage, showWhenSuccess: false));
-
-                    throw new Exception(alreadyExitsMessage);
-                }
-
-                entity.Id = entity.Id == Guid.Empty ? Guid.NewGuid() : entity.Id;
-
-                entity.AddedDate = DateTime.Now;
-
-                entity.ModifiedDate = DateTime.Now;
-
-                var state = GetAsEntityEntry(entity);
-
-                ShowChangeTrackerEntriesStates();
-
-                ChangeEntityState(entity, EntityState.Added);
-
-                isInserted = true;
-
-                //if (entity.GetType().Name != nameof(Log) && entity.GetType().BaseType.Name != nameof(Log))
-                //    Logs.Add(new Log(category: TypeName,
-                //            name: null,
-                //            description: null,
-                //            logType: LogType.Info,
-                //            entityId: entity.Id.ToString(),
-                //            vesselId: (entity as ISyncObject)?.GetVesselId,
-                //            processType: LogProcessType.Create,
-                //            sessionInformation: SessionInformation));
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(description: ex.Message.ToString(),
-                //    logType: LogType.Error,
-                //    entityId: entity.Id.ToString(),
-                //    vesselId: (entity as ISyncObject)?.GetVesselId,
-                //    processType: LogProcessType.Create,
-                //    sessionInformation: SessionInformation));
-            }
-
-            return isInserted;
+            return uniqueEntity;
         }
 
 
-        public IQueryable<T> FilterWithLinq(Expression<Func<T, bool>> filter = null)
-        {
-            IQueryable<T> query = DbSet;
 
+        public virtual async Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes)
+        {
+            return await GetAsync(UniqueFilter(entity), withAllIncludes, includes);
+        }
+
+        public virtual async Task<bool> IsItNewAsync(T entity)
+        {
             try
             {
-                query = filter != null ? query.Where(filter) : query;
+                var existing = await GetUniqueAsync(entity);
+                return existing == null;
             }
             catch (Exception ex)
             {
-
-                throw;
+                throw new Exception($"[Repository] IsItNew failed for {typeof(T).Name}: {ex.Message}", ex);
             }
+        }
 
-            return query;
+
+
+
+
+
+
+
+        public Repository<T> SetSessionInformation(SessionInformation sessionInformation)
+        {
+            SessionInformation = sessionInformation;
+
+            return this;
         }
 
         public virtual ResponseObjectForUpdate Update(T entity)
@@ -422,138 +426,15 @@ namespace Hydra.DAL.Core
                     .SetSuccess(isUpdated);
         }
 
-        public virtual bool DeleteRange(List<T> entities)
-        {
-            try
-            {
-                foreach (var entity in entities)
-                {
-                    Delete(entity);
-                }
-
-                //foreach (var entity in entities)
-                //{
-                //    if (Context.Entry(entity).State == EntityState.Detached)
-                //    {
-                //        DbSet.Attach(entity);
-                //    }
-
-                //    ChangeEntityState(entity, EntityState.Deleted);
-
-                //    var message = new
-                //    {
-                //        Count = GetContextChangeTrackerEntries().Count(),
-                //        Description = string.Join(",\n", GetContextChangeTrackerEntries().Select(e => string.Format("{0} : {1}", e.Entity.GetType().Name, e.State)))
-                //    };
-
-                //    Logs.Add(new Log(category: typeof(T).Name,
-                //        name: null,
-                //        string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description),
-                //        logType: LogType.Info,
-                //        entityId: entity.Id.ToString(),
-                //        vesselId: (entity as ISyncObject)?.GetVesselId,
-                //        userId: "userId",
-                //        processType: LogProcessType.Delete,
-                //        ip: "ip"));
-                //}
-
-                //Tek tek siliyor
-                //Context.RemoveRange(entities);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(description: ex.Message.ToString(),
-                //                 logType: LogType.Error,
-                //                 entityId: null,
-                //                 vesselId: null,
-                //                 processType: LogProcessType.Delete,
-                //                 sessionInformation: SessionInformation));
-            }
-
-
-            return false;
-        }
-
-        public virtual bool Delete(T entity)
-        {
-            bool isDeleted = false;
-
-            try
-            {
-                if (Context.Entry(entity).State == EntityState.Detached) //Concurrency için
-                {
-                    DbSet.Attach(entity);
-                }
-
-                //DeleteDependencies(entity);
-
-                ChangeEntityState(entity, EntityState.Deleted);
-
-                isDeleted = true;
-
-                if (isDeleted)
-                {
-                    var message = new
-                    {
-                        Count = GetContextChangeTrackerEntries().Count(),
-                        Description = string.Join(",\n", GetContextChangeTrackerEntries().Select(e => string.Format("{0} : {1}", e.Entity.GetType().Name, e.State)))
-                    };
-
-                    ////Log nesnesi silindiğinde test edilecek
-                    //if (typeof(T).Name != "Log")
-                    //    Logs.Add(new Log(category: typeof(T).Name,
-                    //                                name: null,
-                    //                                description: string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description),
-                    //                                logType: LogType.Info,
-                    //                                entityId: entity.Id.ToString(),
-                    //                                vesselId: (entity as ISyncObject)?.GetVesselId,
-                    //                                processType: LogProcessType.Delete,
-                    //                                sessionInformation: SessionInformation));
-
-                    Console.WriteLine(string.Format("\nIn deleting process {0} entities was affected.Message : {1} \n", message.Count, message.Description));
-
-                    ShowChangeTrackerEntriesStates();
-                }
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(description: ex.Message.ToString(),
-                //                                 logType: LogType.Error,
-                //                                 entityId: entity.Id.ToString(),
-                //                                 vesselId: (entity as ISyncObject)?.GetVesselId,
-                //                                 processType: LogProcessType.Delete,
-                //                                 sessionInformation: SessionInformation));
-            }
-
-            return isDeleted;
-        }
-
         public bool Contains(Expression<Func<T, bool>> predicate)
         {
             throw new NotImplementedException();
         }
 
-        public int Count(Expression<Func<T, bool>> predicate = null)
-        {
-            try
-            {
-                IQueryable<T> query = DbSet;
-
-                return query.Count(predicate);
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(string.Format("Class : {0}, Error : {1}", typeof(T).FullName, ex.ToString())));
-            }
-
-            return 0;
-        }
 
         public EntityEntry GetAsEntityEntry(T entity)
         {
-            return Context.Entry(entity);
+            return _context.Entry(entity);
         }
 
         public void ChangeEntityState(T entity, EntityState entityState)
@@ -563,7 +444,7 @@ namespace Hydra.DAL.Core
 
         public IEnumerable<EntityEntry> GetContextChangeTrackerEntries()
         {
-            return Context.ChangeTracker.Entries();
+            return _context.ChangeTracker.Entries();
         }
 
         public void ShowChangeTrackerEntriesStates()
@@ -577,6 +458,7 @@ namespace Hydra.DAL.Core
                 Console.WriteLine("{0} : {1} ({2})", entityTypeName, e.State, ((IBaseObject<T>)e.Entity).Id);
             }
         }
+
 
         public virtual string[] GetIncludes()
         {
@@ -648,20 +530,6 @@ namespace Hydra.DAL.Core
             }
         }
 
-        public bool HasAnyModifiedProperty(T entity)
-        {
-            return GetModifiedProperties(entity).Any();
-        }
-        public T GetExistingEntity(T entity, bool throwException = true, bool withAllIncludes = false)
-        {
-            T t = GetEntityFromContext(entity) ?? GetUnique(entity, withAllIncludes);
-            //T t = GetUnique(entity, withAllIncludes);
-
-            if (t == null && throwException)
-                throw new Exception("There is no such an entity in either Db or Context");
-
-            return t;
-        }
 
 
         public T GetEntityFromContext(T entity)
@@ -675,29 +543,18 @@ namespace Hydra.DAL.Core
         }
 
 
-        public virtual T GetUnique(T entity, bool withAllIncludes = false, params string[] includes)
-        {
-            return Get(UniqueFilter(entity), withAllIncludes: withAllIncludes, includes: includes);
-        }
-        public virtual Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true)
-        {
-            return t => t.Id == entity.Id;
-        }
-        public virtual bool IsItNew(T entity)
-        {
-            var isItNew = false;
+        //public virtual Task<T?> GetUnique(T entity, bool withAllIncludes = false, params string[] includes)
+        //{
+        //    return await GetAsync(UniqueFilter(entity), withAllIncludes: withAllIncludes, includes: includes);
+        //}
 
-            try
-            {
-                isItNew = GetUnique(entity) == null;
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            return isItNew;
+        public bool HasAnyModifiedProperty(T entity)
+        {
+            return GetModifiedProperties(entity).Any();
         }
+
+
+
 
 
         public static IRepository<T>? GetOwnRepository(RepositoryInjector injector) 
@@ -734,6 +591,11 @@ namespace Hydra.DAL.Core
             Logs.Clear();
 
             return logList;
+        }
+
+        public virtual Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true)
+        {
+            return t => t.Id == entity.Id;
         }
     }
 }

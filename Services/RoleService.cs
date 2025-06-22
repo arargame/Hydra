@@ -1,12 +1,9 @@
-﻿using Hydra.DAL.Core;
-using Hydra.DI;
+﻿using Hydra.DI;
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Cache;
 using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hydra.Services
@@ -14,30 +11,29 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<Role>))]
     public class RoleService : Service<Role>
     {
-        private readonly ICacheService<Guid, Role> _cache;
-        public RoleService(ServiceInjector injector, ICacheService<Guid, Role> cache) : base(injector)
-        {
-            HasCache = true;
+        private readonly RoleSystemUserService _roleSystemUserService;
+        private readonly RolePermissionService _rolePermissionService;
 
-            _cache = cache;
+        public RoleService(
+            ServiceInjector injector,
+            IQueryableCacheService<Guid, Role> cache,
+            RoleSystemUserService roleSystemUserService,
+            RolePermissionService rolePermissionService) : base(injector)
+        {
+            SetCacheService(cache);
+            _roleSystemUserService = roleSystemUserService;
+            _rolePermissionService = rolePermissionService;
         }
 
-        public List<SystemUser> GetUsers(Guid id)
+        public async Task<List<SystemUser>> GetUsersAsync(Guid roleId)
         {
-            var userService = new SystemUserService(new ServiceInjector(UnitOfWork));
-
-            var list = userService.SelectWithLinq(j => j.Id == id);
-
-            return list;
+            return await _roleSystemUserService.GetUsersAsync(roleId);
         }
 
-        public List<Permission> GetPermissions(Guid id)
+        public async Task<List<Permission>> GetPermissionsAsync(Guid roleId)
         {
-            var permissionService = new PermissionService(new ServiceInjector(UnitOfWork));
-
-            var list = permissionService.SelectWithLinq(j => j.Id == id);
-
-            return list;
+            return await _rolePermissionService.GetPermissionsAsync(roleId);
         }
     }
 }
+

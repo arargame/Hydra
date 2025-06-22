@@ -95,6 +95,44 @@ namespace Hydra.CacheManagement
             }
         }
 
+        public IEnumerable<TValue> GetAll()
+        {
+            lock (lockObject)
+            {
+                return lruList.Select(cacheItem => cacheItem.Value).ToList();
+            }
+        }
+
+
+        public IEnumerable<TValue> GetAll(Func<TValue, bool> predicate)
+        {
+            lock (lockObject)
+            {
+                return lruList
+                    .Select(cacheItem => cacheItem.Value)
+                    .Where(predicate)
+                    .ToList();
+            }
+        }
+
+        public bool TryGetAll(Func<TValue, bool> predicate, out List<TValue> values)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            lock (lockObject)
+            {
+                values = lruList
+                    .Select(node => node.Value.Value)
+                    .Where(predicate)
+                    .ToList();
+            }
+
+            return values.Any();
+        }
+
+
+
         public int Count
         {
             get

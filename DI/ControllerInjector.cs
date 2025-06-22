@@ -1,8 +1,8 @@
 ﻿using Hydra.DI.HttpContextDI;
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.IdentityAndAccess;
-using Hydra.Services;
 using Hydra.Services.Core;
+using Hydra.Services.Log;
 using Microsoft.AspNetCore.Http;
 
 namespace Hydra.DI

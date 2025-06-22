@@ -19,9 +19,9 @@ namespace Hydra.DTOs
     public class TableDTO
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        public string Alias { get; set; }
+        public string? Alias { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
 
@@ -935,7 +935,7 @@ namespace Hydra.DTOs
             }
         }
 
-        public static TableDTO FromTableToDTO(Table table)
+        public static TableDTO FromTableToDTO(ITable table)
         {
             var tableDTO = new TableDTO()
             {
@@ -952,9 +952,9 @@ namespace Hydra.DTOs
                 Rows = table.Rows.Select(r => RowDTO.ConvertToRowDTO(r)).ToList(),
                 MetaColumns = table.MetaColumns.Select(mc => MetaColumnDTO.ConvertToColumnDTO(mc)).ToList(),
                 JoinTables = table.JoinTables.Select(jt => JoinTableDTO.ConvertToJoinTableDTO(jt)).ToList(),
-    //            HasManyToManyRelationship = table.HasManyToManyRelationship,
+                HasManyToManyRelationship = table.HasManyToManyRelationship,
                 ViewType = table.ViewType,
-  //              RelationType = table.RelationType
+              //  RelationType = table.RelationType
             };
 
             return tableDTO;

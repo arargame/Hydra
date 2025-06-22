@@ -1,48 +1,43 @@
 ﻿using Hydra.Core;
 using Hydra.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.Services.Core
 {
     //COMMAND
     public partial class Service<T> : IService<T> where T : BaseObject<T>
     {
-        public virtual bool Create(T entity)
+        public virtual async Task<bool> CreateAsync(T entity)
         {
-            var isCommitted = Repository.Create(entity) && Commit();
-
             try
             {
-                if (isCommitted)
+                var result = await Repository.CreateAsync(entity);
+
+                if (result)
                 {
-                    var log = Repository.ConsumeLogs().Where(l => l.ProcessType == LogProcessType.Create).SingleOrDefault();
-
-                    //LogManager.Save(log);
-
-                    if (log == null)
-                        return isCommitted;
-
-                    var logRepository = new LogRepository(Repository.GetInjector());
-
-                    logRepository.Create(log);
-
-                    Commit();
-
-                    if (HasCache)
-                        Cache<T>.AddObject(entity);
+                    if(EnableForCommitting)
+                        await Repository.CommitAsync();
+                    
+                    if(HasCache)
+                        CacheService?.Add(entity.Id, entity);
                 }
+
+                var logs = Repository.ConsumeLogs();
+
+                foreach (var log in logs)
+                {
+                    await LogService.SaveAsync(log, LogRecordType.Database); // Fire-and-forget değil, direkt await
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(ex.Message, entityId: entity.UniqueProperty));
-            }
+                var errorLog = new Log(ex.Message, LogType.Error, entity.Id.ToString(), LogProcessType.Create, SessionInformation);
+                await LogService.Create(errorLog, LogRecordType.All);
 
-            return isCommitted;
+                return false;
+            }
         }
 
         public async Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>> expression = null)
@@ -71,110 +66,85 @@ namespace Hydra.Services.Core
             return await Task.FromResult(isDone);
         }
 
-        public bool Delete(T entity)
+        public async Task<bool> DeleteAsync(Expression<Func<T, bool>> filter)
         {
-            return Delete(entity.Id);
+            var entity = await Repository.GetAsync(filter);
+            if (entity == null)
+                return false;
+
+            return await DeleteAsync(entity);
         }
 
-        public virtual bool Delete(Guid id)
+        public async Task<bool> DeleteAsync(T entity)
         {
-            return Delete(i => i.Id == id);
-        }
-
-        public bool Delete(Expression<Func<T, bool>> filter)
-        {
-            var isCommitted = false;
-
-            Guid? entityId = null;
-
             try
             {
-                var existingEntity = Repository.Get(filter);
+                var success = await Repository.DeleteAsync(entity);
 
-                if (existingEntity == null)
-                    throw new NullReferenceException();
+                if (!success)
+                    throw new Exception("DeleteAsync failed.");
 
-                entityId = existingEntity?.Id;
+                var isCommitted = await _unitOfWork.CommitAsync();
 
-                if (!Repository.Delete(existingEntity))
-                    throw new Exception(string.Format("{0} Delete Exception", Repository.GetType().Name));
+                await LogInfoAsync($"Entity deleted", entity.Id, LogProcessType.Delete);
 
-                isCommitted = Commit();
+                if (isCommitted && HasCache)
+                    CacheService?.Remove(entity.Id);
 
-                if (isCommitted)
-                {
-                    var log = Repository.ConsumeLogs().Where(l => l.ProcessType == LogProcessType.Delete).FirstOrDefault();
-
-                    //LogManager.Save(log);
-
-                    var logRepository = new LogRepository(Repository.GetInjector());
-                    if (log != null)
-                        logRepository.Create(log);
-
-                    Commit();
-
-                    if (HasCache)
-                    {
-                        Cache<T>.RemoveObjectById(existingEntity.Id);
-                    }
-                }
+                return true;
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(ex.Message, entityId: entityId?.ToString()));
+                await LogErrorAsync("DeleteAsync Exception : " + ex.Message, entity.Id, LogProcessType.Delete);
+                return false;
             }
-
-            return isCommitted;
         }
 
-        public virtual bool DeleteRange(List<T> entities)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            var isCommitted = false;
+            return await DeleteAsync(e => e.Id == id);
+        }
 
-            if (!entities.Any())
-                return isCommitted;
-
+        public async Task<bool> DeleteRangeAsync(List<T> entities)
+        {
             try
             {
-                if (!Repository.DeleteRange(entities))
-                    throw new Exception(string.Format("{0} DeleteRange Exception", Repository.GetType().Name));
+                var success = await Repository.DeleteRangeAsync(entities);
 
-                isCommitted = Commit();
+                if (!success)
+                    throw new Exception("DeleteRangeAsync failed.");
 
-                if (isCommitted)
+                await _unitOfWork.CommitAsync();
+
+                foreach (var entity in entities)
                 {
-                    var logs = Repository.Logs.Where(l => l.ProcessType == LogProcessType.Delete).ToList();
-
-                    //logs.ForEach(l=>LogManager.Save(l));
-
-                    var logRepository = new LogRepository(Repository.GetInjector());
-
-                    foreach (var log in logs)
-                    {
-                        logRepository.Create(log);
-                    }
-
-                    Commit();
+                    await LogInfoAsync($"Entity deleted",entity.Id, LogProcessType.Delete);
 
                     if (HasCache)
-                    {
-                        entities.ForEach(e => Cache<T>.RemoveObjectById(e.Id));
-                    }
+                        CacheService?.Remove(entity.Id);
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
-                LogManager.Save(new Log(ex.Message));
+                await LogErrorAsync(description: "DeleteRangeAsync Exception : "+ ex.Message,processType: LogProcessType.Delete);
+                return false;
             }
-
-            return isCommitted;
         }
 
-        public bool DeleteRange(List<Guid> idList)
+        public async Task<bool> DeleteRangeAsync(List<Guid> idList)
         {
-            var entities = SelectWithLinq(e => idList.Contains(e.Id));
-
-            return DeleteRange(entities);
+            try
+            {
+                var entities = await Repository.GetListAsync(e => idList.Contains(e.Id));
+                return await DeleteRangeAsync(entities);
+            }
+            catch (Exception ex)
+            {
+                await LogErrorAsync("DeleteRangeAsync (by id list) Exception: " + ex.Message, null, LogProcessType.Delete);
+                return false;
+            }
         }
 
         public virtual ResponseObjectForUpdate Update(T entity)

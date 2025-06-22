@@ -18,36 +18,36 @@ namespace Hydra.Services
 
     public interface ILogService
     {
-        void Save(Log log, LogRecordType recordType);
+        Task SaveAsync(Log log, LogRecordType recordType);
 
         List<Log> GetRecentLogs();
     }
 
     public class LogService : ILogService
     {
-        private readonly FileService fileService;
-        private readonly DatabaseService databaseService;
-        private readonly IMemoryCache memoryCache;
-        private readonly SessionInformation sessionInformation;
+        private readonly FileService _fileService;
+        private readonly ILogDbWriterService _logDbWriterService;
+        private readonly IMemoryCache _memoryCache;
+        private readonly SessionInformation _sessionInformation;
 
         private const string CACHE_KEY = "RecentLogs";
         private readonly TimeSpan cacheExpiration = TimeSpan.FromHours(1);
 
         public LogService(
             FileService fileService,
-            DatabaseService databaseService,
+            ILogDbWriterService logDbWriterService,
             IMemoryCache memoryCache,
             SessionInformation sessionInformation)
         {
-            this.fileService = fileService;
-            this.databaseService = databaseService;
-            this.memoryCache = memoryCache;
-            this.sessionInformation = sessionInformation;
+            _fileService = fileService;
+            _logDbWriterService = logDbWriterService;
+            _memoryCache = memoryCache;
+            _sessionInformation = sessionInformation;
         }
 
-        public void Save(Log log, LogRecordType recordType)
+        public async Task SaveAsync(Log log, LogRecordType recordType)
         {
-            log.SetSessionInformation(sessionInformation);
+            log.SetSessionInformation(_sessionInformation);
 
             // 1. Her halükarda cache'e yaz (son 1 saatlik loglar)
             AddLogToCache(log);
@@ -64,7 +64,7 @@ namespace Hydra.Services
                     break;
 
                 case LogRecordType.Database:
-                 //   databaseService.Save(log); // Bu metod DatabaseService içinde geliştirilecek
+                    await _logDbWriterService.SaveAsync(log);
                     break;
 
                 default:
@@ -74,19 +74,19 @@ namespace Hydra.Services
 
         private void AddLogToCache(Log log)
         {
-            var logs = memoryCache.GetOrCreate(CACHE_KEY, entry =>
+            var logs = _memoryCache.GetOrCreate(CACHE_KEY, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
                 return new List<Log>();
             });
 
             logs?.Add(log);
-            memoryCache.Set(CACHE_KEY, logs, cacheExpiration);
+            _memoryCache.Set(CACHE_KEY, logs, cacheExpiration);
         }
 
         public List<Log> GetRecentLogs()
         {
-            _ = memoryCache.TryGetValue(CACHE_KEY, out List<Log> logs);
+            _ = _memoryCache.TryGetValue(CACHE_KEY, out List<Log> logs);
 
             return logs ??  new List<Log>();
         }
