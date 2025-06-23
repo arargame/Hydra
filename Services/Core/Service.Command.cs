@@ -1,6 +1,7 @@
 ﻿using Hydra.Core;
 using Hydra.Http;
 using System.Linq.Expressions;
+using Hydra.Services.Cache;
 
 namespace Hydra.Services.Core
 {
@@ -16,7 +17,7 @@ namespace Hydra.Services.Core
                 if (result)
                 {
                     if(EnableForCommitting)
-                        await Repository.CommitAsync();
+                        await CommitAsync();
                     
                     if(HasCache)
                         CacheService?.Add(entity.Id, entity);
@@ -26,7 +27,7 @@ namespace Hydra.Services.Core
 
                 foreach (var log in logs)
                 {
-                    await LogService.SaveAsync(log, LogRecordType.Database); // Fire-and-forget değil, direkt await
+                    await LogService.SaveAsync(log, LogRecordType.Database); 
                 }
 
                 return result;
@@ -40,21 +41,19 @@ namespace Hydra.Services.Core
             }
         }
 
-        public async Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>> expression = null)
+        public async Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>>? expression = null)
         {
             bool isDone = false;
 
-            //Task<bool> task;
-
             if ((expression != null && !Repository.Any(expression)) || ((expression == null) && IsItNew(entity)))
             {
-                isDone = Create(entity);
+                isDone = await CreateAsync(entity);
             }
             else
             {
-                entity.Id = GetUnique(entity).Id;
+                entity.Id = (await GetUniqueAsync(entity)).Id;
 
-                var updateResponse = Update(entity);
+                var updateResponse = UpdateAsync(entity);
 
                 isDone = updateResponse.IsSuccess;
             }
@@ -137,7 +136,7 @@ namespace Hydra.Services.Core
         {
             try
             {
-                var entities = await Repository.GetListAsync(e => idList.Contains(e.Id));
+                var entities = await Repository.(e => idList.Contains(e.Id));
                 return await DeleteRangeAsync(entities);
             }
             catch (Exception ex)
@@ -147,46 +146,39 @@ namespace Hydra.Services.Core
             }
         }
 
-        public virtual ResponseObjectForUpdate Update(T entity)
+        public virtual async Task<ResponseObjectForUpdate> UpdateAsync(T entity)
         {
-            var isCommitted = false;
-
-            if (!EnableForCommitting && !Any(e => e.Id == entity.Id))
+            try
             {
-                return new ResponseObjectForUpdate().SetSuccess(true);
-            }
+                var updateResponse = await Repository.UpdateAsync(entity);
 
-            var responseObjectForUpdate = Repository.Update(entity);
-
-            if (!responseObjectForUpdate.IsSuccess)
-                return responseObjectForUpdate;
-
-            isCommitted = Commit();
-
-            if (isCommitted)
-            {
-                var logs = Repository.ConsumeLogs().Where(l => l.ProcessType == LogProcessType.Update);
-
-                foreach (var log in logs)
+                if (updateResponse.IsSuccess)
                 {
-                    //LogManager.Save(log);
+                    if (EnableForCommitting)
+                        await CommitAsync();
 
-                    var logRepository = new LogRepository(Repository.GetInjector());
+                    if (HasCache)
+                        CacheService?.TryRefresh(entity.Id, entity);
 
-                    logRepository.Create(log);
+                    var logs = Repository.ConsumeLogs();
+
+                    foreach (var log in logs)
+                        await LogService.SaveAsync(log, LogRecordType.Database);
                 }
 
-                Commit();
-
-                if (HasCache)
-                {
-                    Cache<T>.Refresh(entity);
-                }
+                return updateResponse;
             }
+            catch (Exception ex)
+            {
+                var errorLog = new Log(ex.Message, LogType.Error, entity.Id.ToString(), LogProcessType.Update, SessionInformation);
+                await LogService.Create(errorLog, LogRecordType.All);
 
-            return responseObjectForUpdate
-                    .SetSuccess(isCommitted);
+                return new ResponseObjectForUpdate()
+                    .SetSuccess(false)
+                    .AddMessage("Update failed: " + ex.Message);
+            }
         }
+
 
     }
 }

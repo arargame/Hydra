@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Hydra.Core
@@ -11,16 +13,21 @@ namespace Hydra.Core
     {
         Guid Id { get; set; }
     }
+    public interface IHasAuditFields
+    {
+        DateTime AddedDate { get; set; }
 
-    public interface IBaseObject<T> : IHasId where T : IBaseObject<T>
+        DateTime? ModifiedDate { get; set; }
+
+        byte[]? RowVersion { get; set; }
+    }
+
+
+    public interface IBaseObject<T> : IHasId, IHasAuditFields where T : IBaseObject<T>
     {
         string? Name { get; set; }
 
         string? Description {  get; set; }
-
-         DateTime AddedDate { get; set; }
-
-         DateTime ModifiedDate { get; set; }
 
         //void Initialize();
 
@@ -58,14 +65,18 @@ namespace Hydra.Core
     public abstract class BaseObject<T> : IBaseObject<T> where T : BaseObject<T>
     {
         public Guid Id { get; set; }
-    
-        public string? Name { get; set; }
 
-        public string? Description { get; set; }
+        public string? Name { get; set; } = null;
+
+        public string? Description { get; set; } = null;
 
         public DateTime AddedDate { get; set; }
 
-        public DateTime ModifiedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; } = null;
+
+        [Timestamp]
+        [JsonIgnore]
+        public byte[]? RowVersion { get; set; } = null;
 
         [NotMapped]
         public bool IsPersistent = true;
