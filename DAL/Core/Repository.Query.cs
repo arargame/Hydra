@@ -58,6 +58,11 @@ namespace Hydra.DAL.Core
             return query;
         }
 
+        public async Task<List<T>> FilterWithLinqAsync(Expression<Func<T, bool>>? filter = null)
+        {
+            return await FilterWithLinq(filter).ToListAsync();
+        }
+
 
         public virtual async Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes)
         {

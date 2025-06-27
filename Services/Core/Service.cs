@@ -89,7 +89,20 @@ namespace Hydra.Services.Core
         //    return new ServiceInjector(UnitOfWork, SessionInformation, Configuration);
         //}
 
-        protected async Task LogErrorAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        protected async Task SaveRepositoryLogsAsync()
+        {
+            if (LogService == null)
+                throw new NullReferenceException(nameof(LogService));
+
+            var logs = Repository.Result.ConsumeLogs();
+
+            foreach (var log in logs)
+            {
+                await LogService.SaveAsync(log, LogRecordType.Database);
+            }
+        }
+
+        protected async Task SaveErrorLogAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
         {
             if (LogService == null) return;
 
@@ -105,7 +118,7 @@ namespace Hydra.Services.Core
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
-        protected async Task LogInfoAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        protected async Task SaveInfoLogAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
         {
             if (LogService == null) return;
 
@@ -121,7 +134,7 @@ namespace Hydra.Services.Core
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
-        protected async Task LogWarningAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        protected async Task SaveWarningLogAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
         {
             if (LogService == null) return;
 

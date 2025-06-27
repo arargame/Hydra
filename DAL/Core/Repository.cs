@@ -11,66 +11,9 @@ using System.Linq.Expressions;
 
 namespace Hydra.DAL.Core
 {
-    public interface IRepository<T> where T : IBaseObject<T>
-    {
-        //DbContext? Context { get; set; }
-
-        string? GetContextConnectionString
-        {
-            get;
-        }
-
-        List<Log> Logs { get; set; }
-
-        List<ResponseObjectMessage> Messages { get; set; }
-
-        IQueryable<T> All(params string[] includes);
-
-        Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null);
-
-        Task<bool> CreateAsync(T entity);
-
-        bool Contains(Expression<Func<T, bool>> predicate);
-
-        List<Log> ConsumeLogs();
-
-        Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
-
-        Task<bool> DeleteAsync(T entity);
-
-        Task<bool> DeleteRangeAsync(List<T> entities);
-
-        Task<bool> DeleteRangeAsync(List<Guid> idList);
-
-        IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
-
-        string[] GetAllIncludes();
-        Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
-
-        Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes);
-
-        //T? GetEntityFromContext(T entity);
-
-        Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes);
-
-        //Task<bool> IsItNewAsync(T entity);
-
-        void ShowChangeTrackerEntriesStates();
-        Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true);
-
-
-        Task<ResponseObjectForUpdate> UpdateAsync(T entity);
-
-        Task<List<ResponseObjectForUpdate>> UpdateRangeAsync(List<T> entities)
-    }
-
     public partial class Repository<T> : IRepository<T> where T : BaseObject<T>
     {
-        private readonly ILogService LogService;
-
         private readonly DbContext? _context;
-
-        //public DbContext? Context { get { return _context; } }
 
         public string? GetContextConnectionString
         {
@@ -84,9 +27,7 @@ namespace Hydra.DAL.Core
 
         private readonly DbSet<T> _dbSet;
 
-        public List<Log> Logs { get; set; } = new List<Log>();
-
-        public List<ResponseObjectMessage> Messages { get; set; } = new List<ResponseObjectMessage>();
+        public RepositoryResult Result { get; } = new RepositoryResult();
 
         private readonly string TypeName = typeof(T).Name;
 
@@ -95,8 +36,6 @@ namespace Hydra.DAL.Core
             _context = injector.Context;
 
             _dbSet = injector.Context.Set<T>();
-
-            LogService = injector.LogService;
         }
 
         public void ChangeEntityState(T entity, EntityState entityState)
@@ -136,8 +75,9 @@ namespace Hydra.DAL.Core
                 return entityFromContext;
 
             var uniqueEntity = await GetUniqueAsync(entity, withAllIncludes);
+
             if (uniqueEntity == null && throwException)
-                throw new Exception("There is no such entity in either Db or Context");
+                throw new Exception($"There is no such entity({typeof(T)}) in either Db or Context");
 
             return uniqueEntity;
         }
@@ -251,7 +191,7 @@ namespace Hydra.DAL.Core
             }
             catch (Exception ex)
             {
-                throw new Exception($"[Repository] IsItNew failed for {typeof(T).Name}: {ex.Message}", ex);
+                throw new Exception($"[Repository] IsItNew failed for {typeof(T).Name}: {ex.Message}");
             }
         }
 
@@ -315,58 +255,7 @@ namespace Hydra.DAL.Core
             return t => t.Id == entity.Id;
         }
 
-        public virtual async Task<ResponseObjectForUpdate> UpdateAsync(T entity)
-        {
-            var response = new ResponseObjectForUpdate();
-            var isUpdated = false;
 
-            try
-            {
-                var existingEntity = await GetExistingEntityAsync(entity, throwException: true, withAllIncludes: true);
-
-                entity.Id = existingEntity.Id;
-                entity.AddedDate = existingEntity.AddedDate;
-
-                var entityEntry = GetAsEntityEntry(existingEntity);
-                entityEntry.CurrentValues.SetValues(entity);
-                entity = existingEntity;
-
-                if (HasAnyModifiedProperty(entity))
-                {
-                    entity.ModifiedDate = DateTime.Now;
-
-                    var modifiedProps = GetModifiedProperties(entity).ToArray();
-                    response.ModifiedProperties = modifiedProps;
-
-                    ChangeEntityState(entity, EntityState.Modified);
-                    isUpdated = true;
-                }
-                else
-                {
-                    Messages.Add(new ResponseObjectMessage(title: "Nothing changed", text: "This record has no modified field", showWhenSuccess: false));
-                }
-            }
-            catch (Exception)
-            {
-                throw; 
-            }
-
-            return response.SetSuccess(isUpdated);
-        }
-
-
-        public virtual async Task<List<ResponseObjectForUpdate>> UpdateRangeAsync(List<T> entities)
-        {
-            var results = new List<ResponseObjectForUpdate>();
-
-            foreach (var entity in entities)
-            {
-                var result = await UpdateAsync(entity);
-                results.Add(result);
-            }
-
-            return results;
-        }
 
 
 
@@ -396,17 +285,6 @@ namespace Hydra.DAL.Core
 
             return instance as IRepository<T>;
         }
-
-        public List<Log> ConsumeLogs()
-        {
-            var logList = new List<Log>(Logs);
-
-            Logs.Clear();
-
-            return logList;
-        }
-
-
     }
 
     public class GroupObject<TKey>

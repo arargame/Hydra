@@ -20,7 +20,8 @@ namespace Hydra.DAL.Core
 
                 if (existingEntity != null)
                 {
-                    Logs.Add(new Log("Record already exists", LogType.Warning, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                    Result.AddErrorMessage("Availability", "This record already exists in the database");
+
                     return false;
                 }
 
@@ -32,7 +33,14 @@ namespace Hydra.DAL.Core
 
                 if (!(entity is Log))
                 {
-                    Logs.Add(new Log($"{TypeName} created", LogType.Info, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                    Result.SetSuccess(true)
+                            .Logs.Add(new Log(category: TypeName,
+                             name: null,
+                             description: null,
+                             logType: LogType.Info,
+                             entityId: entity.Id.ToString(),
+                             processType: LogProcessType.Create,
+                             sessionInformation: SessionInformation));
                 }
 
                 return true;
@@ -79,6 +87,59 @@ namespace Hydra.DAL.Core
             }
 
             return Task.FromResult(true);
+        }
+
+        public virtual async Task<ResponseObjectForUpdate> UpdateAsync(T entity)
+        {
+            var response = new ResponseObjectForUpdate();
+            var isUpdated = false;
+
+            try
+            {
+                var existingEntity = await GetExistingEntityAsync(entity, throwException: true, withAllIncludes: true);
+
+                entity.Id = existingEntity.Id;
+                entity.AddedDate = existingEntity.AddedDate;
+
+                var entityEntry = GetAsEntityEntry(existingEntity);
+                entityEntry.CurrentValues.SetValues(entity);
+                entity = existingEntity;
+
+                if (HasAnyModifiedProperty(entity))
+                {
+                    entity.ModifiedDate = DateTime.Now;
+
+                    var modifiedProps = GetModifiedProperties(entity).ToArray();
+                    response.ModifiedProperties = modifiedProps;
+
+                    ChangeEntityState(entity, EntityState.Modified);
+                    isUpdated = true;
+                }
+                else
+                {
+                    Messages.Add(new ResponseObjectMessage(title: "Nothing changed", text: "This record has no modified field", showWhenSuccess: false));
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            return response.SetSuccess(isUpdated);
+        }
+
+
+        public virtual async Task<List<ResponseObjectForUpdate>> UpdateRangeAsync(List<T> entities)
+        {
+            var results = new List<ResponseObjectForUpdate>();
+
+            foreach (var entity in entities)
+            {
+                var result = await UpdateAsync(entity);
+                results.Add(result);
+            }
+
+            return results;
         }
 
     }

@@ -18,9 +18,9 @@ namespace Hydra.Services
 
     public interface ILogService
     {
-        Task SaveAsync(Log log, LogRecordType recordType);
+        Task SaveAsync(ILog log, LogRecordType recordType);
 
-        List<Log> GetRecentLogs();
+        List<ILog> GetRecentLogs();
     }
 
     public class LogService : ILogService
@@ -45,7 +45,7 @@ namespace Hydra.Services
             _sessionInformation = sessionInformation;
         }
 
-        public async Task SaveAsync(Log log, LogRecordType recordType)
+        public async Task SaveAsync(ILog log, LogRecordType recordType)
         {
             log.SetSessionInformation(_sessionInformation);
 
@@ -72,23 +72,23 @@ namespace Hydra.Services
             }
         }
 
-        private void AddLogToCache(Log log)
+        private void AddLogToCache(ILog log)
         {
             var logs = _memoryCache.GetOrCreate(CACHE_KEY, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = cacheExpiration;
-                return new List<Log>();
+                return new List<ILog>();
             });
 
             logs?.Add(log);
             _memoryCache.Set(CACHE_KEY, logs, cacheExpiration);
         }
 
-        public List<Log> GetRecentLogs()
+        public List<ILog> GetRecentLogs()
         {
-            _ = _memoryCache.TryGetValue(CACHE_KEY, out List<Log> logs);
+            _ = _memoryCache.TryGetValue(CACHE_KEY, out List<ILog> logs);
 
-            return logs ??  new List<Log>();
+            return logs ??  new List<ILog>();
         }
     }
 

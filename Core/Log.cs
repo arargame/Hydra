@@ -21,10 +21,13 @@ namespace Hydra.Core
     public enum LogProcessType
     {
         Unspecified,
-        Create,    
+        Create,
+        CreateBulk,
         Read,    
-        Update,    
+        Update,
+        UpdateBulk,
         Delete,
+        DeleteBulk,
         Login,
         Logout
     }
