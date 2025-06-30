@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hydra.IdentityAndAccess
+namespace Hydra.AccessManagement
 {
     using Hydra.Core;
     using System;

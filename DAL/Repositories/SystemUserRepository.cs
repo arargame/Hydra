@@ -1,6 +1,6 @@
 ﻿using Hydra.DAL.Core;
 using Hydra.DI;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 
 namespace Hydra.DAL.Repositories
 {

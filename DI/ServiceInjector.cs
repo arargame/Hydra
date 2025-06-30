@@ -1,6 +1,6 @@
 ﻿using Hydra.DAL.Core;
 using Hydra.DTOs.ViewConfigurations;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -17,7 +17,7 @@ namespace Hydra.DI
 
         public IRepositoryFactoryService RepositoryFactory {  get; set; }
 
-        public SessionInformation SessionInformation { get; set; } 
+        //public SessionInformation SessionInformation { get; set; } 
 
         public IConfiguration Configuration { get; set; }
 
@@ -25,7 +25,7 @@ namespace Hydra.DI
 
         public ServiceInjector(IUnitOfWork unitOfWork,
                             IRepositoryFactoryService repositoryFactory,
-                            SessionInformation sessionInformation,
+                            //SessionInformation sessionInformation,
                             IConfiguration configuration,
                             IServiceProvider serviceProvider)
         {
@@ -33,7 +33,7 @@ namespace Hydra.DI
 
             RepositoryFactory = repositoryFactory; 
 
-            SessionInformation = sessionInformation;
+            //SessionInformation = sessionInformation;
 
             Configuration = configuration;
 

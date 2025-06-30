@@ -5,7 +5,7 @@ using Hydra.DI;
 using Hydra.DTOs;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Http;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 using Hydra.Services.Cache;
 using System.Linq.Expressions;
 using System.Threading.Tasks;

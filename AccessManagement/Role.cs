@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Hydra.IdentityAndAccess
+namespace Hydra.AccessManagement
 {
     public class Role : BaseObject<Role>
     {

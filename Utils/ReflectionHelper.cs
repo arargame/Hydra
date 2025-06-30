@@ -1,5 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -174,6 +175,31 @@ namespace Hydra.Utils
         {
             return GetTypeFromAssembly(sampleTypeInAssembly.Assembly, typeName, isDerivedFromThisType, logAction);
         }
+
+        public static Type? GetTypeWithAttributeImplementingInterface<TAttribute>(
+            Assembly[] assemblies,
+            Type interfaceType)
+            where TAttribute : Attribute
+                {
+                    foreach (var assembly in assemblies)
+                    {
+                        var matchingType = assembly.GetTypes()
+                            .Where(t =>
+                                t.IsClass &&
+                                !t.IsAbstract &&
+                                t.GetCustomAttribute<TAttribute>() != null &&
+                                t.GetInterfaces().Any(i =>
+                                    i.IsGenericType &&
+                                    i.GetGenericTypeDefinition() == interfaceType.GetGenericTypeDefinition()))
+                            .FirstOrDefault();
+
+                        if (matchingType != null)
+                            return matchingType;
+                    }
+
+                    return null;
+                }
+
 
         private static readonly ConcurrentDictionary<Assembly, List<Type>> _derivedTypeCache = new();
 
@@ -408,6 +434,16 @@ namespace Hydra.Utils
                                                 });
 
             return instance;
+        }
+
+        public static object? CreateInstance(IServiceProvider serviceProvider, Type targetType, params object[] constructorParams)
+        {
+            return ActivatorUtilities.CreateInstance(serviceProvider, targetType, constructorParams);
+        }
+
+        public static T? CreateInstance<T>(IServiceProvider serviceProvider, params object[] constructorParams)
+        {
+            return (T?)ActivatorUtilities.CreateInstance(serviceProvider, typeof(T), constructorParams);
         }
         public static bool IsPropertyFrom<T>(PropertyInfo propertyInfo)
         {

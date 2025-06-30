@@ -1,7 +1,7 @@
 ﻿using Hydra.Core;
 using Hydra.DAL.Core;
 using Hydra.DI;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 using Hydra.Services.Cache;
 using System.Linq.Expressions;
 
@@ -17,9 +17,9 @@ namespace Hydra.Services.Core
 
         public bool HasCache => CacheService != null;
 
-        private readonly SessionInformation _sessionInformation;
+        //private readonly SessionInformation _sessionInformation;
 
-        public SessionInformation SessionInformation { get { return _sessionInformation; } }
+        //public SessionInformation SessionInformation { get { return _sessionInformation; } }
 
         private readonly IRepositoryFactoryService _repositoryFactory;
 
@@ -37,7 +37,7 @@ namespace Hydra.Services.Core
 
             _repositoryFactory = injector.RepositoryFactory;
 
-            _sessionInformation = injector.SessionInformation;
+            //_sessionInformation = injector.SessionInformation;
 
             SetRepository();
 
@@ -56,7 +56,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync(ex.Message, processType: LogProcessType.Update);
+                await SaveErrorLogAsync(ex.Message, processType: LogProcessType.Update);
 
                 return false;
             }
@@ -84,10 +84,6 @@ namespace Hydra.Services.Core
             return (await SelectThenCache(e => e.Id == id)).FirstOrDefault();
         }
 
-        //public ServiceInjector GetInjector()
-        //{
-        //    return new ServiceInjector(UnitOfWork, SessionInformation, Configuration);
-        //}
 
         protected async Task SaveRepositoryLogsAsync()
         {
@@ -111,7 +107,6 @@ namespace Hydra.Services.Core
                 logType: LogType.Error,
                 entityId: entityId?.ToString(),
                 processType: processType,
-                sessionInformation: SessionInformation,
                 frameIndex: 2
             );
 
@@ -127,7 +122,6 @@ namespace Hydra.Services.Core
                 logType: LogType.Info,
                 entityId: entityId?.ToString(),
                 processType: processType,
-                sessionInformation: SessionInformation,
                 frameIndex: 2
             );
 
@@ -143,7 +137,6 @@ namespace Hydra.Services.Core
                 logType: LogType.Warning,
                 entityId: entityId?.ToString(),
                 processType: processType,
-                sessionInformation: SessionInformation,
                 frameIndex: 2
             );
 
@@ -155,14 +148,9 @@ namespace Hydra.Services.Core
             CacheService = service;
         }
 
-        public virtual void SetRepository(IRepository<T>? repository = null)
+        public virtual void SetRepository(IRepository<T>? repository = null, params object[] additionalParams)
         {
-            Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context, _sessionInformation);
+            Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context, additionalParams);
         }
-
-        //protected ServiceInjector GetInjector()
-        //{
-        //    return new ServiceInjector(_unitOfWork, _repositoryFactory, SessionInformation, Configuration, serviceProvider);
-        //}
     }
 }

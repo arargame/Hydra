@@ -1,7 +1,7 @@
 ﻿using Hydra.Core;
 using Hydra.DI;
 using Hydra.Http;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 using Hydra.Services;
 using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
@@ -22,8 +22,6 @@ namespace Hydra.DAL.Core
                 return _context?.Database.GetDbConnection().ConnectionString;
             }
         }
-
-        public SessionInformation SessionInformation;
 
         private readonly DbSet<T> _dbSet;
 
@@ -230,14 +228,6 @@ namespace Hydra.DAL.Core
         }
 
 
-
-        public Repository<T> SetSessionInformation(SessionInformation sessionInformation)
-        {
-            SessionInformation = sessionInformation;
-
-            return this;
-        }
-
         public void ShowChangeTrackerEntriesStates()
         {
             Console.Write("\nShowChangeTrackerEntriesStates({0}) \n", typeof(T).Name);
@@ -253,37 +243,6 @@ namespace Hydra.DAL.Core
         public virtual Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true)
         {
             return t => t.Id == entity.Id;
-        }
-
-
-
-
-
-        public static IRepository<T>? GetOwnRepository(RepositoryInjector injector) 
-        {
-            var repositoryType = ReflectionHelper.GetTypeFromAssembly(typeof(IRepository<>), string.Format("{0}Repository", typeof(T).Name)) ?? typeof(Repository<T>);
-
-            var instance = ReflectionHelper.CreateInstance(typeName:nameof(repositoryType),parameters: new object[]
-                {
-                    new object[]
-                    {
-                        injector
-                    }
-                });
-
-            //var instance = ReflectionHelper.InvokeMethod(invokerType: typeof(ReflectionHelper),
-            //    invokerObject: null,
-            //    methodName: nameof(ReflectionHelper.CreateInstance),
-            //    genericTypes: new[] { repositoryType },
-            //    parameters: new object[]
-            //    {
-            //        new object[]
-            //        {
-            //            injector
-            //        }
-            //    });
-
-            return instance as IRepository<T>;
         }
     }
 

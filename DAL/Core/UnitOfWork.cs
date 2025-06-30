@@ -1,6 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.DI;
-using Hydra.IdentityAndAccess;
+using Hydra.AccessManagement;
 using Hydra.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

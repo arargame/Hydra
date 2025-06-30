@@ -18,6 +18,13 @@ namespace Hydra.Http
         IResponseObject UseDefaultMessages();
         IResponseObject AddExtraMessage(ResponseObjectMessage message);
         IResponseObject AddExtraMessages(List<ResponseObjectMessage> messages);
+
+        IResponseObject SetActionName(string? actionName);
+        IResponseObject SetId(Guid id);
+
+        IResponseObject SetSuccess(bool success);
+
+        IResponseObject SetData(object data);
     }
 
     public class ResponseObject : IResponseObject
@@ -49,25 +56,25 @@ namespace Hydra.Http
             return this;
         }
 
-        public ResponseObject SetActionName(string? actionName)
+        public IResponseObject SetActionName(string? actionName)
         {
             ActionName = actionName;
             return this;
         }
 
-        public ResponseObject SetId(Guid id)
+        public IResponseObject SetId(Guid id)
         {
             Id = id;
             return this;
         }
 
-        public ResponseObject SetSuccess(bool success)
+        public IResponseObject SetSuccess(bool success)
         {
             Success = success;
             return this;
         }
 
-        public ResponseObject SetData(object data)
+        public IResponseObject SetData(object data)
         {
             Data = data;
             return this;

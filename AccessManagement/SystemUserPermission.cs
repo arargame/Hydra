@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Hydra.Core;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Hydra.IdentityAndAccess
+
+namespace Hydra.AccessManagement
 {
-    using Hydra.Core;
-    using System;
-    using System.ComponentModel.DataAnnotations;
-    using System.ComponentModel.DataAnnotations.Schema;
 
     public class SystemUserPermission : BaseObject<SystemUserPermission>
     {

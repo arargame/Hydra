@@ -1,11 +1,7 @@
-﻿using Hydra.Core;
+﻿using Hydra.AccessManagement;
+using Hydra.Core;
 using Hydra.IdentityAndAccess;
 using Microsoft.Extensions.Caching.Memory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
@@ -28,7 +24,8 @@ namespace Hydra.Services
         private readonly FileService _fileService;
         private readonly ILogDbWriterService _logDbWriterService;
         private readonly IMemoryCache _memoryCache;
-        private readonly SessionInformation _sessionInformation;
+        private readonly ISessionContext _sessionContext;
+        private SessionInformation? sessionInformation => _sessionContext.GetCurrent();
 
         private const string CACHE_KEY = "RecentLogs";
         private readonly TimeSpan cacheExpiration = TimeSpan.FromHours(1);
@@ -37,17 +34,17 @@ namespace Hydra.Services
             FileService fileService,
             ILogDbWriterService logDbWriterService,
             IMemoryCache memoryCache,
-            SessionInformation sessionInformation)
+            ISessionContext sessionContext)
         {
             _fileService = fileService;
             _logDbWriterService = logDbWriterService;
             _memoryCache = memoryCache;
-            _sessionInformation = sessionInformation;
+            _sessionContext = sessionContext;
         }
 
         public async Task SaveAsync(ILog log, LogRecordType recordType)
         {
-            log.SetSessionInformation(_sessionInformation);
+            log.SetSessionInformation(sessionInformation);
 
             // 1. Her halükarda cache'e yaz (son 1 saatlik loglar)
             AddLogToCache(log);
