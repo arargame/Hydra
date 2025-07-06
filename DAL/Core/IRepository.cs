@@ -26,6 +26,8 @@ namespace Hydra.DAL.Core
 
         Task<bool> CreateAsync(T entity);
 
+        Task<bool> CreateOrUpdateAsync(T entity, Expression<Func<T, bool>>? expression = null);
+
         bool Contains(Expression<Func<T, bool>> predicate);
 
         Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);

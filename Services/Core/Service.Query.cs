@@ -26,13 +26,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogService.SaveAsync(new Log(
-                    description: ex.Message,
-                    logType: LogType.Error,
-                    entityId: typeof(T).Name,
-                    processType: LogProcessType.Read,
-                    sessionInformation: SessionInformation
-                ),LogRecordType.Database);
+                await SaveErrorLogAsync(ex.Message,typeof(T).Name,LogProcessType.Read);
 
                 return false;
             }
@@ -46,7 +40,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync("Count operation failed" + ex.Message);
+                await SaveErrorLogAsync("Count operation failed : " + ex.Message);
 
                 return 0;
             }

@@ -51,12 +51,15 @@ namespace Hydra.Services.Core
 
         IQueryable<T> FilterWithLinq(Expression<Func<T, bool>>? filter = null);
 
+        string[] GetAllIncludes();
+
+
         Task<T?> GetAsync(Expression<Func<T, bool>> filter, bool withAllIncludes = false, params string[] includes);
         Task<T?> GetAsync(Expression<Func<T, bool>> filter, params string[] includes);
         Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes);
         Task<T?> GetByIdAsync(Guid id, params string[] includes);
 
-        string[] GetAllIncludes();
+        List<ResponseObjectMessage> GetRepositoryMessages();
 
         Table GetTable(string? tableName = null, string? alias = null, int? pageSize = null, int? pageNumber = null);
 

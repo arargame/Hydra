@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -34,22 +36,44 @@ namespace Hydra.DAL.Core
                 if (!(entity is Log))
                 {
                     Result.SetSuccess(true)
-                            .Logs.Add(new Log(category: TypeName,
-                             name: null,
-                             description: null,
-                             logType: LogType.Info,
-                             entityId: entity.Id.ToString(),
-                             processType: LogProcessType.Create,
-                             sessionInformation: SessionInformation));
+                            .Logs.Add(LogFactory.Info(category: TypeName,
+                                                         name: null,
+                                                         description: null,
+                                                         entityId: entity.Id.ToString(),
+                                                         processType: LogProcessType.Create
+                                                         ));
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
-                Logs.Add(new Log(ex.Message, LogType.Error, entity.Id.ToString(), LogProcessType.Create, SessionInformation));
+                Result.Logs.Add(LogFactory.Error(ex.Message, entity.Id, LogProcessType.Create));
+
                 return false;
             }
+        }
+
+        public virtual async Task<bool> CreateOrUpdateAsync(T entity, Expression<Func<T, bool>>? expression = null)
+        {
+            bool isDone = false;
+
+            if ((expression != null && !await AnyAsync(expression)) || (expression == null && await IsItNewAsync(entity)))
+            {
+                var created = await CreateAsync(entity);
+
+                isDone = created ;
+            }
+            else
+            {
+                var existing = await GetUniqueAsync(entity);
+
+                entity.Id = existing.Id;
+
+                isDone = (await UpdateAsync(entity)).Success;
+            }
+
+            return isDone;
         }
 
         public virtual Task<bool> DeleteAsync(T entity)
@@ -110,14 +134,14 @@ namespace Hydra.DAL.Core
                     entity.ModifiedDate = DateTime.Now;
 
                     var modifiedProps = GetModifiedProperties(entity).ToArray();
-                    response.ModifiedProperties = modifiedProps;
+                    response.AddModifiedProperties(modifiedProps);
 
                     ChangeEntityState(entity, EntityState.Modified);
                     isUpdated = true;
                 }
                 else
                 {
-                    Messages.Add(new ResponseObjectMessage(title: "Nothing changed", text: "This record has no modified field", showWhenSuccess: false));
+                   Result.AddErrorMessage(title: "Nothing changed", text: "This record has no modified field");
                 }
             }
             catch (Exception)

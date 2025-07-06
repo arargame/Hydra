@@ -1,7 +1,8 @@
-﻿using Hydra.Core;
+﻿using Hydra.AccessManagement;
+using Hydra.Core;
 using Hydra.DAL.Core;
 using Hydra.DI;
-using Hydra.AccessManagement;
+using Hydra.Http;
 using Hydra.Services.Cache;
 using System.Linq.Expressions;
 
@@ -30,6 +31,7 @@ namespace Hydra.Services.Core
         private string TypeName => typeof(T).Name;
 
         public bool EnableForCommitting { get; set; } = true;
+
 
         public Service(ServiceInjector injector)
         {
@@ -84,6 +86,8 @@ namespace Hydra.Services.Core
             return (await SelectThenCache(e => e.Id == id)).FirstOrDefault();
         }
 
+        public List<ResponseObjectMessage> GetRepositoryMessages() => Repository.Result.Messages;
+
 
         protected async Task SaveRepositoryLogsAsync()
         {
@@ -102,14 +106,8 @@ namespace Hydra.Services.Core
         {
             if (LogService == null) return;
 
-            var log = new Log(
-                description: description,
-                logType: LogType.Error,
-                entityId: entityId?.ToString(),
-                processType: processType,
-                frameIndex: 2
-            );
-
+            var log = LogFactory.Error(description,entityId?.ToString(),processType);
+            
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
@@ -125,6 +123,8 @@ namespace Hydra.Services.Core
                 frameIndex: 2
             );
 
+            LogFactory.Info(,);
+
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
@@ -132,12 +132,10 @@ namespace Hydra.Services.Core
         {
             if (LogService == null) return;
 
-            var log = new Log(
+            var log = LogFactory.Warning(
                 description: description,
-                logType: LogType.Warning,
                 entityId: entityId?.ToString(),
-                processType: processType,
-                frameIndex: 2
+                processType: processType
             );
 
             await LogService.SaveAsync(log, LogRecordType.Database);

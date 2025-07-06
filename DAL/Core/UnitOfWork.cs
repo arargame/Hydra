@@ -1,5 +1,4 @@
-﻿using Hydra.Core;
-using Hydra.DI;
+﻿using Hydra.DI;
 using Hydra.AccessManagement;
 using Hydra.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
+using Hydra.Core;
 
 namespace Hydra.DAL.Core
 {

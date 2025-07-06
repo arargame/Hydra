@@ -6,22 +6,21 @@ using System.Threading.Tasks;
 
 namespace Hydra.Http
 {
-    public class ResponseObjectForUpdate
+    public class ResponseObjectForUpdate : ResponseObject
     {
-        public bool IsSuccess { get; set; }
-
         public string[]? ModifiedProperties { get; set; } = null;
 
-        public ResponseObjectForUpdate()
+        public new ResponseObjectForUpdate SetSuccess(bool isSuccess)
         {
-
+            base.SetSuccess(isSuccess);
+            return this;
         }
 
-        public ResponseObjectForUpdate SetSuccess(bool isSuccess)
+        public ResponseObjectForUpdate AddModifiedProperties(string[] props)
         {
-            IsSuccess = isSuccess;
-
+            ModifiedProperties = props;
             return this;
         }
     }
+
 }

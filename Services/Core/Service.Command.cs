@@ -1,68 +1,101 @@
-﻿using Hydra.Core;
+﻿using Azure;
+using Hydra.Core;
+using Hydra.Core.Http;
 using Hydra.Http;
-using System.Linq.Expressions;
 using Hydra.Services.Cache;
+using System.Linq.Expressions;
 
 namespace Hydra.Services.Core
 {
     //COMMAND
     public partial class Service<T> : IService<T> where T : BaseObject<T>
     {
-        public virtual async Task<bool> CreateAsync(T entity)
+        public virtual async Task<IResponseObject> CreateAsync(T entity)
         {
+            var response = new ResponseObject()
+                            .SetActionName("Create")
+                            .SetId(entity.Id)
+                            .UseDefaultMessages();
+
+            bool isDone = false;
+            bool isCommitted = false;
+
             try
             {
-                var isDone = await Repository.CreateAsync(entity);
+                isDone = await Repository.CreateAsync(entity);
+
+                //if (isDone)
+                //{
+                //    if (EnableForCommitting)
+                //        isCommitted = isDone = await CommitAsync();
+
+                //    if (isCommitted && HasCache)
+                //        CacheService?.Add(entity.Id, entity);
+                //}
 
                 if (isDone)
                 {
-                    var isCommitted = false;
+                    isCommitted = EnableForCommitting ? await CommitAsync() : true;
 
-                    if (EnableForCommitting)
-                        isCommitted = isDone = await CommitAsync();
-                    
-                    if(isCommitted && HasCache)
+                    if (isCommitted && HasCache)
                         CacheService?.Add(entity.Id, entity);
                 }
 
+                response.SetSuccess(isDone && isCommitted);
+
                 await SaveRepositoryLogsAsync();
 
-                return isDone;
             }
             catch (Exception ex)
             {
-                //var errorLog = new Log(ex.Message, LogType.Error, entity.Id.ToString(), LogProcessType.Create, SessionInformation);
-                //await LogService.SaveAsync(errorLog, LogRecordType.Database);
+                await SaveErrorLogAsync(ex.Message, entity.Id, LogProcessType.Create);
 
-                await SaveErrorLogAsync(ex.Message,entity.Id,LogProcessType.Create);
+                response.Fail("Create Failed", ex.Message);
 
-                return false;
             }
+            finally 
+            {
+                response.MergeRepositoryMessages(this);
+            }
+
+            return response;
         }
 
-        public async Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>>? expression = null)
+        public virtual async Task<IResponseObject> CreateOrUpdateAsync(T entity, Expression<Func<T, bool>>? expression = null)
         {
-            bool isDone = false;
+            IResponseObject response = new ResponseObject() ;
 
-            if ((expression != null && !Repository.Any(expression)) || ((expression == null) && IsItNew(entity)))
+            bool isNew = false;
+
+            try
             {
-                isDone = await CreateAsync(entity);
+                if (expression != null)
+                    isNew = !await Repository.AnyAsync(expression);
+                else
+                    isNew = await IsItNewAsync(entity);
+
+                if (isNew)
+                {
+                    response = await CreateAsync(entity);
+                }
+                else
+                {
+                    var existing = await Repository.GetUniqueAsync(entity);
+                    entity.Id = existing.Id;
+
+                    response = await UpdateAsync(entity);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                entity.Id = (await GetUniqueAsync(entity)).Id;
+                await SaveErrorLogAsync(ex.Message, entity.Id, isNew ? LogProcessType.Create : LogProcessType.Update);
 
-                var updateResponse = UpdateAsync(entity);
-
-                isDone = updateResponse.IsSuccess;
+                response.Fail($"CreateOrUpdate Failed(isNew : {isNew})",ex.Message);
             }
 
-            //task.Start();
-
-            //await Task.WhenAll(new[] { task });
-
-            return await Task.FromResult(isDone);
+            return response;
         }
+
 
         public async Task<bool> DeleteAsync(Expression<Func<T, bool>> filter)
         {
@@ -97,7 +130,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await SaveErrorLogAsync(ex.Message, entity.Id, LogProcessType.Delete);
+                await SaveErrorLogAsync(ex.Message, entity.Id.ToString(), LogProcessType.Delete);
 
                 return false;
             }
@@ -159,37 +192,42 @@ namespace Hydra.Services.Core
             }
         }
 
-        public virtual async Task<ResponseObjectForUpdate> UpdateAsync(T entity)
+        public virtual async Task<IResponseObject> UpdateAsync(T entity)
         {
+            var updateResponse = new ResponseObjectForUpdate()
+                                    .SetActionName("Update")
+                                    .SetId(entity.Id)
+                                    .UseDefaultMessages();
+
             try
             {
-                var updateResponse = await Repository.UpdateAsync(entity);
+                updateResponse = await Repository.UpdateAsync(entity);
 
-                if (updateResponse.IsSuccess)
+                if (updateResponse.Success)
                 {
-                    var isCommitted = false;
+                    var isCommitted = EnableForCommitting ? await CommitAsync() : true;
 
-                    if (EnableForCommitting)
-                        isCommitted = updateResponse.IsSuccess =  await CommitAsync();
+                    updateResponse.SetSuccess(isCommitted);
 
                     if (isCommitted && HasCache)
                         CacheService?.TryRefresh(entity.Id, entity);
                 }
 
                 await SaveRepositoryLogsAsync();
-
-                return updateResponse;
             }
             catch (Exception ex)
             {
-                await SaveErrorLogAsync(ex.Message,entity.Id,LogProcessType.Update);
+                await SaveErrorLogAsync(ex.Message, entity.Id, LogProcessType.Update);
 
-                return new ResponseObjectForUpdate()
-                    .SetSuccess(false)
-                    .AddMessage("Update failed: " + ex.Message);
+                updateResponse.Fail("Update Failed", ex.Message);
             }
-        }
+            finally
+            {
+                updateResponse.MergeRepositoryMessages(this);
+            }
 
+            return updateResponse;
+        }
 
     }
 }
