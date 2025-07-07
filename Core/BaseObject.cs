@@ -29,6 +29,8 @@ namespace Hydra.Core
 
         string? Description {  get; set; }
 
+        bool IsActive { get; set; }
+
         //void Initialize();
 
         //T SetName(string? name);
@@ -73,6 +75,8 @@ namespace Hydra.Core
         public DateTime AddedDate { get; set; }
 
         public DateTime? ModifiedDate { get; set; } = null;
+
+        public bool IsActive { get; set; } = true;
 
         [Timestamp]
         [JsonIgnore]

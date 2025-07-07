@@ -2,6 +2,7 @@
 using Hydra.Services.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +27,18 @@ namespace Hydra.Http
 
                 if (responseObjectMessages.Any())
                     response.AddExtraMessages(responseObjectMessages);
+            }
+
+            return response;
+        }
+
+        public static IResponseObject AddValidationMessages(this IResponseObject response, IEnumerable<ValidationResult> validations)
+        {
+            foreach (var validation in validations)
+            {
+                var message = ResponseMessageProvider.FromValidationResult(validation);
+                
+                response.AddExtraMessage(message);
             }
 
             return response;

@@ -1,5 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.Http;
+using Hydra.Http.Hydra.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace Hydra.DAL.Core
             }
             catch (Exception ex)
             {
-                Result.Logs.Add(LogFactory.Error(ex.Message, entity.Id, LogProcessType.Create));
+                Result.Logs.Add(LogFactory.Error(ex.Message, entity.Id.ToString(), LogProcessType.Create));
 
                 return false;
             }

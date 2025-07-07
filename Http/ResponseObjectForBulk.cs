@@ -1,58 +1,67 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Hydra.Http
+﻿namespace Hydra.Http
 {
-    public class ResponseObjectForBulk : IResponseObject
+    public class ResponseObjectForBulk : ResponseObject
     {
-        public string? ActionName { get; set; } = null;
-        public Guid Id { get; set; }
-        public bool Success => !ResponseObjects.Any(ro => !ro.Success);
-        public object? Data { get; set; } = null;
-        public List<ResponseObjectMessage> Messages { get; set; } = new List<ResponseObjectMessage>();
-        public List<ResponseObject> ResponseObjects { get; set; } = new List<ResponseObject>();
+        public List<Guid> SucceededIds { get; set; } = new();
+        public List<Guid> FailedIds { get; set; } = new();
+        public List<string> FailedMessages { get; set; } = new();
 
-        public List<ResponseObjectMessage> GetPositiveMessages => ResponseObjects.SelectMany(ro => ro.GetPositiveMessages).ToList();
-        public List<ResponseObjectMessage> GetNegativeMessages => ResponseObjects.SelectMany(ro => ro.GetNegativeMessages).ToList();
-
-        public IResponseObject UseDefaultMessages()
+        public ResponseObjectForBulk AddSuccess(Guid id)
         {
-            Messages.AddRange(MessageProvider.GetDefaultMessages(ActionName));
+            SucceededIds.Add(id);
             return this;
         }
 
-        public IResponseObject AddExtraMessage(ResponseObjectMessage message)
+        public ResponseObjectForBulk AddFailure(Guid id, string errorMessage)
         {
-            Messages.Add(message);
+            FailedIds.Add(id);
+            FailedMessages.Add($"[{id}] - {errorMessage}");
+
+            Messages.Add(new ResponseObjectMessage(
+                title: $"Entity ID: {id}",
+                text: errorMessage,
+                showWhenSuccess: false));
+
             return this;
         }
 
-        public IResponseObject AddExtraMessages(List<ResponseObjectMessage> messages)
+        public new ResponseObjectForBulk SetSuccess(bool success)
         {
-            Messages.AddRange(messages);
+            base.SetSuccess(success);
             return this;
         }
 
-        public ResponseObjectForBulk SetResponseObjects(List<ResponseObject> responseObjects)
+        public new ResponseObjectForBulk SetActionName(string? actionName)
         {
-            ResponseObjects = responseObjects;
+            base.SetActionName(actionName);
             return this;
         }
 
-        public ResponseObjectForBulk SetActionName(string actionName)
+        public new ResponseObjectForBulk UseDefaultMessages()
         {
-            ActionName = actionName;
+            base.UseDefaultMessages();
             return this;
         }
 
-        public ResponseObjectForBulk SetId(Guid id)
+        public new ResponseObjectForBulk AddExtraMessage(ResponseObjectMessage message)
         {
-            Id = id;
+            base.AddExtraMessage(message);
+            return this;
+        }
+
+        public new ResponseObjectForBulk AddExtraMessages(List<ResponseObjectMessage> messages)
+        {
+            base.AddExtraMessages(messages);
+            return this;
+        }
+
+        public new ResponseObjectForBulk SetData(object data)
+        {
+            base.SetData(data);
             return this;
         }
     }
-
 }
+
+
+

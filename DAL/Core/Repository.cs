@@ -180,11 +180,12 @@ namespace Hydra.DAL.Core
             return GetModifiedProperties(entity).Any();
         }
 
-        protected virtual async Task<bool> IsItNewAsync(T entity)
+        public virtual async Task<bool> IsItNewAsync(T entity)
         {
             try
             {
                 var existing = await GetUniqueAsync(entity);
+
                 return existing == null;
             }
             catch (Exception ex)

@@ -26,7 +26,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await SaveErrorLogAsync(ex.Message,typeof(T).Name,LogProcessType.Read);
+                await LogService.SaveAsync(new Log(description:ex.Message,logType:LogType.Error,entityId:ex.Message,processType:LogProcessType.Read));
 
                 return false;
             }
@@ -65,7 +65,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync($"GetAsync Exception: {ex.Message}", processType: LogProcessType.Read);
+                await SaveErrorLogAsync(description: $"GetAsync Exception: {ex.Message}", processType: LogProcessType.Read);
                 return null;
             }
         }
@@ -83,7 +83,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync($"GetByIdAsync Exception: {ex.Message}", entityId: id, processType: LogProcessType.Read);
+                await SaveErrorLogAsync(description: $"GetByIdAsync Exception: {ex.Message}", entityId: id, processType: LogProcessType.Read);
                 return null;
             }
         }

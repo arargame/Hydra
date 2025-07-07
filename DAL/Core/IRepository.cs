@@ -1,5 +1,6 @@
 ﻿using Hydra.Core;
 using Hydra.Http;
+using Hydra.Http.Hydra.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +52,7 @@ namespace Hydra.DAL.Core
 
         Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes);
 
-        //Task<bool> IsItNewAsync(T entity);
+        Task<bool> IsItNewAsync(T entity);
 
         void ShowChangeTrackerEntriesStates();
         Expression<Func<T, bool>> UniqueFilter(T entity, bool forEntityFramework = true);
@@ -59,6 +60,6 @@ namespace Hydra.DAL.Core
 
         Task<ResponseObjectForUpdate> UpdateAsync(T entity);
 
-        Task<List<ResponseObjectForUpdate>> UpdateRangeAsync(List<T> entities)
+        Task<List<ResponseObjectForUpdate>> UpdateRangeAsync(List<T> entities);
     }
 }

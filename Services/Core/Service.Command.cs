@@ -2,7 +2,9 @@
 using Hydra.Core;
 using Hydra.Core.Http;
 using Hydra.Http;
+using Hydra.Http.Hydra.Http;
 using Hydra.Services.Cache;
+using Hydra.ValidationManagement;
 using System.Linq.Expressions;
 
 namespace Hydra.Services.Core
@@ -17,21 +19,16 @@ namespace Hydra.Services.Core
                             .SetId(entity.Id)
                             .UseDefaultMessages();
 
+            if (!entity.IsValid(out var validationResults))
+                return response.AddValidationMessages(validationResults)
+                               .SetSuccess(false);
+
             bool isDone = false;
             bool isCommitted = false;
 
             try
             {
                 isDone = await Repository.CreateAsync(entity);
-
-                //if (isDone)
-                //{
-                //    if (EnableForCommitting)
-                //        isCommitted = isDone = await CommitAsync();
-
-                //    if (isCommitted && HasCache)
-                //        CacheService?.Add(entity.Id, entity);
-                //}
 
                 if (isDone)
                 {
@@ -65,6 +62,10 @@ namespace Hydra.Services.Core
         {
             IResponseObject response = new ResponseObject() ;
 
+            if (!entity.IsValid(out var validationResults))
+                return response.AddValidationMessages(validationResults)
+                               .SetSuccess(false);
+
             bool isNew = false;
 
             try
@@ -97,99 +98,118 @@ namespace Hydra.Services.Core
         }
 
 
-        public async Task<bool> DeleteAsync(Expression<Func<T, bool>> filter)
+        public async Task<IResponseObject> DeleteAsync(Expression<Func<T, bool>> filter)
         {
             var entity = await Repository.GetAsync(filter);
 
             if (entity == null)
-                return false;
+                return new ResponseObject()
+                            .SetActionName("Delete")
+                            .SetSuccess(false)
+                            .AddExtraMessage(new ResponseObjectMessage("Delete", "Entity not found", false));
 
             return await DeleteAsync(entity);
         }
 
-        public async Task<bool> DeleteAsync(T entity)
+
+        public async Task<IResponseObject> DeleteAsync(T entity)
         {
+            var response = new ResponseObject()
+                .SetActionName("Delete")
+                .SetId(entity.Id)
+                .UseDefaultMessages();
+
+            bool isDone = false;
+            bool isCommitted = false;
+
+
             try
             {
-                var isDone = await Repository.DeleteAsync(entity);
+                isDone = await Repository.DeleteAsync(entity);
 
                 if (isDone)
                 {
-                    var isCommitted = false;
-
-                    if (EnableForCommitting)
-                        isCommitted = isDone = await _unitOfWork.CommitAsync();
+                    isCommitted = EnableForCommitting ? await _unitOfWork.CommitAsync() : true;
 
                     if (isCommitted && HasCache)
                         CacheService?.Remove(entity.Id);
                 }
 
-                await SaveRepositoryLogsAsync();
+                response.SetSuccess(isDone && isCommitted);
 
-                return isDone;
+                await SaveRepositoryLogsAsync();
             }
             catch (Exception ex)
             {
-                await SaveErrorLogAsync(ex.Message, entity.Id.ToString(), LogProcessType.Delete);
+                await SaveErrorLogAsync(ex.Message, entity.Id, LogProcessType.Delete);
 
-                return false;
+                response.Fail("Delete Failed", ex.Message);
             }
+            finally
+            {
+                response.MergeRepositoryMessages(this);
+            }
+
+            return response;
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
+        public async Task<IResponseObject> DeleteAsync(Guid id)
         {
             return await DeleteAsync(e => e.Id == id);
         }
 
-        public async Task<bool> DeleteRangeAsync(List<T> entities)
+        public async Task<IResponseObject> DeleteRangeAsync(List<Guid> ids)
         {
-            try
+            var response = new ResponseObjectForBulk()
+                                .SetActionName("Delete Range")
+                                .UseDefaultMessages();
+
+            foreach (var id in ids)
             {
-                var isDone = await Repository.DeleteRangeAsync(entities);
-
-                if (isDone)
+                try
                 {
-                    var isCommitted = false;
+                    var entity = await Repository.GetAsync(e => e.Id == id);
 
-                    if (EnableForCommitting)
-                        isCommitted = isDone = await _unitOfWork.CommitAsync();
-
-                    if (isCommitted && HasCache)
+                    if (entity == null)
                     {
-                        entities.ForEach(e=> CacheService?.Remove(e.Id));
+                        response.AddFailure(id, "Entity not found");
+                        continue;
                     }
 
+                    var deleted = await Repository.DeleteAsync(entity);
+
+                    if (deleted)
+                    {
+                        response.AddSuccess(id);
+                        CacheService?.Remove(id);
+                    }
+                    else
+                    {
+                        response.AddFailure(id, "Deletion failed");
+                    }
                 }
-
-                await SaveRepositoryLogsAsync();
-
-                return isDone;
-            }
-            catch (Exception ex)
-            {
-                entities.ForEach(async e => await SaveErrorLogAsync(ex.Message, e.Id, LogProcessType.DeleteBulk));
-
-                return false;
-            }
-        }
-
-        public async Task<bool> DeleteRangeAsync(List<Guid> idList)
-        {
-            try
-            {
-                var entities = await Repository.FilterWithLinqAsync(e => idList.Contains(e.Id));
-
-                return await DeleteRangeAsync(entities);
-            }
-            catch (Exception ex)
-            {
-                foreach (var id in idList)
+                catch (Exception ex)
                 {
+                    response.AddFailure(id, $"Exception: {ex.Message}");
                     await SaveErrorLogAsync(ex.Message, id, LogProcessType.DeleteBulk);
                 }
-
-                return false;
             }
+
+            var isCommitted = EnableForCommitting ? await _unitOfWork.CommitAsync() : true;
+
+            return response.SetSuccess(isCommitted && !response.FailedIds.Any());
+        }
+
+
+        public async Task<IResponseObject> DeleteRangeAsync(List<T> entities)
+        {
+            var response = new ResponseObject()
+                    .SetActionName("Delete Range")
+                    .UseDefaultMessages();
+
+            response = await DeleteRangeAsync(entities.Select(e => e.Id).ToList());
+
+            return response;
         }
 
         public virtual async Task<IResponseObject> UpdateAsync(T entity)
@@ -198,6 +218,10 @@ namespace Hydra.Services.Core
                                     .SetActionName("Update")
                                     .SetId(entity.Id)
                                     .UseDefaultMessages();
+
+            if (!entity.IsValid(out var validationResults))
+                return updateResponse.AddValidationMessages(validationResults)
+                               .SetSuccess(false);
 
             try
             {
@@ -228,6 +252,64 @@ namespace Hydra.Services.Core
 
             return updateResponse;
         }
+
+        public virtual async Task<ResponseObjectForBulkUpdate> UpdateBulkAsync(List<T> entities)
+        {
+            var response = new ResponseObjectForBulkUpdate()
+                                .SetActionName("Bulk Update")
+                                .UseDefaultMessages();
+
+            foreach (var entity in entities)
+            {
+                if (!entity.IsValid(out var validationResults))
+                {
+                    var messages = validationResults
+                                    .Select(ResponseMessageProvider.FromValidationResult)
+                                    .ToList();
+
+                    response.AddValidationErrors(entity.Id, messages);
+                    continue;
+                }
+
+
+                var updateResponse = await Repository.UpdateAsync(entity);
+
+                if (updateResponse.Success)
+                {
+                    var isCommitted = EnableForCommitting ? await CommitAsync() : true;
+
+                    if (isCommitted)
+                    {
+                        var modifiedProps = (updateResponse as ResponseObjectForUpdate)?.ModifiedProperties ?? Array.Empty<string>();
+
+                        response.AddSuccess(entity.Id, modifiedProps);
+
+                        if (HasCache)
+                            CacheService?.TryRefresh(entity.Id, entity);
+                    }
+                    else
+                    {
+                        response.AddValidationErrors(entity.Id, new List<ResponseObjectMessage>
+                {
+                    new ResponseObjectMessage("Commit Failed", $"Entity {entity.Id} commit operation failed", false)
+                });
+                    }
+                }
+                else
+                {
+                    response.AddValidationErrors(entity.Id, updateResponse.GetNegativeMessages);
+                }
+            }
+
+            var isAllSuccessful = response.UpdatedIds.Count == entities.Count;
+            response.SetSuccess(isAllSuccessful);
+
+            await SaveRepositoryLogsAsync();
+
+            return response;
+        }
+
+
 
     }
 }

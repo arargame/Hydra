@@ -15,7 +15,7 @@ namespace Hydra.Services.Core
     public interface IService<T> where T : BaseObject<T>
     {
 
-        SessionInformation SessionInformation {  get; }
+        //SessionInformation SessionInformation {  get; }
 
         ICacheService<Guid, T>? CacheService { get; set; }
         bool HasCache { get;}
@@ -24,28 +24,28 @@ namespace Hydra.Services.Core
 
         //IRepository<T>? Repository { get; set; }
 
-        IService<T> AddExtraMessagesToResponseWhenItIsFailed(ResponseObject responseObject);
+        //IService<T> AddExtraMessagesToResponseWhenItIsFailed(ResponseObject responseObject);
         Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null);
 
         Task<bool> CommitAsync();
 
-        Task<bool> CreateAsync(T entity);
+        Task<IResponseObject> CreateAsync(T entity);
 
-        Task<bool> CreateOrUpdate(T entity, Expression<Func<T, bool>>? expression = null);
+        Task<IResponseObject> CreateOrUpdateAsync(T entity, Expression<Func<T, bool>>? expression = null);
 
         Task<int> CountAsync(Expression<Func<T, bool>>? expression = null);
 
         IService<T> DisableToCommit();
 
-        Task<bool> DeleteAsync(Expression<Func<T, bool>> filter);
+        Task<IResponseObject> DeleteAsync(Expression<Func<T, bool>> filter);
 
-        Task<bool> DeleteAsync(T entity);
+        Task<IResponseObject> DeleteAsync(T entity);
 
-        Task<bool> DeleteAsync(Guid id);
+        Task<IResponseObject> DeleteAsync(Guid id);
 
-        Task<bool> DeleteRangeAsync(List<T> entities);
+        Task<IResponseObject> DeleteRangeAsync(List<T> entities);
 
-        Task<bool> DeleteRangeAsync(List<Guid> idList);
+        Task<IResponseObject> DeleteRangeAsync(List<Guid> idList);
 
         IService<T> EnableToCommit();
 
@@ -111,8 +111,10 @@ namespace Hydra.Services.Core
 
         void SetCacheService(ICacheService<Guid, T> service);
 
-        ServiceInjector GetInjector();
+        //ServiceInjector GetInjector();
 
-        ResponseObjectForUpdate Update(T entity);
+        Task<IResponseObject> UpdateAsync(T entity);
+
+        Task<ResponseObjectForBulkUpdate> UpdateBulkAsync(List<T> entities);
     }
 }

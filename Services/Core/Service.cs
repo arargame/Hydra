@@ -111,32 +111,27 @@ namespace Hydra.Services.Core
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
-        protected async Task SaveInfoLogAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        protected async Task SaveInfoLogAsync(string? category, string? name, string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
         {
             if (LogService == null) return;
 
-            var log = new Log(
+            var log = LogFactory.Info(category: category,
+                name: name,
                 description: description,
-                logType: LogType.Info,
                 entityId: entityId?.ToString(),
                 processType: processType,
-                frameIndex: 2
-            );
-
-            LogFactory.Info(,);
+                sessionInformation: null);
 
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
 
-        protected async Task SaveWarningLogAsync(string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
+        protected async Task SaveWarningLogAsync(string? category, string? name, string description, Guid? entityId = null, LogProcessType processType = LogProcessType.Unspecified)
         {
             if (LogService == null) return;
 
-            var log = LogFactory.Warning(
-                description: description,
-                entityId: entityId?.ToString(),
-                processType: processType
-            );
+            var log = LogFactory.Info(category, name, description, entityId?.ToString(), processType);
+
+            log.SetLogType(LogType.Warning);
 
             await LogService.SaveAsync(log, LogRecordType.Database);
         }

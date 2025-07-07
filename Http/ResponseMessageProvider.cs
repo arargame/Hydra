@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Hydra.Http
 {
-    public static class MessageProvider
+    public static class ResponseMessageProvider
     {
         public static List<ResponseObjectMessage> GetDefaultMessages(string? actionName)
         {
@@ -20,6 +21,14 @@ namespace Hydra.Http
         public static ResponseObjectMessage GetCustomErrorMessage(string title, string text)
         {
             return new ResponseObjectMessage(title, text, showWhenSuccess: false);
+        }
+
+        public static ResponseObjectMessage FromValidationResult(ValidationResult validation)
+        {
+            return new ResponseObjectMessage(
+                title: string.Join(",", validation.MemberNames),
+                text: validation.ErrorMessage ?? "",
+                showWhenSuccess: false);
         }
     }
 

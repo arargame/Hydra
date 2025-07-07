@@ -40,7 +40,7 @@ namespace Hydra.Http
 
         public IResponseObject UseDefaultMessages()
         {
-            Messages.AddRange(MessageProvider.GetDefaultMessages(ActionName));
+            Messages.AddRange(ResponseMessageProvider.GetDefaultMessages(ActionName));
             return this;
         }
 

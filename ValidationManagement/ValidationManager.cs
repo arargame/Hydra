@@ -10,11 +10,29 @@ using System.Threading.Tasks;
 
 namespace Hydra.ValidationManagement
 {
-    public class ValidationManager
+    public static class ValidationManager
     {
+        public static bool IsValid(this object entity, out List<ValidationResult> results)
+        {
+            results = ValidateEntity(entity);
+            return results == null || results.Count == 0;
+        }
+
+        public static List<ValidationResult> ValidateEntity(object entity)
+        {
+            var results = new List<ValidationResult>();
+            var context = new ValidationContext(entity);
+            Validator.TryValidateObject(entity, context, results, true);
+
+            if (entity is IValidatableObject validatable)
+                results.AddRange(validatable.Validate(context));
+
+            return results;
+        }
+
         public static ValidationResult ValueCannotBeNull(string propertyName)
         {
-            return new ValidationResult($"The value of '{propertyName}' cannot be null or empty",
+            return CreateResult($"The value of '{propertyName}' cannot be null or empty",
                 new[] { propertyName });
         }
 
