@@ -494,7 +494,7 @@ namespace Hydra.DTOs
         {
             SetViewDTOTypeName(viewDTOType.Name);
 
-            List<MetaColumnDTO> configuredMetaColumns = ConfigureMetaColumns(viewDTOType, ViewType);
+            List<MetaColumnDTO> configuredMetaColumns = ApplyViewConfiguration(viewDTOType, ViewType);
 
             if (configuredMetaColumns.Any(mc => mc.TableName != Name))
                 configuredMetaColumns.ForEach(c => c.TableName = Name);
@@ -565,7 +565,7 @@ namespace Hydra.DTOs
         //    return configuratedColumns;
         //}
 
-        public static List<MetaColumnDTO> ConfigureMetaColumns(Type dtoType, ViewType viewType)
+        public static List<MetaColumnDTO> ApplyViewConfiguration(Type dtoType, ViewType viewType)
         {
             IEnumerable<IConfiguration> configurations = null;
 

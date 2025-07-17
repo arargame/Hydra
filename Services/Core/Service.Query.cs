@@ -3,6 +3,8 @@ using Hydra.DataModels;
 using Hydra.DataModels.Filter;
 using Hydra.DTOs;
 using Hydra.DTOs.ViewDTOs;
+using Hydra.Http;
+using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -26,7 +28,9 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogService.SaveAsync(new Log(description:ex.Message,logType:LogType.Error,entityId:ex.Message,processType:LogProcessType.Read));
+                var log = LogFactory.Error(description: ex.Message, entityId: ex.Message, processType: LogProcessType.Read);
+
+                await LogService.SaveAsync(log, LogRecordType.Database);
 
                 return false;
             }
@@ -66,6 +70,7 @@ namespace Hydra.Services.Core
             catch (Exception ex)
             {
                 await SaveErrorLogAsync(description: $"GetAsync Exception: {ex.Message}", processType: LogProcessType.Read);
+               
                 return null;
             }
         }
@@ -125,7 +130,7 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync(
+                await SaveErrorLogAsync(
                     description: ex.Message,
                     entityId: entity?.Id,
                     processType: LogProcessType.Read
@@ -181,9 +186,16 @@ namespace Hydra.Services.Core
             }
             catch (Exception ex)
             {
-                await LogErrorAsync(
-                    description: $"Selector: {selector?.Body}, Filter: {filter?.Body}, Includes: {string.Join(",", includes ?? Array.Empty<string>())}, Message:{ex.Message}",
-                    processType: LogProcessType.Read);
+                await SaveErrorLogAsync(description: $"""
+                        Selector: {ExpressionHelper.GetExpressionBody(selector)}
+                        Filter: {ExpressionHelper.GetExpressionBody(filter)}
+                        Includes: { (includes == null || !includes.Any() ? "[No Includes]": string.Join(", ", includes))}
+                        Skip: {countToSkip?.ToString() ?? "[none]"}
+                        Take: {countToTake?.ToString() ?? "[none]"}
+                        Distinct: {selectDistinct}, FirstOrDefault: {firstOrDefault}
+                        Message: {ex.Message}
+                        """,
+                 processType: LogProcessType.Read);
 
                 return new List<TResult>(); 
             }
@@ -208,14 +220,31 @@ namespace Hydra.Services.Core
             return SelectWithLinqAsync<T>(selector, filter, countToSkip, countToTake, asNoTracking, actionToOrder, firstOrDefault, selectDistinct, includes);
         }
 
-      
-
-        public List<T2> SelectWithTable<T2>(ref TableDTO tableDTO, ViewType? viewType = null, Type viewDTOTypeToPrepareUsingConfigurations = null, List<MetaColumnDTO> externalMetaColumns = null) where T2 : class
+        public async Task<List<T>> SelectWithTableAsync(string? tableName = null,
+                        string? tableAlias = null,
+                        List<IMetaColumn>? metaColumns = null,
+                        Expression<Func<ITable, IJoinFilter>>? expressionToManageFilters = null,
+                        Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
+                        int? pageNumber = null,
+                        int? pageSize = null)
         {
-            var table = tableDTO != null ? TableDTO.ConvertToTable(tableDTO) : GetTable(pageSize: 10, pageNumber: 1).SetViewType(viewType != null ? viewType.Value : ViewType.None);
+            tableName = string.IsNullOrEmpty(tableName) ? TypeName : tableName;
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
+            var table = Table.Create(tableName, tableAlias, metaColumns, expressionToManageFilters, expressionToSetJoins, pageNumber, pageSize);
+
+            return await SelectWithTableAsync<T>(table);
+        }
+
+        public async Task<(TableDTO TableDTO,List<TResult> Results)> SelectWithTableAsync<TResult>(
+                TableDTO? tableDTO = null,
+                ViewType? viewType = null,
+                Type? viewDTOTypeToPrepareUsingConfigurations = null,
+                List<MetaColumnDTO>? externalMetaColumns = null
+            ) where TResult : class
+        {
+            var table = tableDTO != null
+                ? TableDTO.ConvertToTable(tableDTO)
+                : GetTable(pageSize: 10, pageNumber: 1).SetViewType(viewType ?? ViewType.None);
 
             if (tableDTO == null)
             {
@@ -226,9 +255,6 @@ namespace Hydra.Services.Core
                     tableDTO.PrepareUsingConfigurations(viewDTOTypeToPrepareUsingConfigurations);
                 }
             }
-
-            sw.Stop();
-            var sw1Elapsed = sw.Elapsed;
 
             if (externalMetaColumns != null)
             {
@@ -243,46 +269,30 @@ namespace Hydra.Services.Core
                 tableDTO.SetViewType(viewType.Value);
             }
 
-
-
-
             table = TableDTO.ConvertToTable(tableDTO);
 
-            sw.Restart();
-
-            var results = SelectWithTable<T2>(table);
-
-            sw.Stop();
-            var sw2Elapsed = sw.Elapsed;
-            sw.Restart();
+            var results = await SelectWithTableAsync<TResult>(table); 
 
             tableDTO = TableDTO.FromTableToDTO(table)
-                                .SetViewDTOTypeName(typeof(T2).Name);
-
-
+                               .SetViewDTOTypeName(typeof(TResult).Name);
 
             if (viewDTOTypeToPrepareUsingConfigurations != null)
             {
                 tableDTO.PrepareUsingConfigurations(viewDTOTypeToPrepareUsingConfigurations);
             }
 
-            sw.Stop();
-            var sw3Elapsed = sw.Elapsed;
-
-            return results;
-        }
-
-        public List<T> SelectWithTable(ITable table)
-        {
-            return SelectWithTable<T>(table);
+            return (tableDTO,results);
         }
 
 
-        public List<T2> SelectWithTable<T2>(ITable table) where T2 : class
+        public async Task<List<T>> SelectWithTableAsync(ITable table)
         {
-            return table.PrepareQueryStringToSelect()
-                                .SetRows()
-                                .Cast<T2>();
+            return await SelectWithTableAsync<T>(table);
+        }
+
+        public async Task<List<TResult>> SelectWithTableAsync<TResult>(ITable table) where TResult : class
+        {
+            return (await _tableService.GetTableAsync(table)).Cast<TResult>();
         }
 
         public async Task<List<T>> SelectThenCache(Expression<Func<T, bool>> filter)

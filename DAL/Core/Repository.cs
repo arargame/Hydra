@@ -196,37 +196,22 @@ namespace Hydra.DAL.Core
 
 
 
-        public IQueryable<T> FromSqlRaw(string sql, bool asNoTracking = true, params object[] parameters)
-        {
-            IQueryable<T> list = null;
-
-            try
-            {
-                list = _dbSet.FromSqlRaw(sql, parameters);
-            }
-            catch (Exception ex)
-            {
-                //LogManager.Save(new Log(ex.Message));
-            }
-
-            return asNoTracking ? list?.AsNoTracking() : list;
-        }
-
         public IQueryable<T> FromSqlInterpolated(FormattableString sql, bool asNoTracking = true)
         {
-            IQueryable<T> list = null;
-
             try
             {
-                list = DbSet.FromSqlInterpolated(sql);
+                var query = _dbSet.FromSqlInterpolated(sql);
+
+                return asNoTracking ? query.AsNoTracking() : query;
             }
             catch (Exception ex)
             {
-                //LogManager.Save(new Log(ex.Message));
+                Result.Logs.Add(LogFactory.Error(description: $"SQL: {sql.Format}, Message: {ex.Message}",processType: LogProcessType.Unspecified));
+                
+                return Enumerable.Empty<T>().AsQueryable();
             }
-
-            return asNoTracking ? list.AsNoTracking() : list;
         }
+
 
 
         public void ShowChangeTrackerEntriesStates()

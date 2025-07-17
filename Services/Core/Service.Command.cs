@@ -173,6 +173,7 @@ namespace Hydra.Services.Core
                     if (entity == null)
                     {
                         response.AddFailure(id, "Entity not found");
+
                         continue;
                     }
 

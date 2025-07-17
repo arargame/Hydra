@@ -24,7 +24,7 @@ namespace Hydra.Http
 
         IResponseObject SetSuccess(bool success);
 
-        IResponseObject SetData(object data);
+        IResponseObject SetData(object? data);
     }
 
     public class ResponseObject : IResponseObject
@@ -74,7 +74,7 @@ namespace Hydra.Http
             return this;
         }
 
-        public IResponseObject SetData(object data)
+        public IResponseObject SetData(object? data)
         {
             Data = data;
             return this;

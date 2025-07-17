@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Hydra.Services
 {
-    public class DatabaseService
+    public class AdoNetDatabaseService
     {
-        public static bool CheckConnection(CustomConnection? connection = null)
+        public static bool CheckConnection(IDbConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
    
@@ -32,7 +32,7 @@ namespace Hydra.Services
 
         public static List<Dictionary<string, object?>> ExecuteQuery(string? query,
             Dictionary<string, object?>? parameters = null,
-            CustomConnection? connection = null)
+            IDbConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
 
@@ -76,7 +76,7 @@ namespace Hydra.Services
 
         public static object? ExecuteScalar(string? query,
             Dictionary<string, object?>? parameters = null,
-            CustomConnection? connection = null)
+            IDbConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
 
@@ -103,7 +103,7 @@ namespace Hydra.Services
 
         public static int ExecuteNonQuery(string? query,
             Dictionary<string, object?>? parameters = null,
-            CustomConnection? connection = null)
+            IDbConnection? connection = null)
         {
             connection = connection ?? new MsSqlConnection();
 
@@ -128,7 +128,7 @@ namespace Hydra.Services
             }
         }
 
-        public static List<Dictionary<string, object?>> SelectColumnNames(string? tableName, CustomConnection? connection = null)
+        public static List<Dictionary<string, object?>> SelectColumnNames(string? tableName, IDbConnection? connection = null)
         {
             var query = connection is OracleConnection
                 ? $"SELECT COLUMN_NAME, DATA_TYPE FROM USER_TAB_COLUMNS WHERE table_name = '{tableName}'"
@@ -147,7 +147,7 @@ namespace Hydra.Services
 
             return result != null && Convert.ToInt32(result) == 1;
         }
-        public static bool CreateView(string? query, CustomConnection connection)
+        public static bool CreateView(string? query, IDbConnection connection)
         {
             string createViewSql;
 
@@ -181,7 +181,7 @@ namespace Hydra.Services
 
         public static readonly Dictionary<string, string> PrimaryKeyCache = new Dictionary<string, string>();
 
-        public static string GetPrimaryKeyName(string tableName, CustomConnection connection)
+        public static string GetPrimaryKeyName(string tableName, IDbConnection connection)
         {
             if (PrimaryKeyCache.ContainsKey(tableName))
                 return PrimaryKeyCache[tableName];
@@ -196,7 +196,7 @@ namespace Hydra.Services
                 { "@TableName", tableName }
             };
 
-            var primaryKey = (DatabaseService.ExecuteScalar(query, parameters, connection) as string) ?? "Id";
+            var primaryKey = (AdoNetDatabaseService.ExecuteScalar(query, parameters, connection) as string) ?? "Id";
             PrimaryKeyCache[tableName] = primaryKey;
 
             return primaryKey;

@@ -13,7 +13,7 @@ namespace Hydra.DBAccess
         PostgreSql
     }
 
-    public interface IDbConnection
+    public interface IDbConnection:IDisposable
     {
         ConnectionType ConnectionType { get; set; }
 
@@ -26,6 +26,8 @@ namespace Hydra.DBAccess
         IDbConnection SetConnection(DbConnection connection);
 
         IDbConnection Connect();
+
+        IDbCommand CreateCommand();
 
         IDbConnection Disconnect();
     }

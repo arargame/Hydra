@@ -90,22 +90,26 @@ namespace Hydra.Services.Core
                                                 bool selectDistinct = false,
                                                 params string[] includes);
 
-        List<T> SelectWithTable(string? tableName = null,
-                                string? tableAlias = null,
-                                List<IMetaColumn>? metaColumns = null,
-                                Expression<Func<ITable, IJoinFilter>>? expressionToManageFilters = null,
-                                Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
-                                int? pageNumber = null,
-                                int? pageSize = null);
 
-        List<T2> SelectWithTable<T2>(ref TableDTO tableDTO,
-                                    ViewType? viewType = null,
-                                    Type? viewDTOTypeToPrepareUsingConfigurations = null,
-                                    List<MetaColumnDTO>? externalMetaColumns = null) where T2 : class;
+        Task<List<T>> SelectWithTableAsync(string? tableName = null,
+                        string? tableAlias = null,
+                        List<IMetaColumn>? metaColumns = null,
+                        Expression<Func<ITable, IJoinFilter>>? expressionToManageFilters = null,
+                        Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
+                        int? pageNumber = null,
+                        int? pageSize = null);
 
-        List<T> SelectWithTable(ITable table);
+        Task<(TableDTO TableDTO, List<TResult> Results)> SelectWithTableAsync<TResult>(
+                TableDTO? tableDTO = null,
+                ViewType? viewType = null,
+                Type? viewDTOTypeToPrepareUsingConfigurations = null,
+                List<MetaColumnDTO>? externalMetaColumns = null
+            ) where TResult : class;
 
-        List<T2> SelectWithTable<T2>(ITable table) where T2 : class;
+        
+        Task<List<T>> SelectWithTableAsync(ITable table);
+
+        Task<List<TResult>> SelectWithTableAsync<TResult>(ITable table) where TResult : class;
 
         Task<List<T>> SelectThenCache(Expression<Func<T, bool>> filter);
 

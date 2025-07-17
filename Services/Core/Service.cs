@@ -32,6 +32,8 @@ namespace Hydra.Services.Core
 
         public bool EnableForCommitting { get; set; } = true;
 
+        private readonly ITableService _tableService;
+
 
         public Service(ServiceInjector injector)
         {
@@ -44,6 +46,8 @@ namespace Hydra.Services.Core
             SetRepository();
 
             _lazyLogService = injector.ResolveLazy<ILogService>()!;
+
+            _tableService = injector.TableService;
         }
 
 

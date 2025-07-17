@@ -1,4 +1,5 @@
 ﻿using Hydra.Core;
+using Hydra.Utils;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -80,9 +81,16 @@ namespace Hydra.DAL.Core
 
                 return await query.SingleOrDefaultAsync(filter);
             }
-            catch
+            catch(Exception ex)
             {
-                throw;
+                Result.Logs.Add(LogFactory.Error(description: $"""
+                    Filter: {ExpressionHelper.GetFilterDescription(filter)}
+                    Includes: {(includes == null || !includes.Any() ? "[No Includes]" : string.Join(", ", includes))}
+                    WithAllIncludes: {withAllIncludes}
+                    Message: {ex.Message}
+                """,processType: LogProcessType.Read));
+
+                return null;
             }
         }
 

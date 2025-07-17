@@ -98,17 +98,6 @@ namespace Hydra.Core.Http
             return Failure("Already Exists", $"{entityName} already exists.", id, actionName);
         }
 
-        public static ResponseObject ValidationError(List<string> validationErrors, Guid? id = null, string? actionName = null)
-        {
-            var messages = new List<(string, string)>();
-            foreach (var error in validationErrors)
-            {
-                messages.Add(("Validation Error", error));
-            }
-
-            return Failure(messages, id, actionName);
-        }
-
         public static ResponseObject ServerError(Guid? id = null, string? actionName = null)
         {
             return Failure("Server Error", "An unexpected error occurred. Please try again later.", id, actionName);

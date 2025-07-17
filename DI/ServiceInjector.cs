@@ -1,6 +1,7 @@
-﻿using Hydra.DAL.Core;
+﻿using Hydra.AccessManagement;
+using Hydra.DAL.Core;
 using Hydra.DTOs.ViewConfigurations;
-using Hydra.AccessManagement;
+using Hydra.Services;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -23,11 +24,14 @@ namespace Hydra.DI
 
         public IServiceProvider ServiceProvider { get; set; }
 
+        public ITableService TableService {  get; set; }
+
         public ServiceInjector(IUnitOfWork unitOfWork,
                             IRepositoryFactoryService repositoryFactory,
                             //SessionInformation sessionInformation,
                             IConfiguration configuration,
-                            IServiceProvider serviceProvider)
+                            IServiceProvider serviceProvider,
+                            ITableService tableService)
         {
             UnitOfWork = unitOfWork;
 
@@ -38,6 +42,8 @@ namespace Hydra.DI
             Configuration = configuration;
 
             ServiceProvider = serviceProvider;
+
+            TableService = tableService;
         }
 
         /// <summary>

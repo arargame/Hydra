@@ -32,7 +32,7 @@ namespace Hydra.Core
         Logout
     }
 
-    public interface ILog
+    public interface ILog : IBaseObject<ILog>
     {
         string? Category { get; set; }
 
@@ -41,6 +41,8 @@ namespace Hydra.Core
         LogType Type { get; set; }
 
         LogProcessType ProcessType { get; set; }
+
+        Guid? SessionInformationId {  get; set; }
 
         ILog SetLogType(LogType logType);
         ILog SetProcessType(LogProcessType processType);

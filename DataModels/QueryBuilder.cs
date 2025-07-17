@@ -2,21 +2,15 @@
 using Hydra.DBAccess;
 using Hydra.Services;
 using Hydra.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static Hydra.DataModels.SortingFilterDirectionExtension;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Hydra.DataModels
 {
     public class QueryBuilder
     {
-        private readonly ITable table;
+        private readonly ITable _table;
 
-        private readonly CustomConnection connection;
+        private readonly IDbConnection _connection;
 
         private string? TopString { get; set; } = null;
 
@@ -36,16 +30,16 @@ namespace Hydra.DataModels
 
         private string? SelectQuery { get; set; } = null;
 
-        public QueryBuilder(ITable table,CustomConnection connection)
+        public QueryBuilder(ITable table,IDbConnection connection)
         {
-            this.table = table;
+            _table = table;
 
-            this.connection = connection;
+            _connection = connection;
         }
 
         public QueryBuilder PrepareFilteredColumnsString()
         {
-            FilteredColumnsString = table.Filter != null ? $"where {table.Filter.PrepareQueryString()}" : null;
+            FilteredColumnsString = _table.Filter != null ? $"where {_table.Filter.PrepareQueryString()}" : null;
 
             return this;
         }
@@ -54,7 +48,7 @@ namespace Hydra.DataModels
         {
             JoinedTablesString = "";
 
-            var allJoinTables = table.GetAllJoinTables;
+            var allJoinTables = _table.GetAllJoinTables;
 
             foreach (var joinTable in allJoinTables)
             {
@@ -66,14 +60,14 @@ namespace Hydra.DataModels
 
         public QueryBuilder PrepareQueryToTakeCount()
         {
-            QueryToTakeCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString}";
+            QueryToTakeCount = $"select count(0) from {_table.Name} {_table.Alias} {JoinedTablesString}";
 
             return this;
         }
 
         public QueryBuilder ExecuteTotalRecordsCount()
         {
-            TotalRecordsCount = (int)((DatabaseService.ExecuteScalar(query: QueryToTakeCount, parameters:null,connection: connection)) ?? 0);
+            TotalRecordsCount = (int)((AdoNetDatabaseService.ExecuteScalar(query: QueryToTakeCount, parameters:null,connection: _connection)) ?? 0);
 
             return this;
         }
@@ -87,36 +81,36 @@ namespace Hydra.DataModels
 
         public QueryBuilder PrepareQueryToTakeFilteredCount()
         {
-            QueryToTakeFilteredCount = $"select count(0) from {table.Name} {table.Alias} {JoinedTablesString} {FilteredColumnsString}";
+            QueryToTakeFilteredCount = $"select count(0) from {_table.Name} {_table.Alias} {JoinedTablesString} {FilteredColumnsString}";
 
             return this;
         }
 
         public QueryBuilder ExecuteFilteredTotalRecordsCount()
         {
-            FilteredTotalRecordsCount = (int)(DatabaseService.ExecuteScalar(QueryToTakeFilteredCount, table.QueryParameters, connection) ?? 0);
+            FilteredTotalRecordsCount = (int)(AdoNetDatabaseService.ExecuteScalar(QueryToTakeFilteredCount, _table.QueryParameters, connection) ?? 0);
 
             return this;
         }
 
         public QueryBuilder SetTableFilter()
         {
-            if (table.JoinTables.Any())
+            if (_table.JoinTables.Any())
             {
-                if (table.GetFilteredMetaColumnsIncludingJoins.Count == 1)
+                if (_table.GetFilteredMetaColumnsIncludingJoins.Count == 1)
                 {
-                    table.SetFilter(table.GetFilteredMetaColumnsIncludingJoins.FirstOrDefault()?.Filter);
+                    _table.SetFilter(_table.GetFilteredMetaColumnsIncludingJoins.FirstOrDefault()?.Filter);
                 }
                 else
                 {
-                    var joinFilter = JoinedFiltersGroup.SetFromColumns(table.GetFilteredMetaColumnsIncludingJoins);
+                    var joinFilter = JoinedFiltersGroup.SetFromColumns(_table.GetFilteredMetaColumnsIncludingJoins);
 
-                    table.SetFilter(joinFilter.FirstOrDefault());
+                    _table.SetFilter(joinFilter.FirstOrDefault());
                 }
             }
             else
             {
-                table.SetFilter();
+                _table.SetFilter();
             }
 
             return this;
@@ -124,21 +118,21 @@ namespace Hydra.DataModels
 
         public QueryBuilder SetTableQueryParameters()
         {
-            if (!table.QueryParameters.Any() && table.Filter != null)
-                table.SetQueryParameters();
+            if (!_table.QueryParameters.Any() && _table.Filter != null)
+                _table.SetQueryParameters();
 
             return this;
         }
 
         public QueryBuilder PrepareSelectedColumnsString()
         {
-            var selectedColumns = table.GetSelectedMetaColumnsIncludingJoins
+            var selectedColumns = _table.GetSelectedMetaColumnsIncludingJoins
                                                .Where(sc => !sc.IsFileColumn)
                                                .ToList();
 
             if (!selectedColumns.Any())
             {
-                var leftTableSelectedColumnList = DatabaseService.SelectColumnNames(table.Name)
+                var leftTableSelectedColumnList = AdoNetDatabaseService.SelectColumnNames(table.Name)
                                                             .Select(c => c["COLUMN_NAME"]?.ToString())
                                                             .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(table))
                                                             .OfType<IMetaColumn>()
@@ -146,9 +140,9 @@ namespace Hydra.DataModels
 
                 var joinTablesSelectedColumnList = new List<IMetaColumn>();
 
-                foreach (var joinTable in table.GetAllJoinTables)
+                foreach (var joinTable in _table.GetAllJoinTables)
                 {
-                    joinTablesSelectedColumnList.AddRange(DatabaseService.SelectColumnNames(joinTable.Name)
+                    joinTablesSelectedColumnList.AddRange(AdoNetDatabaseService.SelectColumnNames(joinTable.Name)
                                                 .Select(c => c["COLUMN_NAME"]?.ToString())
                                                 .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(joinTable))
                                                 .OfType<IMetaColumn>());
@@ -183,8 +177,8 @@ namespace Hydra.DataModels
                 SelectedColumnsString = string.Join(",", selectedColumns.Select(column => $"{column.Table?.Alias}.{column.Name} as [{column.Alias}]"));
             }
 
-            var orderByString = PrepareRowNumberOrderString(table.GetOrderedMetaColumnsIncludingJoins.OfType<OrderedColumn>(), table.Alias!, table.HasAnySelectedColumnToGroup);
-            SelectedColumnsString += table.PageSize > 0 ? $",ROW_NUMBER() OVER ({orderByString}) AS RowNumber" : null;
+            var orderByString = PrepareRowNumberOrderString(_table.GetOrderedMetaColumnsIncludingJoins.OfType<OrderedColumn>(), _table.Alias!, _table.HasAnySelectedColumnToGroup);
+            SelectedColumnsString += _table.PageSize > 0 ? $",ROW_NUMBER() OVER ({orderByString}) AS RowNumber" : null;
 
 
             return this;
@@ -248,29 +242,29 @@ namespace Hydra.DataModels
 
                 PrepareSelectedColumnsString();
 
-                baseQuery = $"select {TopString} {SelectedColumnsString} from {table.Name} {table.Alias} {JoinedTablesString} {FilteredColumnsString}";
+                baseQuery = $"select {TopString} {SelectedColumnsString} from {_table.Name} {_table.Alias} {JoinedTablesString} {FilteredColumnsString}";
 
-                if (table.HasAnySelectedColumnToGroup)
+                if (_table.HasAnySelectedColumnToGroup)
                 {
-                    baseQuery = GenerateGroupByQuery(table.GetSelectedMetaColumnsIncludingJoins.OfType<SelectedColumn>(), baseQuery);
+                    baseQuery = GenerateGroupByQuery(_table.GetSelectedMetaColumnsIncludingJoins.OfType<SelectedColumn>(), baseQuery);
                 }
 
-                var aliasList = table.JoinTables.Select(jt => jt.Alias).Append(table.Alias).Distinct();
+                var aliasList = _table.JoinTables.Select(jt => jt.Alias).Append(_table.Alias).Distinct();
 
                 var unusedAlias = Helper.GenerateUnusedCharacterInAWord(string.Join("", aliasList));
 
                 SelectQuery = $"select {unusedAlias}.* from({baseQuery}) {unusedAlias} ";
 
-                table.SetPageSize(table.PageSize > 0 ? table.PageSize : TotalRecordsCount);
+                _table.SetPageSize(_table.PageSize > 0 ? _table.PageSize : TotalRecordsCount);
 
-                table.Pagination = new Pagination(table.PageNumber,
-                                                  table.PageSize,
-                                                  TotalRecordsCount,
-                                                  FilteredTotalRecordsCount);
+                _table.Pagination = new Pagination(_table.PageNumber,
+                                                _table.PageSize,
+                                                TotalRecordsCount,
+                                                FilteredTotalRecordsCount);
 
-                if (table.PageSize > 0)
+                if (_table.PageSize > 0)
                 {
-                    SelectQuery += $"where {unusedAlias}.RowNumber between {table.Pagination.Start} and {table.Pagination.Finish}";
+                    SelectQuery += $"where {unusedAlias}.RowNumber between {_table.Pagination.Start} and {_table.Pagination.Finish}";
                 }
 
 
@@ -343,17 +337,17 @@ namespace Hydra.DataModels
 
         public QueryBuilder SetTableRows()
         {
-            var primaryKey = DatabaseService.GetPrimaryKeyName(table.Name!, connection); 
+            var primaryKey = AdoNetDatabaseService.GetPrimaryKeyName(_table.Name!, _connection); 
 
-            var results = DatabaseService.ExecuteQuery(SelectQuery, table.QueryParameters, connection);
+            var results = AdoNetDatabaseService.ExecuteQuery(SelectQuery, _table.QueryParameters, _connection);
 
             foreach (var result in results)
             {
                 var columns = result.Select(r => new DataColumn(r.Key, r.Value))
-                                    .Where(dc => table.GetSelectedMetaColumnsIncludingJoins.Any(smc => smc.Alias == dc.Name))
+                                    .Where(dc => _table.GetSelectedMetaColumnsIncludingJoins.Any(smc => smc.Alias == dc.Name))
                                     .ToList();
 
-                var row = new Row().SetTable(table);
+                var row = new Row().SetTable(_table);
 
                 if (result.ContainsKey(primaryKey))
                 {
@@ -365,7 +359,7 @@ namespace Hydra.DataModels
                     row.AddColumn(column);
                 }
 
-                table.AddRow(row);
+                _table.AddRow(row);
             }
 
             return this;

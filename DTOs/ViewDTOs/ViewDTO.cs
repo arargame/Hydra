@@ -205,9 +205,9 @@ namespace Hydra.DTOs.ViewDTOs
 
 
         public ViewDTO SetConfigurationsViaBooleanPropertyInfo(PropertyInfo propertyInfo,
-                                                string displayName = null,
-                                                NavigationColumnInfo navigation = null,
-                                                object defaultValueInCreation = null,
+                                                string? displayName = null,
+                                                NavigationColumnInfo? navigation = null,
+                                                object? defaultValueInCreation = null,
                                                 bool useToCreateCollectionViewConfiguration = true,
                                                 bool useToCreateLookupViewConfiguration = true)
         {
@@ -392,7 +392,7 @@ namespace Hydra.DTOs.ViewDTOs
             return Configurations.FirstOrDefault(c => c.PropertyName == memberName && c.ViewType == viewType);
         }
 
-        public virtual ViewDTO SetConfigurationsForBaseObjectMembers(string inheritingTableName = null)
+        public virtual ViewDTO SetConfigurationsForBaseObjectMembers(string? inheritingTableName = null)
         {
             bool isInherited = !string.IsNullOrEmpty(inheritingTableName);
 

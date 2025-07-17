@@ -10,23 +10,26 @@ namespace Hydra.Services
 {
     public interface ILogDbWriterService
     {
-        Task<bool> SaveAsync(Log log);
+        Task<bool> SaveAsync(ILog log);
     }
     public class LogDbWriterService : ILogDbWriterService
     {
         //private readonly string _connectionString;
-        private readonly ConnectionType _connectionType;
+        //private readonly ConnectionType _connectionType;
 
-        private readonly ICustomConfigurationService _config;
+        //private readonly ICustomConfigurationService _config;
 
-        public LogDbWriterService(ICustomConfigurationService config, ConnectionType connectionType)
+        private readonly IDbConnection _connection;
+
+        public LogDbWriterService(IDbConnection connection)
         {
             //_connectionString = connectionString;
-            _config = config;
-            _connectionType = connectionType;
+            //_config = config;
+            //_connectionType = connectionType;
+            _connection = connection;
         }
 
-        public async Task<bool> SaveAsync(Log log)
+        public async Task<bool> SaveAsync(ILog log)
         {
             try
             {
@@ -50,13 +53,13 @@ namespace Hydra.Services
                 VALUES 
                 (@Id, @Name, @Description, @Category, @EntityId, @Type, @ProcessType, @AddedDate, @ModifiedDate, @SessionInformationId)";
 
-                var connectionString = _config.Get("LogDb");
+                //var connectionString = _config.Get("LogDb");
 
-                var connection = ConnectionFactory.CreateConnection(_connectionType, connectionString);
+                //var connection = ConnectionFactory.CreateConnection(_connectionType, connectionString);
 
                 await Task.Run(() =>
                 {
-                    DatabaseService.ExecuteNonQuery(query, parameters, connection);
+                    AdoNetDatabaseService.ExecuteNonQuery(query, parameters, _connection);
                 });
 
                 return true;
