@@ -11,15 +11,6 @@ using System.Threading.Tasks;
 
 namespace Hydra.DTOs.ViewConfigurations
 {
-    public class ConfigurationCacheGroup
-    {
-        public string? ViewName { get; set; } = null;
-
-        public ViewType ViewType { get; set; }
-
-        public List<IConfiguration> List { get; set; } = new List<IConfiguration>();
-    }
-
     public interface IConfiguration
     {
         string? TableName { get; set; }
@@ -306,14 +297,14 @@ namespace Hydra.DTOs.ViewConfigurations
 
         public IConfiguration SetPriorityToSelect(int priority)
         {
-            ToSelect.SetPripority(priority);
+            ToSelect?.SetPripority(priority);
 
             return this;
         }
 
         public IConfiguration SetPriorityToFilter(int priority)
         {
-            ToFilter.SetPripority(priority);
+            ToFilter?.SetPripority(priority);
 
             return this;
         }

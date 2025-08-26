@@ -281,9 +281,9 @@ namespace Hydra.Services.Core
 
                     if (isCommitted)
                     {
-                        var modifiedProps = (updateResponse as ResponseObjectForUpdate)?.ModifiedProperties ?? Array.Empty<string>();
+                        var modifiedProps = (updateResponse as ResponseObjectForUpdate)?.ModifiedProperties;
 
-                        response.AddSuccess(entity.Id, modifiedProps);
+                        response.AddSuccess(entity.Id, modifiedProps.ToArray());
 
                         if (HasCache)
                             CacheService?.TryRefresh(entity.Id, entity);

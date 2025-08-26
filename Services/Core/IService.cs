@@ -59,6 +59,8 @@ namespace Hydra.Services.Core
         Task<T?> GetByIdAsync(Guid id, bool withAllIncludes = false, params string[] includes);
         Task<T?> GetByIdAsync(Guid id, params string[] includes);
 
+        Task<(TableDTO FinalDTO, TResult? Result)> GetDetailsAsync<TResult>(Guid id) where TResult : class;
+
         List<ResponseObjectMessage> GetRepositoryMessages();
 
         Table GetTable(string? tableName = null, string? alias = null, int? pageSize = null, int? pageNumber = null);

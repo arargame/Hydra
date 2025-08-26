@@ -98,6 +98,25 @@ namespace Hydra.Services.Core
             return GetByIdAsync(id, false, includes);
         }
 
+        public async Task<(TableDTO FinalDTO, TResult? Result)> GetDetailsAsync<TResult>(Guid id) where TResult : class
+        {
+            var externalMetaColumns = new List<MetaColumnDTO>
+            {
+                MetaColumnDTO.CreateColumnDTOWithEqualFilter("Id", null, id)
+            };
+
+            var (finalDTO, results) = await SelectWithTableAsync<TResult>(
+                viewType: ViewType.DetailsView,
+                externalMetaColumns: externalMetaColumns
+            );
+
+            var result = results?.SingleOrDefault();
+
+            return (finalDTO, result);
+        }
+
+
+
         public virtual async Task<T?> GetUniqueAsync(T entity, bool withAllIncludes = false, params string[] includes)
         {
             return await GetAsync(Repository.UniqueFilter(entity), withAllIncludes, includes);
@@ -238,7 +257,7 @@ namespace Hydra.Services.Core
         public async Task<(TableDTO TableDTO,List<TResult> Results)> SelectWithTableAsync<TResult>(
                 TableDTO? tableDTO = null,
                 ViewType? viewType = null,
-                Type? viewDTOTypeToPrepareUsingConfigurations = null,
+                Type? viewDTOType = null,
                 List<MetaColumnDTO>? externalMetaColumns = null
             ) where TResult : class
         {
@@ -250,9 +269,9 @@ namespace Hydra.Services.Core
             {
                 tableDTO = TableDTO.FromTableToDTO(table);
 
-                if (viewDTOTypeToPrepareUsingConfigurations != null)
+                if (viewDTOType != null)
                 {
-                    tableDTO.PrepareUsingConfigurations(viewDTOTypeToPrepareUsingConfigurations);
+                    tableDTO.PrepareUsingConfigurations(viewDTOType);
                 }
             }
 
@@ -276,9 +295,9 @@ namespace Hydra.Services.Core
             tableDTO = TableDTO.FromTableToDTO(table)
                                .SetViewDTOTypeName(typeof(TResult).Name);
 
-            if (viewDTOTypeToPrepareUsingConfigurations != null)
+            if (viewDTOType != null)
             {
-                tableDTO.PrepareUsingConfigurations(viewDTOTypeToPrepareUsingConfigurations);
+                tableDTO.PrepareUsingConfigurations(viewDTOType);
             }
 
             return (tableDTO,results);

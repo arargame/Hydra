@@ -3,6 +3,7 @@ using Hydra.DTOs.ViewConfigurations;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -41,14 +42,14 @@ namespace Hydra.DTOs
 
         public string ViewDTOTypeName { get; set; }
 
-        [JsonIgnore]
-        public Type? ViewDTOType
-        {
-            get
-            {
-                return ReflectionHelper.GetTypeFromAssembly(sampleTypeInAssembly: typeof(DTO), typeName: ViewDTOTypeName);
-            }
-        }
+        //[JsonIgnore]
+        //public Type? ViewDTOType
+        //{
+        //    get
+        //    {
+        //        return ReflectionHelper.GetTypeFromAssembly(sampleTypeInAssembly: typeof(DTO), typeName: ViewDTOTypeName);
+        //    }
+        //}
 
         public ViewType ViewType { get; set; }
 
@@ -494,7 +495,11 @@ namespace Hydra.DTOs
         {
             SetViewDTOTypeName(viewDTOType.Name);
 
-            List<MetaColumnDTO> configuredMetaColumns = ApplyViewConfiguration(viewDTOType, ViewType);
+            //Type? dtoType, ViewType viewType
+            //viewDTOType, ViewType
+            var group = ViewDTOConfigurationCacheManager.Instance.GetOrLoad(viewDTOType, Name, ViewType);
+
+            var configuredMetaColumns = BuildMetaColumnsFromConfiguration(group?.List ?? new());
 
             if (configuredMetaColumns.Any(mc => mc.TableName != Name))
                 configuredMetaColumns.ForEach(c => c.TableName = Name);
@@ -538,59 +543,38 @@ namespace Hydra.DTOs
             return this;
         }
 
-        //public static List<MetaColumnDTO> ConfigureMetaColumns<AttributeType>(Type dtoType,string tableName = null) where AttributeType : Attribute
-        //{
-        //    var configuratedColumns = ConfigureMetaColumns(dtoType, typeof(AttributeType));
-
-        //    if(!string.IsNullOrEmpty(tableName))
-        //        configuratedColumns.ForEach(c => c.TableName = tableName);
-
-        //    if (dtoType.IsSubclassOf(typeof(CreateViewDTO)))
-        //    {
-        //        configuratedColumns.ForEach(c=>c.SetViewTpe(ViewType.CreateView));
-        //    }
-        //    else if(dtoType.IsSubclassOf(typeof(ListViewDTO)))
-        //    {
-        //        configuratedColumns.ForEach(c => c.SetViewTpe(ViewType.ListView));
-        //    }
-        //    else if (dtoType.IsSubclassOf(typeof(CollectionViewDTO)))
-        //    {
-        //        configuratedColumns.ForEach(c => c.SetViewTpe(ViewType.CollectionView));
-        //    }
-        //    else if (dtoType.IsSubclassOf(typeof(EditViewDTO)))
-        //    {
-        //        configuratedColumns.ForEach(c => c.SetViewTpe(ViewType.EditView));
-        //    }
-
-        //    return configuratedColumns;
-        //}
-
-        public static List<MetaColumnDTO> ApplyViewConfiguration(Type dtoType, ViewType viewType)
+        /// <summary>
+        /// Builds a list of <see cref="MetaColumnDTO"/> objects by applying 
+        /// the given ViewDTO configurations for the specified DTO type and view.
+        /// </summary>
+        /// <param name="dtoType">The DTO type to load configurations for.</param>
+        /// <param name="viewType">The view type (ListView, DetailsView, etc.)</param>
+        /// <returns>A list of generated <see cref="MetaColumnDTO"/> based on configurations.</returns>
+        public List<MetaColumnDTO> BuildMetaColumnsFromConfiguration(IEnumerable<IConfiguration>? configurations)
         {
-            IEnumerable<IConfiguration> configurations = null;
 
-            if (!Configuration.CacheGroups.Any(cg => cg.ViewName == dtoType.Name && cg.ViewType == viewType))
-            {
-                var dtoInstance = ReflectionHelper.CreateInstance(typeName: dtoType.Name) as ViewDTO;
+            //if (!Configuration.CacheGroups.Any(cg => cg.ViewName == dtoType.Name && cg.ViewType == viewType))
+            //{
+            //    var dtoInstance = ReflectionHelper.CreateInstance(typeName: dtoType.Name) as ViewDTO;
 
-                dtoInstance.LoadConfigurations();
+            //    dtoInstance.LoadConfigurations();
 
-                if (dtoInstance == null)
-                    throw new Exception($"An instance of {dtoType.Name} could not be created");
+            //    if (dtoInstance == null)
+            //        throw new Exception($"An instance of {dtoType.Name} could not be created");
 
-                configurations = dtoInstance.Configurations.Where(c => c.ViewType == viewType);
+            //    configurations = dtoInstance.Configurations.Where(c => c.ViewType == viewType);
 
-                Configuration.CacheGroups.Add(new ConfigurationCacheGroup()
-                {
-                    ViewName = dtoType.Name,
-                    ViewType = viewType,
-                    List = configurations.ToList()
-                });
-            }
-            else
-            {
-                configurations = Configuration.CacheGroups.FirstOrDefault(cg => cg.ViewName == dtoType.Name && cg.ViewType == viewType).List;
-            }
+            //    Configuration.CacheGroups.Add(new ConfigurationCacheGroup()
+            //    {
+            //        ViewName = dtoType.Name,
+            //        ViewType = viewType,
+            //        List = configurations.ToList()
+            //    });
+            //}
+            //else
+            //{
+            //    configurations = Configuration.CacheGroups.FirstOrDefault(cg => cg.ViewName == dtoType.Name && cg.ViewType == viewType).List;
+            //}
 
             var selectedColumns = new List<MetaColumnDTO>();
             var filteredColumns = new List<MetaColumnDTO>();
@@ -640,92 +624,6 @@ namespace Hydra.DTOs
             return allColumns;
         }
 
-        //public static List<MetaColumnDTO> ConfigureMetaColumnsUsingAttributes(Type dtoType, Type attributeType)
-        //{
-        //    var properties = dtoType.GetProperties().Where(p => p.CanWrite);
-
-        //    var predicate = new Func<PropertyInfo, bool>(p => p.CustomAttributes.Any(a => a.AttributeType.Name == attributeType.Name));
-
-        //    var selectedColumns = new List<MetaColumnDTO>();
-        //    var filteredColumns = new List<MetaColumnDTO>();
-        //    var orderedColumns = new List<MetaColumnDTO>();
-
-        //    if (dtoType == null || !properties.Any(predicate))
-        //    {
-        //        var counter = 0;
-
-        //        selectedColumns = properties.Select(pi => new MetaColumnDTO()
-        //        {
-        //            TypeName = nameof(SelectedColumn),
-        //            Name = pi.Name,
-        //            Priority = counter++
-
-        //        }).ToList();
-        //    }
-        //    else
-        //    {
-        //        selectedColumns = properties.Where(predicate)
-        //                    .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(SelectedColumn)))
-        //                    .ToList();
-
-
-        //        if (!properties.Where(predicate).Any(pi => pi.Name == "Id"))
-        //            selectedColumns.Add(new MetaColumnDTO()
-        //            {
-        //                TypeName = nameof(SelectedColumn),
-        //                Name = "Id",
-        //                Priority = 0,
-        //                DisplayName = "Id",
-        //                IsPrimaryKey = true
-        //            });
-        //    }
-
-        //    if (dtoType.IsAssignableTo(typeof(IFilterableView)))
-        //        filteredColumns = properties.Where(predicate)
-        //            .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(FilterTypeAttribute).Name))
-        //            .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(FilteredColumn)))
-        //            .ToList();
-
-        //    orderedColumns = properties.Where(predicate)
-        //                                .Where(pi => pi.CustomAttributes.Any(a => a.AttributeType.Name == typeof(OrderableAttribute).Name))
-        //                                .Select(pi => pi.ToColumnDTOUsingAttributes(nameof(OrderedColumn)))
-        //                                .ToList();
-
-        //    var allColumns = selectedColumns.Union(filteredColumns).Union(orderedColumns).ToList();
-
-        //    try
-        //    {
-        //        var propertyNameForTableNameInDTO = ReflectionHelper.GetMemberName<ViewDTO>(dto => dto.ControllerName);
-
-        //        var dtoInstance = ReflectionHelper.InvokeMethod(invokerType: typeof(Helper),
-        //                                                invokerObject: null,
-        //                                                methodName: "CreateInstance",
-        //                                                genericTypes: new[] { dtoType },
-        //                                                parameters: new object?[]
-        //                                                {
-        //                                                    null
-        //                                                });
-
-        //        if (string.IsNullOrEmpty((dtoInstance as ViewDTO).ControllerName))
-        //            throw new Exception($"Please set the controller name for {dtoType.Name}");
-
-        //        foreach (var column in allColumns)
-        //        {
-        //            column.SetTableName(ReflectionHelper.GetValueOf(propertyNameForTableNameInDTO, dtoInstance).ToString());
-
-        //            if (column.IsFilteredColumn && column.DefaultValue != null && column.GetFirstValue == null)
-        //            {
-        //                column.FilterDTO.SetParameters(new List<object>() { column.DefaultValue });
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //    }
-
-        //    return allColumns;
-        //}
 
         public JoinTableDTO GetOrCreateJoinTableDTO(string tableName,
                                                     string alias,
@@ -734,7 +632,7 @@ namespace Hydra.DTOs
                                                     JoinType joinType,
                                                     string rightTableKeyName,
                                                     string rightTableName,
-                                                    MetaColumnDTO traceColumnToJoin = null)
+                                                    MetaColumnDTO? traceColumnToJoin = null)
         {
             var createNewJoinTable = new Func<JoinTableDTO>(() =>
             {
@@ -747,7 +645,7 @@ namespace Hydra.DTOs
                                         rightTableColumnName: rightTableKeyName);
             });
 
-            JoinTableDTO joinTable = null;
+            JoinTableDTO? joinTable = null;
 
             if (leftTableName != Name)
             {

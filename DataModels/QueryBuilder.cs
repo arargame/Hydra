@@ -88,7 +88,7 @@ namespace Hydra.DataModels
 
         public QueryBuilder ExecuteFilteredTotalRecordsCount()
         {
-            FilteredTotalRecordsCount = (int)(AdoNetDatabaseService.ExecuteScalar(QueryToTakeFilteredCount, _table.QueryParameters, connection) ?? 0);
+            FilteredTotalRecordsCount = (int)(AdoNetDatabaseService.ExecuteScalar(QueryToTakeFilteredCount, _table.QueryParameters, _connection) ?? 0);
 
             return this;
         }
@@ -132,9 +132,9 @@ namespace Hydra.DataModels
 
             if (!selectedColumns.Any())
             {
-                var leftTableSelectedColumnList = AdoNetDatabaseService.SelectColumnNames(table.Name)
+                var leftTableSelectedColumnList = AdoNetDatabaseService.SelectColumnNames(_table.Name)
                                                             .Select(c => c["COLUMN_NAME"]?.ToString())
-                                                            .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(table))
+                                                            .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(_table))
                                                             .OfType<IMetaColumn>()
                                                             .ToList();
 
@@ -161,7 +161,7 @@ namespace Hydra.DataModels
 
                     foreach (var column in columnsToChangeAlias)
                     {
-                        if (column.Table!=null && column.Table.Name != table.Name)
+                        if (column.Table!=null && column.Table.Name != _table.Name)
                             column.Alias = $"{column.Table?.Name}.{column.Alias}";
                     }
                 }

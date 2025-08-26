@@ -360,7 +360,7 @@ namespace Hydra.DTOs
         }
 
 
-        public static MetaColumnDTO Create(string name, string alias, string typeName, FilterDTO filter, int priority = 0)
+        public static MetaColumnDTO Create(string name, string? alias, string typeName, FilterDTO? filter, int priority = 0)
         {
             return new MetaColumnDTO()
             {
@@ -372,7 +372,7 @@ namespace Hydra.DTOs
             };
         }
 
-        public static MetaColumnDTO CreateColumnDTOWithFilter(string name, string alias, int priority, string filterTypeName, int filterPriority, bool createFilterComponentFromThis, List<object?>? values)
+        public static MetaColumnDTO CreateColumnDTOWithFilter(string name, string? alias, int priority, string filterTypeName, int filterPriority, bool createFilterComponentFromThis, List<object?>? values)
         {
             return Create(name: name,
                             alias: alias,
@@ -416,7 +416,7 @@ namespace Hydra.DTOs
             return column.SetAsForeignKey(true).SetColumnValueType(ColumnValueType.Guid);
         }
 
-        public static MetaColumnDTO CreateColumnDTOWithEqualFilter(string name, string alias, object value, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
+        public static MetaColumnDTO CreateColumnDTOWithEqualFilter(string name, string? alias, object value, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
         {
             return CreateColumnDTOWithFilter(name: name, alias: alias, priority: priority, filterTypeName: typeof(EqualFilter).Name, createFilterComponentFromThis: useFilterToCreateViewComponent, filterPriority: filterPriority, values: new List<object>() { value });
         }
