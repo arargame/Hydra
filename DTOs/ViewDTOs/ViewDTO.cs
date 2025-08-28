@@ -148,7 +148,7 @@ namespace Hydra.DTOs.ViewDTOs
         }
 
 
-        public ViewDTO SetConfigurationsViaEnumPropertyInfo(PropertyInfo propertyInfo,
+        public ViewDTO SetConfigurationsViaEnumPropertyInfo(PropertyInfo? propertyInfo,
                                                 string? displayName = null,
                                                 NavigationColumnInfo? navigation = null,
                                                 object? defaultValue = null)
@@ -172,7 +172,7 @@ namespace Hydra.DTOs.ViewDTOs
                                                     navigation: navigation);
         }
 
-        public ViewDTO SetConfigurationsViaStringPropertyInfo(PropertyInfo propertyInfo,
+        public ViewDTO SetConfigurationsViaStringPropertyInfo(PropertyInfo? propertyInfo,
                                                 string? displayName = null,
                                                 NavigationColumnInfo? navigation = null,
                                                 AttributeToFilter? attributeToFilter = null,
@@ -204,7 +204,7 @@ namespace Hydra.DTOs.ViewDTOs
         }
 
 
-        public ViewDTO SetConfigurationsViaBooleanPropertyInfo(PropertyInfo propertyInfo,
+        public ViewDTO SetConfigurationsViaBooleanPropertyInfo(PropertyInfo? propertyInfo,
                                                 string? displayName = null,
                                                 NavigationColumnInfo? navigation = null,
                                                 object? defaultValueInCreation = null,

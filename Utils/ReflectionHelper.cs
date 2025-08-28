@@ -504,6 +504,11 @@ namespace Hydra.Utils
                 : memberExpression.Member.Name;
         }
 
+        public static bool HasProperty(Type type, string propertyName)
+        {
+            return type.GetProperty(propertyName,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase) != null;
+        }
 
         public static T? ShallowCopy<T>(T entity) where T : class
         {

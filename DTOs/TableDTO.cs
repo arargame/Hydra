@@ -2,17 +2,10 @@
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.Utils;
-using Hydra.ValidationManagement.Hydra.ValidationManagement;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Collections.Generic;
-using System.Data.Common;
+//using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using static Hydra.DataModels.SortingFilterDirectionExtension;
 
 namespace Hydra.DTOs
@@ -460,14 +453,14 @@ namespace Hydra.DTOs
             return this;
         }
 
-        public List<T> GetResultsAs<T>() where T : class
+        public List<T?> GetResultsAs<T>(Action<Exception>? logAction = null) where T : class
         {
-            return Rows.Select(r => r.ToObject<T>()).ToList();
+            return Rows.Select(r => r.ToObject<T>(logAction)).ToList();
         }
 
-        public async Task<List<object>> GetResultsAsViewDTOType()
+        public async Task<List<object?>> GetResultsAsViewDTOType(Assembly? assembly= null,Action<Exception> ? logAction = null)
         {
-            List<object> results = new List<object>();
+            List<object?> results = new List<object?>();
 
             Stopwatch sw = new Stopwatch();
 
@@ -475,12 +468,7 @@ namespace Hydra.DTOs
 
             foreach (var row in Rows)
             {
-                //foreach (var column in row.Columns)
-                //{
-                //    column.Value = column.Value?.ToString();
-                //}
-
-                results.Add(await row.ToObject(ViewDTOType));
+                results.Add(await row.ToObjectAsync(assembly: assembly, typeName: ViewDTOTypeName, logAction: logAction));
             }
 
             sw.Stop();
