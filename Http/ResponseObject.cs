@@ -56,7 +56,7 @@ namespace Hydra.Http
             return this;
         }
 
-        public IResponseObject SetActionName(string? actionName)
+        public IResponseObject SetActionName([System.Runtime.CompilerServices.CallerMemberName] string? actionName = null)
         {
             ActionName = actionName;
             return this;
