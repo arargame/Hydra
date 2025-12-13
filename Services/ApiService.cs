@@ -27,7 +27,7 @@ namespace Hydra.Services
             _httpClient = httpClient;
         }
 
-        public async Task<ResponseObject> SendAsync(string url,
+        public async Task<IResponseObject> SendAsync(string url,
                                                     HttpRequestType method,
                                                     object? body = null,
                                                     Dictionary<string, string>? headers = null,

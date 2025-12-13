@@ -11,10 +11,10 @@ namespace Hydra.DAL.Repositories
             : base(injector) { }
 
 
-        public SystemUser? GetByEmail(string email)
-        {
-            return Context?.Set<SystemUser>().FirstOrDefault(u => u.Email == email);
-        }
+        //public SystemUser? GetByEmail(string email)
+        //{
+        //    return Context?.Set<SystemUser>().FirstOrDefault(u => u.Email == email);
+        //}
     }
 
 }

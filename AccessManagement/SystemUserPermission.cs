@@ -1,4 +1,5 @@
 ﻿using Hydra.Core;
+using Hydra.IdentityAndAccess;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

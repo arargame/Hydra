@@ -123,7 +123,7 @@ namespace Hydra.CacheManagement
             lock (lockObject)
             {
                 values = lruList
-                    .Select(node => node.Value.Value)
+                    .Select(node => node.Value)
                     .Where(predicate)
                     .ToList();
             }

@@ -96,7 +96,7 @@ namespace Hydra.Services.Core
         Task<List<T>> SelectWithTableAsync(string? tableName = null,
                         string? tableAlias = null,
                         List<IMetaColumn>? metaColumns = null,
-                        Expression<Func<ITable, IJoinFilter>>? expressionToManageFilters = null,
+                        Expression<Func<ITable, JoinedFiltersGroup>>? expressionToManageFilters = null,
                         Expression<Func<ITable, List<IJoinTable>>>? expressionToSetJoins = null,
                         int? pageNumber = null,
                         int? pageSize = null);

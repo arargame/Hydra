@@ -2,7 +2,6 @@
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Core;
-using Hydra.Services.Log;
 using Microsoft.AspNetCore.Http;
 
 namespace Hydra.DI
@@ -15,7 +14,7 @@ namespace Hydra.DI
         //HttpContext HttpContext { get; }
         IHttpContextAccessorAbstraction HttpContextAccessor { get; }
 
-        ILogService LogService { get; }
+        //ILogService LogService { get; }
     }
     public class ControllerInjector : IControllerInjector
     {
@@ -24,7 +23,7 @@ namespace Hydra.DI
         //public IConfiguration Configuration { get; }
         //  public IHttpContextAccessor HttpContextAccessor { get; }
         public IHttpContextAccessorAbstraction HttpContextAccessor { get; }
-        public ILogService LogService { get; }
+        //public ILogService LogService { get; }
 
       //  public HttpContext HttpContext => HttpContextAccessor.HttpContext!;
 
@@ -33,15 +32,15 @@ namespace Hydra.DI
             IServiceFactory serviceFactory,
             ISessionContext sessionContext,
             //            IConfiguration configuration,
-            IHttpContextAccessorAbstraction httpContextAccessor,
-            ILogService logService)
+            IHttpContextAccessorAbstraction httpContextAccessor)
+         //   ILogService logService)
         {
             
             ServiceFactory = serviceFactory;
             SessionContext = sessionContext;
          //   Configuration = configuration;
             HttpContextAccessor = httpContextAccessor;
-            LogService = logService;
+            //LogService = logService;
         }
     }
 }
