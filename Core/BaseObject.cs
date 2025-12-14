@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
+
 namespace Hydra.Core
 {
     public interface IHasId
@@ -91,7 +92,7 @@ namespace Hydra.Core
         }
         public virtual void Initialize()
         {
-            Id = Guid.NewGuid();
+            Id = Guid.CreateVersion7();
         }
 
         public virtual T SetName(string? name)
