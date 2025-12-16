@@ -20,7 +20,7 @@ namespace Hydra.DI
 
         //public SessionInformation SessionInformation { get; set; } 
 
-        public IConfiguration Configuration { get; set; }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get; set; }
 
         public IServiceProvider ServiceProvider { get; set; }
 
@@ -29,7 +29,7 @@ namespace Hydra.DI
         public ServiceInjector(IUnitOfWork unitOfWork,
                             IRepositoryFactoryService repositoryFactory,
                             //SessionInformation sessionInformation,
-                            IConfiguration configuration,
+                            Microsoft.Extensions.Configuration.IConfiguration configuration,
                             IServiceProvider serviceProvider,
                             ITableService tableService)
         {
@@ -63,7 +63,7 @@ namespace Hydra.DI
         /// </example>
         public Lazy<T> ResolveLazy<T>() where T : class
         {
-            Ensure.IsTrue(ServiceProvider == null, "ServiceProvider is not initialized.");
+            Ensure.IsTrue(ServiceProvider != null, "ServiceProvider is not initialized.");
 
             return new Lazy<T>(() => ServiceProvider!.GetRequiredService<T>());
         }

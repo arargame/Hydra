@@ -10,24 +10,22 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<Permission>))]
     public class PermissionService : Service<Permission>
     {
-        private readonly SystemUserPermissionService _systemUserPermissionService;
-        private readonly RolePermissionService _rolePermissionService;
+        private readonly ServiceInjector _injector;
+        // Dependencies removed from constructor to break circular reference
 
         public PermissionService(
             ServiceInjector injector,
-            IQueryableCacheService<Guid, Permission> cache,
-            SystemUserPermissionService systemUserPermissionService,
-            RolePermissionService rolePermissionService) : base(injector)
+            IQueryableCacheService<Guid, Permission> cache) : base(injector)
         {
+            _injector = injector;
             SetCacheService(cache);
-            _systemUserPermissionService = systemUserPermissionService;
-            _rolePermissionService = rolePermissionService;
         }
 
 
         public async Task<List<SystemUser>> GetUsersAsync(Guid permissionId)
         {
-            return await _systemUserPermissionService.GetUsersAsync(permissionId);
+            var systemUserPermissionService = _injector.ResolveLazy<SystemUserPermissionService>().Value;
+            return await systemUserPermissionService.GetUsersAsync(permissionId);
         }
 
         public async Task<IResponseObject> GetUsersResponseAsync(Guid permissionId,
@@ -45,7 +43,8 @@ namespace Hydra.Services
 
         public async Task<List<Role>> GetRolesAsync(Guid permissionId)
         {
-            return await _rolePermissionService.GetRolesAsync(permissionId);
+            var rolePermissionService = _injector.ResolveLazy<RolePermissionService>().Value;
+            return await rolePermissionService.GetRolesAsync(permissionId);
         }
 
         public async Task<IResponseObject> GetRolesResponseAsync(Guid permissionId,

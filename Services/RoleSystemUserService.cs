@@ -9,17 +9,14 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<RoleSystemUser>))]
     public class RoleSystemUserService : Service<RoleSystemUser>
     {
-        private readonly RoleService _roleService;
-        private readonly SystemUserService _systemUserService;
+        private readonly ServiceInjector _injector;
+
+
 
         public RoleSystemUserService(ServiceInjector injector,
-                                     IQueryableCacheService<Guid, RoleSystemUser> cache,
-                                     RoleService roleService,
-                                     SystemUserService systemUserService) : base(injector)
+                                     IQueryableCacheService<Guid, RoleSystemUser> cache) : base(injector)
         {
-            _roleService = roleService;
-            _systemUserService = systemUserService;
-
+            _injector = injector;
             SetCacheService(cache);
         }
 
@@ -41,7 +38,8 @@ namespace Hydra.Services
 
             foreach (var ru in roleSystemUsers)
             {
-                var role = await _roleService.GetOrSelectThenCacheAsync(ru.RoleId);
+                var roleService = _injector.ResolveLazy<RoleService>().Value;
+                var role = await roleService.GetOrSelectThenCacheAsync(ru.RoleId);
                 if (role != null)
                     roles.Add(role);
             }
@@ -56,7 +54,8 @@ namespace Hydra.Services
 
             foreach (var ru in roleSystemUsers)
             {
-                var user = await _systemUserService.GetOrSelectThenCacheAsync(ru.UserId);
+                var systemUserService = _injector.ResolveLazy<SystemUserService>().Value;
+                var user = await systemUserService.GetOrSelectThenCacheAsync(ru.UserId);
                 if (user != null)
                     users.Add(user);
             }

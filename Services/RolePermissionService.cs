@@ -10,19 +10,12 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<RolePermission>))]
     public class RolePermissionService : Service<RolePermission>
     {
-        private readonly RoleService _roleService;
-
-        private readonly PermissionService _permissionService;
+        private readonly ServiceInjector _injector;
 
         public RolePermissionService(ServiceInjector injector,
-                                      ICacheService<Guid, RolePermission> cacheService,
-                                      RoleService roleService,
-                                      PermissionService permissionService) : base(injector)
+                                      IQueryableCacheService<Guid, RolePermission> cacheService) : base(injector)
         {
-            _roleService = roleService;
-
-            _permissionService = permissionService;
-
+            _injector = injector;
             SetCacheService(cacheService); 
         }
 
@@ -44,7 +37,8 @@ namespace Hydra.Services
 
             foreach (var rp in rolePermissions)
             {
-                var role = await _roleService.GetOrSelectThenCacheAsync(rp.RoleId);
+                var roleService = _injector.ResolveLazy<RoleService>().Value;
+                var role = await roleService.GetOrSelectThenCacheAsync(rp.RoleId);
                 if (role != null)
                     roles.Add(role);
             }
@@ -61,7 +55,8 @@ namespace Hydra.Services
 
             foreach (var rp in rolePermissions)
             {
-                var permission = await _permissionService.GetOrSelectThenCacheAsync(rp.PermissionId);
+                var permissionService = _injector.ResolveLazy<PermissionService>().Value;
+                var permission = await permissionService.GetOrSelectThenCacheAsync(rp.PermissionId);
                 if (permission != null)
                     permissions.Add(permission);
             }

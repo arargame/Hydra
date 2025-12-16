@@ -12,28 +12,26 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<SystemUser>))]
     public class SystemUserService : Service<SystemUser>
     {
-        private readonly RoleSystemUserService _roleSystemUserService;
-        private readonly SystemUserPermissionService _systemUserPermissionService;
+        private readonly ServiceInjector _injector;
 
         public SystemUserService(
             ServiceInjector injector,
-            ICacheService<Guid, SystemUser> cache,
-            RoleSystemUserService roleSystemUserService,
-            SystemUserPermissionService systemUserPermissionService) : base(injector)
+            IQueryableCacheService<Guid, SystemUser> cache) : base(injector)
         {
+            _injector = injector;
             SetCacheService(cache);
-            _roleSystemUserService = roleSystemUserService;
-            _systemUserPermissionService = systemUserPermissionService;
         }
 
         public async Task<List<Role>> GetRolesAsync(Guid userId)
         {
-            return await _roleSystemUserService.GetRolesAsync(userId);
+            var roleSystemUserService = _injector.ResolveLazy<RoleSystemUserService>().Value;
+            return await roleSystemUserService.GetRolesAsync(userId);
         }
 
         public async Task<List<Permission>> GetPermissionsAsync(Guid userId)
         {
-            return await _systemUserPermissionService.GetPermissionsAsync(userId);
+            var systemUserPermissionService = _injector.ResolveLazy<SystemUserPermissionService>().Value;
+            return await systemUserPermissionService.GetPermissionsAsync(userId);
         }
     }
 }

@@ -13,17 +13,12 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<SystemUserPermission>))]
     public class SystemUserPermissionService : Service<SystemUserPermission>
     {
-        private readonly SystemUserService _systemUserService;
-        private readonly PermissionService _permissionService;
+        private readonly ServiceInjector _injector;
 
         public SystemUserPermissionService(ServiceInjector injector,
-                                           IQueryableCacheService<Guid, SystemUserPermission> cacheService,
-                                           SystemUserService systemUserService,
-                                           PermissionService permissionService) : base(injector)
+                                           IQueryableCacheService<Guid, SystemUserPermission> cacheService) : base(injector)
         {
-            _systemUserService = systemUserService;
-            _permissionService = permissionService;
-
+            _injector = injector;
             SetCacheService(cacheService);
         }
 
@@ -45,7 +40,8 @@ namespace Hydra.Services
 
             foreach (var up in systemUserPermissions)
             {
-                var user = await _systemUserService.GetOrSelectThenCacheAsync(up.SystemUserId);
+                var systemUserService = _injector.ResolveLazy<SystemUserService>().Value;
+                var user = await systemUserService.GetOrSelectThenCacheAsync(up.SystemUserId);
                 if (user != null)
                     users.Add(user);
             }
@@ -60,7 +56,8 @@ namespace Hydra.Services
 
             foreach (var up in systemUserPermissions)
             {
-                var permission = await _permissionService.GetOrSelectThenCacheAsync(up.PermissionId);
+                var permissionService = _injector.ResolveLazy<PermissionService>().Value;
+                var permission = await permissionService.GetOrSelectThenCacheAsync(up.PermissionId);
                 if (permission != null)
                     permissions.Add(permission);
             }
