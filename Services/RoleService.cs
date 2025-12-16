@@ -13,23 +13,20 @@ namespace Hydra.Services
     [RegisterAsService(typeof(IService<Role>))]
     public class RoleService : Service<Role>
     {
-        private readonly RoleSystemUserService _roleSystemUserService;
-        private readonly RolePermissionService _rolePermissionService;
+        private readonly ServiceInjector _injector;
 
         public RoleService(
             ServiceInjector injector,
-            IQueryableCacheService<Guid, Role> cache,
-            RoleSystemUserService roleSystemUserService,
-            RolePermissionService rolePermissionService) : base(injector)
+            IQueryableCacheService<Guid, Role> cache) : base(injector)
         {
+            _injector = injector;
             SetCacheService(cache);
-            _roleSystemUserService = roleSystemUserService;
-            _rolePermissionService = rolePermissionService;
         }
 
         public async Task<List<SystemUser>> GetUsersAsync(Guid roleId)
         {
-            return await _roleSystemUserService.GetUsersAsync(roleId);
+            var roleSystemUserService = _injector.ResolveLazy<RoleSystemUserService>().Value;
+            return await roleSystemUserService.GetUsersAsync(roleId);
         }
 
         public async Task<IResponseObject> GetUsersResponseAsync(Guid roleId, [System.Runtime.CompilerServices.CallerMemberName] string? actionName = null)
@@ -46,7 +43,8 @@ namespace Hydra.Services
 
         public async Task<List<Permission>> GetPermissionsAsync(Guid roleId)
         {
-            return await _rolePermissionService.GetPermissionsAsync(roleId);
+            var rolePermissionService = _injector.ResolveLazy<RolePermissionService>().Value;
+            return await rolePermissionService.GetPermissionsAsync(roleId);
         }
 
         public async Task<IResponseObject> GetPermissionsResponseAsync(Guid roleId, [System.Runtime.CompilerServices.CallerMemberName] string? actionName = null)

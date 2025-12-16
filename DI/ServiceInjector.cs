@@ -5,6 +5,7 @@ using Hydra.Services;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +21,7 @@ namespace Hydra.DI
 
         //public SessionInformation SessionInformation { get; set; } 
 
-        public IConfiguration Configuration { get; set; }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get; set; }
 
         public IServiceProvider ServiceProvider { get; set; }
 
@@ -29,7 +30,7 @@ namespace Hydra.DI
         public ServiceInjector(IUnitOfWork unitOfWork,
                             IRepositoryFactoryService repositoryFactory,
                             //SessionInformation sessionInformation,
-                            IConfiguration configuration,
+                            Microsoft.Extensions.Configuration.IConfiguration configuration,
                             IServiceProvider serviceProvider,
                             ITableService tableService)
         {
@@ -45,6 +46,8 @@ namespace Hydra.DI
 
             TableService = tableService;
         }
+
+        private readonly ConcurrentDictionary<Type, object> _lazyCache = new();
 
         /// <summary>
         /// Lazily resolves a service instance from the IServiceProvider.
@@ -63,9 +66,12 @@ namespace Hydra.DI
         /// </example>
         public Lazy<T> ResolveLazy<T>() where T : class
         {
-            Ensure.IsTrue(ServiceProvider == null, "ServiceProvider is not initialized.");
+            Ensure.IsTrue(ServiceProvider != null, "ServiceProvider is not initialized.");
 
-            return new Lazy<T>(() => ServiceProvider!.GetRequiredService<T>());
+            return (Lazy<T>)_lazyCache.GetOrAdd(
+                typeof(T),
+                _ => new Lazy<T>(() => ServiceProvider!.GetRequiredService<T>())
+            );
         }
 
         //private readonly Func<QuestionService> _questionServiceFactory;
