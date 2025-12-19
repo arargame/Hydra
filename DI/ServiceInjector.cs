@@ -2,10 +2,11 @@
 using Hydra.DAL.Core;
 using Hydra.DTOs.ViewConfigurations;
 using Hydra.Services;
+using Hydra.Services.Core;
+using Hydra.IdentityAndAccess;
 using Hydra.ValidationManagement.Hydra.ValidationManagement;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,12 +28,17 @@ namespace Hydra.DI
 
         public ITableService TableService {  get; set; }
 
+        public IServiceFactory ServiceFactory { get; set; }
+        public ISessionContext SessionContext { get; set; }
+
         public ServiceInjector(IUnitOfWork unitOfWork,
                             IRepositoryFactoryService repositoryFactory,
                             //SessionInformation sessionInformation,
                             Microsoft.Extensions.Configuration.IConfiguration configuration,
                             IServiceProvider serviceProvider,
-                            ITableService tableService)
+                            ITableService tableService,
+                            IServiceFactory serviceFactory,
+                            ISessionContext sessionContext)
         {
             UnitOfWork = unitOfWork;
 
@@ -45,37 +51,15 @@ namespace Hydra.DI
             ServiceProvider = serviceProvider;
 
             TableService = tableService;
+            ServiceFactory = serviceFactory;
+            SessionContext = sessionContext;
         }
 
-        private readonly ConcurrentDictionary<Type, object> _lazyCache = new();
-
-        /// <summary>
-        /// Lazily resolves a service instance from the IServiceProvider.
-        /// This delays the creation of the service until it's actually needed.
-        /// </summary>
-        /// <typeparam name="T">The type of the service to resolve.</typeparam>
-        /// <returns>A Lazy wrapper around the requested service.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if ServiceProvider is not initialized.</exception>
-        /// <example>
-        /// Usage:
-        /// <code>
-        /// var lazyService = injector.ResolveLazy&lt;QuestionService&gt;();
-        /// // Service is created only when .Value is accessed:
-        /// var questions = lazyService.Value.GetQuestions(poolId);
-        /// </code>
-        /// </example>
-        public Lazy<T> ResolveLazy<T>() where T : class
+        public Lazy<T> GetServiceLazy<T>() where T : class
         {
-            Ensure.IsTrue(ServiceProvider != null, "ServiceProvider is not initialized.");
-
-            return (Lazy<T>)_lazyCache.GetOrAdd(
-                typeof(T),
-                _ => new Lazy<T>(() => ServiceProvider!.GetRequiredService<T>())
-            );
+            return ServiceFactory.GetServiceLazy<T>();
         }
 
-        //private readonly Func<QuestionService> _questionServiceFactory;
-        //var service = _questionServiceFactory();
         public Func<T> ResolveFactory<T>() where T : class
         {
             return () => ServiceProvider.GetRequiredService<T>();

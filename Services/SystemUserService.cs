@@ -24,13 +24,13 @@ namespace Hydra.Services
 
         public async Task<List<Role>> GetRolesAsync(Guid userId)
         {
-            var roleSystemUserService = _injector.ResolveLazy<RoleSystemUserService>().Value;
+            var roleSystemUserService = _injector.GetServiceLazy<RoleSystemUserService>().Value;
             return await roleSystemUserService.GetRolesAsync(userId);
         }
 
         public async Task<List<Permission>> GetPermissionsAsync(Guid userId)
         {
-            var systemUserPermissionService = _injector.ResolveLazy<SystemUserPermissionService>().Value;
+            var systemUserPermissionService = _injector.GetServiceLazy<SystemUserPermissionService>().Value;
             return await systemUserPermissionService.GetPermissionsAsync(userId);
         }
     }

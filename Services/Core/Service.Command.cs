@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 namespace Hydra.Services.Core
 {
     //COMMAND
-    public partial class Service<T> : IService<T> where T : BaseObject<T>
+    public partial class Service<T> : IService<T> where T : BaseObject<T>, new()
     {
         public virtual async Task<IResponseObject> CreateAsync(T entity)
         {

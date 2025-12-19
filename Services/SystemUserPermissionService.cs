@@ -40,7 +40,7 @@ namespace Hydra.Services
 
             foreach (var up in systemUserPermissions)
             {
-                var systemUserService = _injector.ResolveLazy<SystemUserService>().Value;
+                var systemUserService = _injector.GetServiceLazy<SystemUserService>().Value;
                 var user = await systemUserService.GetOrSelectThenCacheAsync(up.SystemUserId);
                 if (user != null)
                     users.Add(user);
@@ -56,7 +56,7 @@ namespace Hydra.Services
 
             foreach (var up in systemUserPermissions)
             {
-                var permissionService = _injector.ResolveLazy<PermissionService>().Value;
+                var permissionService = _injector.GetServiceLazy<PermissionService>().Value;
                 var permission = await permissionService.GetOrSelectThenCacheAsync(up.PermissionId);
                 if (permission != null)
                     permissions.Add(permission);

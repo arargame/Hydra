@@ -1,4 +1,5 @@
 ﻿using Hydra.AccessManagement;
+using Hydra.IdentityAndAccess;
 using Hydra.Core;
 using Hydra.DAL.Core;
 using Hydra.DI;
@@ -8,7 +9,7 @@ using System.Linq.Expressions;
 
 namespace Hydra.Services.Core
 {
-    public partial class Service<T> : IService<T> where T : BaseObject<T>
+    public partial class Service<T> : IService<T> where T : BaseObject<T>, new()
     {
         private readonly IUnitOfWork _unitOfWork;
 
@@ -33,6 +34,9 @@ namespace Hydra.Services.Core
         public bool EnableForCommitting { get; set; } = true;
 
         private readonly ITableService _tableService;
+        
+        protected IServiceFactory ServiceFactory { get; private set; }
+        protected ISessionContext SessionContext { get; private set; }
 
 
         public Service(ServiceInjector injector)
@@ -42,10 +46,13 @@ namespace Hydra.Services.Core
             _repositoryFactory = injector.RepositoryFactory;
 
             //_sessionInformation = injector.SessionInformation;
+            
+            ServiceFactory = injector.ServiceFactory;
+            SessionContext = injector.SessionContext;
 
             SetRepository();
 
-            _lazyLogService = injector.ResolveLazy<ILogService>()!;
+            _lazyLogService = injector.GetServiceLazy<ILogService>()!;
 
             _tableService = injector.TableService;
         }
@@ -148,6 +155,16 @@ namespace Hydra.Services.Core
         public virtual void SetRepository(IRepository<T>? repository = null, params object[] additionalParams)
         {
             Repository = repository ?? _repositoryFactory.CreateRepository<T>(_unitOfWork.Context, additionalParams);
+        }
+
+        public virtual async Task<int> SeedAsync(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var entity = Hydra.TestManagement.SampleDataFactory.CreateSample<T>();
+                await CreateAsync(entity);
+            }
+            return count;
         }
     }
 }

@@ -12,10 +12,29 @@ namespace Hydra.TestManagement
         public static T CreateSample<T>() where T : BaseObject<T>, new()
         {
             var instance = new T();
+            var properties = Hydra.Utils.ReflectionHelper.GetCachedProperties(typeof(T));
 
-            var random = new Random().Next(1000, 9999);
-            instance.Name = $"{typeof(T).Name}-{random}";
-            instance.Description = $"Description: {Guid.NewGuid()}";
+            foreach (var prop in properties)
+            {
+                if (!prop.CanWrite || prop.Name == "Id" || prop.Name == "CreatedAt" || prop.Name == "UpdatedAt") continue;
+
+                if (prop.PropertyType == typeof(string))
+                {
+                    prop.SetValue(instance, $"{prop.Name}-{new Random().Next(100,999)}");
+                }
+                else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
+                {
+                    prop.SetValue(instance, new Random().Next(1, 100));
+                }
+                else if (prop.PropertyType == typeof(DateTime) || prop.PropertyType == typeof(DateTime?))
+                {
+                    prop.SetValue(instance, DateTime.UtcNow);
+                }
+                else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
+                {
+                    prop.SetValue(instance, new Random().Next(0, 2) == 1);
+                }
+            }
 
             return instance;
         }

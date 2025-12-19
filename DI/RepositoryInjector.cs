@@ -7,13 +7,9 @@ namespace Hydra.DI
     {
         public DbContext Context { get; set; }
 
-        public ILogService LogService { get; set; }
-
-        public RepositoryInjector(DbContext context,ILogService logService)
+        public RepositoryInjector(DbContext context)
         {
             Context = context;
-
-            LogService = logService;
         }
     }
 }

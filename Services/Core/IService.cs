@@ -117,6 +117,8 @@ namespace Hydra.Services.Core
 
         void SetCacheService(ICacheService<Guid, T> service);
 
+        Task<int> SeedAsync(int count);
+
         //ServiceInjector GetInjector();
 
         Task<IResponseObject> UpdateAsync(T entity);

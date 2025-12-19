@@ -180,25 +180,23 @@ namespace Hydra.Utils
             Assembly[] assemblies,
             Type interfaceType)
             where TAttribute : Attribute
-                {
-                    foreach (var assembly in assemblies)
-                    {
-                        var matchingType = assembly.GetTypes()
-                            .Where(t =>
-                                t.IsClass &&
-                                !t.IsAbstract &&
-                                t.GetCustomAttribute<TAttribute>() != null &&
-                                t.GetInterfaces().Any(i =>
-                                    i.IsGenericType &&
-                                    i.GetGenericTypeDefinition() == interfaceType.GetGenericTypeDefinition()))
-                            .FirstOrDefault();
+        {
+            foreach (var assembly in assemblies)
+            {
+                var matchingType = assembly.GetTypes()
+                    .Where(t =>
+                        t.IsClass &&
+                        !t.IsAbstract &&
+                        t.GetCustomAttribute<TAttribute>() != null &&
+                        t.GetInterfaces().Any(i => i == interfaceType))
+                    .FirstOrDefault();
 
-                        if (matchingType != null)
-                            return matchingType;
-                    }
+                if (matchingType != null)
+                    return matchingType;
+            }
 
-                    return null;
-                }
+            return null;
+        }
 
 
         private static readonly ConcurrentDictionary<Assembly, List<Type>> _derivedTypeCache = new();

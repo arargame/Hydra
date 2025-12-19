@@ -24,7 +24,7 @@ namespace Hydra.Services
 
         public async Task<List<SystemUser>> GetUsersAsync(Guid permissionId)
         {
-            var systemUserPermissionService = _injector.ResolveLazy<SystemUserPermissionService>().Value;
+            var systemUserPermissionService = _injector.GetServiceLazy<SystemUserPermissionService>().Value;
             return await systemUserPermissionService.GetUsersAsync(permissionId);
         }
 
@@ -43,7 +43,7 @@ namespace Hydra.Services
 
         public async Task<List<Role>> GetRolesAsync(Guid permissionId)
         {
-            var rolePermissionService = _injector.ResolveLazy<RolePermissionService>().Value;
+            var rolePermissionService = _injector.GetServiceLazy<RolePermissionService>().Value;
             return await rolePermissionService.GetRolesAsync(permissionId);
         }
 

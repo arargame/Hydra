@@ -38,7 +38,7 @@ namespace Hydra.Services
 
             foreach (var ru in roleSystemUsers)
             {
-                var roleService = _injector.ResolveLazy<RoleService>().Value;
+                var roleService = _injector.GetServiceLazy<RoleService>().Value;
                 var role = await roleService.GetOrSelectThenCacheAsync(ru.RoleId);
                 if (role != null)
                     roles.Add(role);
@@ -54,7 +54,7 @@ namespace Hydra.Services
 
             foreach (var ru in roleSystemUsers)
             {
-                var systemUserService = _injector.ResolveLazy<SystemUserService>().Value;
+                var systemUserService = _injector.GetServiceLazy<SystemUserService>().Value;
                 var user = await systemUserService.GetOrSelectThenCacheAsync(ru.UserId);
                 if (user != null)
                     users.Add(user);

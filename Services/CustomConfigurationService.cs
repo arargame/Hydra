@@ -28,13 +28,30 @@ namespace Hydra.Services
 
         public string Get(string key, string? defaultValue = null)
         {
-            // Öncelik: secret manager > config
+            // 1. Öncelik: Secret Manager (Kök dizin)
             var secretValue = _secretManager.GetSecret(key);
             if (!string.IsNullOrEmpty(secretValue))
                 return secretValue;
 
+            // 2. Öncelik: Secret Manager (ConnectionStrings altı) - Eğer key zaten "ConnectionStrings:" ile başlamıyorsa dene
+            if (!key.StartsWith("ConnectionStrings:"))
+            {
+                var secretConnStr = _secretManager.GetSecret($"ConnectionStrings:{key}");
+                if (!string.IsNullOrEmpty(secretConnStr))
+                    return secretConnStr;
+            }
+
+            // 3. Öncelik: Config (Kök dizin)
             var configValue = _configuration[key];
-            return !string.IsNullOrEmpty(configValue) ? configValue : defaultValue ?? string.Empty;
+            if (!string.IsNullOrEmpty(configValue))
+                return configValue;
+
+            // 4. Öncelik: Config (ConnectionStrings altı)
+            var connStrValue = _configuration.GetConnectionString(key);
+            if (!string.IsNullOrEmpty(connStrValue))
+                return connStrValue;
+
+            return defaultValue ?? string.Empty;
         }
 
         public T Get<T>(string key, T defaultValue = default!)

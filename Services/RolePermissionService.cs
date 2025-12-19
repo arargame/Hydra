@@ -37,7 +37,7 @@ namespace Hydra.Services
 
             foreach (var rp in rolePermissions)
             {
-                var roleService = _injector.ResolveLazy<RoleService>().Value;
+                var roleService = _injector.GetServiceLazy<RoleService>().Value;
                 var role = await roleService.GetOrSelectThenCacheAsync(rp.RoleId);
                 if (role != null)
                     roles.Add(role);
@@ -55,7 +55,7 @@ namespace Hydra.Services
 
             foreach (var rp in rolePermissions)
             {
-                var permissionService = _injector.ResolveLazy<PermissionService>().Value;
+                var permissionService = _injector.GetServiceLazy<PermissionService>().Value;
                 var permission = await permissionService.GetOrSelectThenCacheAsync(rp.PermissionId);
                 if (permission != null)
                     permissions.Add(permission);

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34622.214
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11312.210 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra", "Hydra.csproj", "{520C5768-7A6C-4CBC-8B21-900A46C96C2E}"
 EndProject
@@ -9,11 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra.TestProject", "..\Hyd
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hydra.ConsoleApp", "..\Hydra.ConsoleApp\Hydra.ConsoleApp.csproj", "{14EE4BC2-7742-4BF6-A055-41FCA247D04E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.Blazor", "..\Hydra.Blazor\Hydra.Blazor.csproj", "{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.WebApi", "..\Hydra.WebApi\Hydra.WebApi.csproj", "{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hydra.RazorClassLibrary", "..\Hydra.RazorClassLibrary\Hydra.RazorClassLibrary.csproj", "{79F95A56-EF35-47E5-B981-C912F6E9C3EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,18 +29,10 @@ Global
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14EE4BC2-7742-4BF6-A055-41FCA247D04E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC39C694-14D3-4CFF-83D1-F59F533DD1F5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{842BB2AF-8305-4CE2-AE9E-0300BD19FF59}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79F95A56-EF35-47E5-B981-C912F6E9C3EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79F95A56-EF35-47E5-B981-C912F6E9C3EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79F95A56-EF35-47E5-B981-C912F6E9C3EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79F95A56-EF35-47E5-B981-C912F6E9C3EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

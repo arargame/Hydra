@@ -15,7 +15,7 @@ namespace Hydra.Services.Core
 {
 
     //QUERY
-    public partial class Service<T> : IService<T> where T : BaseObject<T>
+    public partial class Service<T> : IService<T> where T : BaseObject<T>, new()
     {
         public async Task<bool> AnyAsync(Expression<Func<T, bool>>? filter = null)
         {

@@ -19,7 +19,7 @@ namespace Hydra.Http
 
         public static T MergeRepositoryMessages<T, TEntity>(this T response, Service<TEntity> service)
             where T : IResponseObject
-            where TEntity : BaseObject<TEntity>
+            where TEntity : BaseObject<TEntity>, new()
         {
             if (!response.Success)
             {

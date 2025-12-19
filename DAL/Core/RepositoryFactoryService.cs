@@ -17,22 +17,18 @@ namespace Hydra.DAL.Core
     {
         private readonly IServiceProvider _serviceProvider;
 
-        private readonly LogService _logService;
-
         private readonly Assembly[] _assembliesToScan;
 
-        public RepositoryFactoryService(IServiceProvider serviceProvider, LogService logService, Assembly[] assembliesToScan)
+        public RepositoryFactoryService(IServiceProvider serviceProvider, Assembly[] assembliesToScan)
         {
             _serviceProvider = serviceProvider;
-
-            _logService = logService;
 
             _assembliesToScan = assembliesToScan;
         }
 
         //public IRepository<T>? CreateRepository<T>(DbContext context,SessionInformation sessionInfo) where T : BaseObject<T>
         //{
-        //    var injector = new RepositoryInjector(context, _logService);
+        //    var injector = new RepositoryInjector(context);
 
         //    var repositoryType = ReflectionHelper.GetTypeFromAssembly(typeof(IRepository<>), string.Format("{0}Repository", typeof(T).Name)) ?? typeof(Repository<T>);
 
@@ -63,7 +59,7 @@ namespace Hydra.DAL.Core
 
             var repositoryType = customRepoType ?? typeof(Repository<T>);
 
-            var injector = new RepositoryInjector(context, _logService);
+            var injector = new RepositoryInjector(context);
 
             var finalParameters = new object[] { injector }.Concat(additionalParameters).ToArray();
 
