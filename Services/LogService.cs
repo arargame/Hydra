@@ -21,7 +21,7 @@ namespace Hydra.Services
 
     public class LogService : ILogService
     {
-        private readonly FileService _fileService;
+        private readonly FileLogWriterService _fileLogWriterService;
         private readonly ILogDbWriterService _logDbWriterService;
         private readonly IMemoryCache _memoryCache;
         private readonly ISessionContext _sessionContext;
@@ -31,12 +31,12 @@ namespace Hydra.Services
         private readonly TimeSpan cacheExpiration = TimeSpan.FromHours(1);
 
         public LogService(
-            FileService fileService,
+            FileLogWriterService fileLogWriterService,
             ILogDbWriterService logDbWriterService,
             IMemoryCache memoryCache,
             ISessionContext sessionContext)
         {
-            _fileService = fileService;
+            _fileLogWriterService = fileLogWriterService;
             _logDbWriterService = logDbWriterService;
             _memoryCache = memoryCache;
             _sessionContext = sessionContext;
@@ -57,11 +57,18 @@ namespace Hydra.Services
                     break;
 
                 case LogRecordType.File:
-                   // fileService.Save(log); // Bu metod FileService içinde geliştirilecek
+                    await _fileLogWriterService.WriteAsync(log);
                     break;
 
                 case LogRecordType.Database:
-                    await _logDbWriterService.SaveAsync(log);
+                    try
+                    {
+                        await _logDbWriterService.SaveAsync(log);
+                    }
+                    catch
+                    {
+                        await _fileLogWriterService.WriteAsync(log);
+                    }
                     break;
 
                 default:

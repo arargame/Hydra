@@ -36,6 +36,8 @@ namespace Hydra.Core
     {
         string? Category { get; set; }
 
+        string? EntityName {  get; set; }
+
         string? EntityId { get; set; }
 
         LogType Type { get; set; }
@@ -51,22 +53,31 @@ namespace Hydra.Core
 
         ILog SetEntityId(string? entityId);
 
+        ILog SetEntityName(string? entityName);
+
 
         ILog SetSessionInformation(SessionInformation? sessionInformation);
+        ILog SetPayload(string? payload);
+
+        string? Payload { get; set; }
     }
 
-    [Index("EntityId")]
-    [Index("SessionInformationId")]
-    [Index("Category")]
+    [Index(nameof(Log.EntityId))]
+    [Index(nameof(Log.SessionInformationId))]
+    [Index(nameof(Log.Category))]
     public class Log : BaseObject<Log>, ILog
     {
         public string? Category { get; set; }
+
+        public string? EntityName { get; set; }
 
         public string? EntityId { get; set; }
 
         public LogType Type { get; set; }
 
         public LogProcessType ProcessType { get; set; }
+
+        public string? Payload { get; set; }
 
         public Guid? SessionInformationId { get; set; }
 
@@ -79,6 +90,7 @@ namespace Hydra.Core
             string? name,
             string? description,
             LogType logType,
+            string ? entityName = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null)
@@ -102,10 +114,11 @@ namespace Hydra.Core
 
         public Log(string description,
             LogType logType = LogType.Error,
+            string? entityName = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null,
-            int frameIndex = 1) : this(null, null, description, logType, entityId, processType, sessionInformation)
+            int frameIndex = 1) : this(null, null, description, logType, entityName, entityId, processType, sessionInformation)
         {
             var methodBase = new StackTrace().GetFrame(frameIndex)?.GetMethod();
 
@@ -157,10 +170,23 @@ namespace Hydra.Core
             return this;
         }
 
+        public ILog SetEntityName(string? entityName)
+        {
+            EntityName = entityName;
+
+            return this;
+        }
+
         public ILog SetSessionInformation(SessionInformation? sessionInformation)
         {
             SessionInformation = sessionInformation;
 
+            return this;
+        }
+
+        public ILog SetPayload(string? payload)
+        {
+            Payload = payload;
             return this;
         }
     }

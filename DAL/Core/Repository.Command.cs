@@ -8,7 +8,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Hydra.Core.DTOs;
+
 
 namespace Hydra.DAL.Core
 {
@@ -40,6 +43,7 @@ namespace Hydra.DAL.Core
                             .Logs.Add(LogFactory.Info(category: TypeName,
                                                          name: null,
                                                          description: null,
+                                                         entityName:TypeName,
                                                          entityId: entity.Id.ToString(),
                                                          processType: LogProcessType.Create
                                                          ));
@@ -49,7 +53,7 @@ namespace Hydra.DAL.Core
             }
             catch (Exception ex)
             {
-                Result.Logs.Add(LogFactory.Error(ex.Message, entity.Id.ToString(), LogProcessType.Create));
+                Result.Logs.Add(LogFactory.Error(ex.Message,TypeName, entity.Id.ToString(), LogProcessType.Create));
 
                 return false;
             }
@@ -137,6 +141,44 @@ namespace Hydra.DAL.Core
                     var modifiedProps = GetModifiedProperties(entity).ToArray();
                     response.AddModifiedProperties(modifiedProps);
 
+                    if (entity is IHasAuditFields baseObj)
+                    {
+                        var changes = new List<EntityChangeSet>();
+                        var entry = GetAsEntityEntry(entity);
+                        var dbValues = entry.GetDatabaseValues();
+
+                        foreach (var propName in modifiedProps)
+                        {
+                            var oldValue = dbValues?[propName]?.ToString();
+                            var newValue = entry.CurrentValues[propName]?.ToString();
+                            changes.Add(new EntityChangeSet
+                            {
+                                Property = propName,
+                                OldValue = oldValue,
+                                NewValue = newValue
+                            });
+                        }
+
+                        if (changes.Any())
+                        {
+                            var payload = JsonSerializer.Serialize(new UpdateLogPayload
+                            {
+                                EntityName = TypeName,
+                                EntityId = entity.Id.ToString(),
+                                Changes = changes
+                            });
+
+                            Result.Logs.Add(
+                                LogFactory.Info(category: TypeName,
+                                                     name: null,
+                                                     description: null,
+                                                     entityName: TypeName,
+                                                     entityId: entity.Id.ToString(),
+                                                     processType: LogProcessType.Update)
+                                            .SetPayload(payload));
+                        }
+                    }
+
                     ChangeEntityState(entity, EntityState.Modified);
                     isUpdated = true;
                 }
@@ -145,9 +187,9 @@ namespace Hydra.DAL.Core
                    Result.AddErrorMessage(title: "Nothing changed", text: "This record has no modified field");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                Result.Logs.Add(LogFactory.Error(ex.Message, TypeName, entity.Id.ToString(), LogProcessType.Update));
             }
 
             return response.SetSuccess(isUpdated);
