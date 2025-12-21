@@ -71,12 +71,15 @@ namespace Hydra.DAL.Core
                     }
                     catch (Exception ex)
                     {
+                        var friendlyMessage = SqlExceptionHelper.ToUserFriendlyMessage(ex);
+
                         await _logService.SaveAsync(new Log(
-                            description: $"Commit failed: {ex.GetFullMessage()}",
+                            description: $"Commit failed: {friendlyMessage}",
                             logType: LogType.Error), LogRecordType.Database);
 
-                        break;
                     }
+                    // Reverting to previous logic of swallowing exception (returning false) but with friendly log
+                    break;
                 }
             }
 

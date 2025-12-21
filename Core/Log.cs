@@ -60,6 +60,13 @@ namespace Hydra.Core
         ILog SetPayload(string? payload);
 
         string? Payload { get; set; }
+
+        Guid? CorrelationId { get; set; }
+        
+        Guid? PlatformId { get; set; }
+
+        ILog SetCorrelationId(Guid? correlationId);
+        ILog SetPlatformId(Guid? platformId);
     }
 
     [Index(nameof(Log.EntityId))]
@@ -78,6 +85,13 @@ namespace Hydra.Core
         public LogProcessType ProcessType { get; set; }
 
         public string? Payload { get; set; }
+
+        public Guid? CorrelationId { get; set; }
+
+        public Guid? PlatformId { get; set; }
+
+        [ForeignKey("PlatformId")]
+        public Platform? Platform { get; set; }
 
         public Guid? SessionInformationId { get; set; }
 
@@ -108,6 +122,8 @@ namespace Hydra.Core
             SetEntityId(entityId);
 
             SetProcessType(processType);
+
+            SetEntityName(entityName);
 
             SetSessionInformation(sessionInformation);
         }
@@ -176,7 +192,7 @@ namespace Hydra.Core
 
         public override string ToString()
         {
-            return $"({Id})[{Type}][{ProcessType}]{Category}/{Name}/{EntityId}";
+            return $"({Id})[{Type}][{ProcessType}]{Category}/{Name}/{EntityId} - Correlation:{CorrelationId} Platform:{PlatformId}";
         }
 
         public ILog SetCategory(string? category)
@@ -210,6 +226,18 @@ namespace Hydra.Core
         public ILog SetPayload(string? payload)
         {
             Payload = payload;
+            return this;
+        }
+
+        public ILog SetCorrelationId(Guid? correlationId)
+        {
+            CorrelationId = correlationId;
+            return this;
+        }
+
+        public ILog SetPlatformId(Guid? platformId)
+        {
+            PlatformId = platformId;
             return this;
         }
     }

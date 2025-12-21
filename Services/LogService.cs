@@ -45,6 +45,17 @@ namespace Hydra.Services
         public async Task SaveAsync(ILog log, LogRecordType recordType)
         {
             log.SetSessionInformation(sessionInformation);
+            
+            // Auto-populate from HydraContext if not already set
+            if (log.CorrelationId == null && HydraContext.CorrelationId.HasValue)
+            {
+                log.SetCorrelationId(HydraContext.CorrelationId.Value);
+            }
+
+            if (log.PlatformId == null && HydraContext.PlatformId.HasValue)
+            {
+                log.SetPlatformId(HydraContext.PlatformId.Value);
+            }
 
             // 1. Her halükarda cache'e yaz (son 1 saatlik loglar)
             AddLogToCache(log);

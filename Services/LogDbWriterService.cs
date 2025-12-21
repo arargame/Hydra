@@ -47,14 +47,16 @@ namespace Hydra.Services
                     { "@AddedDate", log.AddedDate },
                     { "@ModifiedDate", log.ModifiedDate },
                     { "@SessionInformationId", log.SessionInformationId },
-                    { "@Payload", log.Payload }
+                    { "@Payload", log.Payload },
+                    { "@CorrelationId", log.CorrelationId },
+                    { "@PlatformId", log.PlatformId }
                 };
 
                 var query = @"
                 INSERT INTO Log 
-                (Id, Name, Description, Category, EntityName, EntityId, Type, ProcessType, AddedDate, ModifiedDate, SessionInformationId, Payload)
+                (Id, Name, Description, Category, EntityName, EntityId, Type, ProcessType, AddedDate, ModifiedDate, SessionInformationId, Payload, CorrelationId, PlatformId)
                 VALUES 
-                (@Id, @Name, @Description, @Category, @EntityName, @EntityId, @Type, @ProcessType, @AddedDate, @ModifiedDate, @SessionInformationId, @Payload)";
+                (@Id, @Name, @Description, @Category, @EntityName, @EntityId, @Type, @ProcessType, @AddedDate, @ModifiedDate, @SessionInformationId, @Payload, @CorrelationId, @PlatformId)";
 
                 //var connectionString = _config.Get("LogDb");
 

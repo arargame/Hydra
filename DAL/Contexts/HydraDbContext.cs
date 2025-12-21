@@ -37,6 +37,7 @@ namespace Hydra.DAL.Contexts
         public DbSet<OrganizationUnit> OrganizationUnit { get; set; }
         public DbSet<Position> Position { get; set; }
         public DbSet<Employee> Employee { get; set; }
+        public DbSet<Platform> Platform { get; set; }
         
         //public DbSet<Log> Log { get; set; }
 

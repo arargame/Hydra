@@ -24,7 +24,6 @@ namespace Hydra.Core
         public static Log Warning(string? category,
             string? name,
             string? description,
-            LogType logType,
             string? entityName = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
