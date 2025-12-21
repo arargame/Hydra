@@ -53,7 +53,24 @@ namespace Hydra.Services
             switch (recordType)
             {
                 case LogRecordType.Console:
-                    Console.WriteLine(log.ToString());
+                    var originalColor = Console.ForegroundColor;
+                    switch (log.Type)
+                    {
+                        case LogType.Error:
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            break;
+                        case LogType.Warning:
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            break;
+                        case LogType.Info:
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            break;
+                        default:
+                            Console.ForegroundColor = ConsoleColor.White;
+                            break;
+                    }
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [{log.Type}] {log.Category}/{log.Name}: {log.Description ?? log.Payload}");
+                    Console.ForegroundColor = originalColor;
                     break;
 
                 case LogRecordType.File:

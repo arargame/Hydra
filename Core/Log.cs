@@ -121,10 +121,33 @@ namespace Hydra.Core
             int frameIndex = 1) : this(null, null, description, logType, entityName, entityId, processType, sessionInformation)
         {
             var methodBase = new StackTrace().GetFrame(frameIndex)?.GetMethod();
+            var declaringType = methodBase?.DeclaringType;
+            var methodName = methodBase?.Name;
 
-            SetCategory(methodBase?.DeclaringType?.Name);
+            // Handle Async State Machine (e.g. <CommitAsync>d__6)
+            if (declaringType != null && 
+                (declaringType.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false) || 
+                 declaringType.Name.Contains("<")))
+            {
+               // If generated, the original class is usually the declaring type of the generated type
+               if (declaringType.DeclaringType != null)
+               {
+                   // Try to extract method name from the generated type name (e.g. <MethodName>d__X)
+                   var typeName = declaringType.Name;
+                   var startIndex = typeName.IndexOf('<') + 1;
+                   var endIndex = typeName.IndexOf('>');
+                   
+                   if (startIndex > 0 && endIndex > startIndex)
+                   {
+                       methodName = typeName.Substring(startIndex, endIndex - startIndex);
+                   }
+                   
+                   declaringType = declaringType.DeclaringType;
+               }
+            }
 
-            SetName(methodBase?.Name);
+            SetCategory(declaringType?.FullName);
+            SetName(methodName);
         }
 
         public override void Initialize()

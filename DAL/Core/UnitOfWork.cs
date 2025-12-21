@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
 using Hydra.Core;
+using Hydra.Utils;
 
 namespace Hydra.DAL.Core
 {
@@ -71,7 +72,7 @@ namespace Hydra.DAL.Core
                     catch (Exception ex)
                     {
                         await _logService.SaveAsync(new Log(
-                            description: $"Commit failed: {ex.Message}",
+                            description: $"Commit failed: {ex.GetFullMessage()}",
                             logType: LogType.Error), LogRecordType.Database);
 
                         break;

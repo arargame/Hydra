@@ -1,6 +1,7 @@
 ﻿using Hydra.Core;
 using Hydra.DBAccess;
 using System;
+using System.Transactions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -39,6 +40,7 @@ namespace Hydra.Services
                     { "@Name", log.Name },
                     { "@Description", log.Description },
                     { "@Category", log.Category },
+                    { "@EntityName", log.EntityName },
                     { "@EntityId", log.EntityId },
                     { "@Type", log.Type.ToString() },
                     { "@ProcessType", log.ProcessType.ToString() },
@@ -50,9 +52,9 @@ namespace Hydra.Services
 
                 var query = @"
                 INSERT INTO Log 
-                (Id, Name, Description, Category, EntityId, Type, ProcessType, AddedDate, ModifiedDate, SessionInformationId, Payload)
+                (Id, Name, Description, Category, EntityName, EntityId, Type, ProcessType, AddedDate, ModifiedDate, SessionInformationId, Payload)
                 VALUES 
-                (@Id, @Name, @Description, @Category, @EntityId, @Type, @ProcessType, @AddedDate, @ModifiedDate, @SessionInformationId, @Payload)";
+                (@Id, @Name, @Description, @Category, @EntityName, @EntityId, @Type, @ProcessType, @AddedDate, @ModifiedDate, @SessionInformationId, @Payload)";
 
                 //var connectionString = _config.Get("LogDb");
 
@@ -60,7 +62,10 @@ namespace Hydra.Services
 
                 await Task.Run(() =>
                 {
-                    AdoNetDatabaseService.ExecuteNonQuery(query, parameters, _connection);
+                    using (var scope = new TransactionScope(TransactionScopeOption.Suppress))
+                    {
+                        AdoNetDatabaseService.ExecuteNonQuery(query, parameters, _connection);
+                    }
                 });
 
                 return true;

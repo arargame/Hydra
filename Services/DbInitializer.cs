@@ -5,6 +5,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Hydra.Core;
 
 namespace Hydra.Services
 {
@@ -12,20 +13,28 @@ namespace Hydra.Services
     {
         public static void InitializeAsync<TDbContext>(IServiceProvider serviceProvider, IConfiguration configuration) where TDbContext : DbContext
         {
-            // 1. Initialize Log Database (ADO.NET)
-            InitializeLogDb(configuration);
-
-            // 2. Initialize Main Database (EF Core)
             using (var scope = serviceProvider.CreateScope())
             {
                 var services = scope.ServiceProvider;
+                var logService = services.GetRequiredService<ILogService>();
+
+                // 1. Initialize Log Database (ADO.NET)
+                InitializeLogDb(configuration, logService);
+
+                // 2. Initialize Main Database (EF Core)
                 try
                 {
+                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Checking Main Database connection..."), LogRecordType.Console).Wait();
+                    
                     var context = services.GetRequiredService<TDbContext>();
-                    context.Database.EnsureCreated();
+                    var created = context.Database.EnsureCreated();
+                    
+                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", $"Main Database Initialization: {(created ? "CREATED" : "EXISTING")}"), LogRecordType.Console).Wait();
                 }
                 catch (Exception ex)
                 {
+                    logService.SaveAsync(LogFactory.Error($"Main DB Error: {ex.Message}"), LogRecordType.Console).Wait();
+                    
                     var logger = services.GetRequiredService<ILogger<DbInitializerLogger>>();
                     logger.LogError(ex, "An error occurred creating the DB.");
                 }
@@ -34,7 +43,8 @@ namespace Hydra.Services
 
         private class DbInitializerLogger { } // Dummy class for Logger category
 
-        public static void InitializeLogDb(IConfiguration configuration)
+
+        public static void InitializeLogDb(IConfiguration configuration, ILogService logService)
         {
             // 1. Get Connection String
             var fullConnectionString = configuration.GetConnectionString("LogDbConnection");
@@ -83,12 +93,14 @@ namespace Hydra.Services
                             [Name] [nvarchar](max) NULL,
                             [Description] [nvarchar](max) NULL,
                             [Category] [nvarchar](450) NULL,
+                            [EntityName] [nvarchar](max) NULL,
                             [EntityId] [nvarchar](450) NULL,
                             [Type] [nvarchar](50) NOT NULL,
                             [ProcessType] [nvarchar](50) NOT NULL,
                             [AddedDate] [datetime2](7) NOT NULL,
                             [ModifiedDate] [datetime2](7) NOT NULL,
                             [SessionInformationId] [uniqueidentifier] NULL,
+                            [Payload] [nvarchar](max) NULL,
                             CONSTRAINT [PK_Log] PRIMARY KEY CLUSTERED ([Id] ASC)
                         )";
 
@@ -98,11 +110,17 @@ namespace Hydra.Services
                     AdoNetDatabaseService.ExecuteNonQuery("CREATE NONCLUSTERED INDEX [IX_Log_EntityId] ON [dbo].[Log] ([EntityId] ASC)", null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString));
                     AdoNetDatabaseService.ExecuteNonQuery("CREATE NONCLUSTERED INDEX [IX_Log_Category] ON [dbo].[Log] ([Category] ASC)", null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString));
                     AdoNetDatabaseService.ExecuteNonQuery("CREATE NONCLUSTERED INDEX [IX_Log_SessionInformationId] ON [dbo].[Log] ([SessionInformationId] ASC)", null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString));
+                    
+                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Log Database CREATED"), LogRecordType.Console).Wait();
+                }
+                else
+                {
+                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Log Database EXISTING"), LogRecordType.Console).Wait();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DbInitializer] Error initializing Log Database: {ex.Message}");
+                logService.SaveAsync(LogFactory.Error($"Log DB Error: {ex.Message}"), LogRecordType.Console).Wait();
             }
         }
     }

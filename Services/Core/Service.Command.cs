@@ -40,7 +40,8 @@ namespace Hydra.Services.Core
 
                 response.SetSuccess(isDone && isCommitted);
 
-                await SaveRepositoryLogsAsync();
+                if (response.Success)
+                    await SaveRepositoryLogsAsync();
 
             }
             catch (Exception ex)
@@ -137,7 +138,8 @@ namespace Hydra.Services.Core
 
                 response.SetSuccess(isDone && isCommitted);
 
-                await SaveRepositoryLogsAsync();
+                if (response.Success)
+                    await SaveRepositoryLogsAsync();
             }
             catch (Exception ex)
             {
@@ -238,7 +240,8 @@ namespace Hydra.Services.Core
                         CacheService?.TryRefresh(entity.Id, entity);
                 }
 
-                await SaveRepositoryLogsAsync();
+                if (updateResponse.Success)
+                    await SaveRepositoryLogsAsync();
             }
             catch (Exception ex)
             {
@@ -305,7 +308,8 @@ namespace Hydra.Services.Core
             var isAllSuccessful = response.UpdatedIds.Count == entities.Count;
             response.SetSuccess(isAllSuccessful);
 
-            await SaveRepositoryLogsAsync();
+            if (response.Success)
+                await SaveRepositoryLogsAsync();
 
             return response;
         }

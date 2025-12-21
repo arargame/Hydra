@@ -1,6 +1,7 @@
 using Hydra.AccessManagement;
 using Hydra.IdentityAndAccess;
 using Hydra.Core;
+using Hydra.Core.HumanResources;
 using Hydra.Core.DTOs;
 using Hydra.Services;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,12 @@ namespace Hydra.DAL.Contexts
         public DbSet<RolePermission> RolePermission { get; set; }
         public DbSet<RoleSystemUser> RoleSystemUser { get; set; }
         public DbSet<SystemUserPermission> SystemUserPermission { get; set; }
+        
+        // HR
+        public DbSet<OrganizationUnit> OrganizationUnit { get; set; }
+        public DbSet<Position> Position { get; set; }
+        public DbSet<Employee> Employee { get; set; }
+        
         //public DbSet<Log> Log { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -46,6 +53,37 @@ namespace Hydra.DAL.Contexts
             {
                 entityType.SetTableName(entityType.DisplayName());
             }
+
+            // Human Resources Configuration
+            modelBuilder.Entity<OrganizationUnit>()
+                .HasOne(x => x.Parent)
+                .WithMany(x => x.Children)
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrganizationUnit>()
+                .HasMany(u => u.Positions)
+                .WithOne(p => p.OrganizationUnit)
+                .HasForeignKey(p => p.OrganizationUnitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrganizationUnit>()
+                .HasOne(u => u.ManagerPosition)
+                .WithMany() // ManagerPosition is just a Position, no specific inverse navigation for "ManagesUnit"
+                .HasForeignKey(u => u.ManagerPositionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Position>()
+                .HasOne(x => x.Parent)
+                .WithMany(x => x.Children)
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            modelBuilder.Entity<Employee>()
+                .HasOne(e => e.Position)
+                .WithMany(p => p.Employees)
+                .HasForeignKey(e => e.PositionId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

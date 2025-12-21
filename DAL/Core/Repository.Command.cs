@@ -40,9 +40,9 @@ namespace Hydra.DAL.Core
                 if (!(entity is Log))
                 {
                     Result.SetSuccess(true)
-                            .Logs.Add(LogFactory.Info(category: TypeName,
-                                                         name: null,
-                                                         description: null,
+                            .Logs.Add(LogFactory.Info(category: this.GetType().Name,
+                                                         name: nameof(CreateAsync),
+                                                         description: "The creation process was successful.",
                                                          entityName:TypeName,
                                                          entityId: entity.Id.ToString(),
                                                          processType: LogProcessType.Create
@@ -169,9 +169,9 @@ namespace Hydra.DAL.Core
                             });
 
                             Result.Logs.Add(
-                                LogFactory.Info(category: TypeName,
-                                                     name: null,
-                                                     description: null,
+                                LogFactory.Info(category: this.GetType().Name,
+                                                     name: nameof(UpdateAsync),
+                                                     description: "The update process was successful.",
                                                      entityName: TypeName,
                                                      entityId: entity.Id.ToString(),
                                                      processType: LogProcessType.Update)

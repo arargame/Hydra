@@ -179,6 +179,40 @@ namespace Hydra.Services
         }
 
 
+        public static void AddColumn(string tableName, string columnName, string columnType, bool isNullable = true, IDbConnection? connection = null)
+        {
+            connection = connection ?? new MsSqlConnection();
+
+            string query;
+            string nullability = isNullable ? "NULL" : "NOT NULL";
+
+            if (connection.ConnectionType == ConnectionType.MsSql)
+            {
+                query = $"IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'{tableName}') AND name = '{columnName}') " +
+                        $"BEGIN ALTER TABLE [{tableName}] ADD [{columnName}] {columnType} {nullability} END";
+            }
+            else if (connection.ConnectionType == ConnectionType.Oracle)
+            {
+                 // Oracle specific check could be added here, simplified for now
+                 query = $"ALTER TABLE {tableName} ADD {columnName} {columnType} {nullability}";
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported connection type: {connection.ConnectionType}");
+            }
+
+            try
+            {
+                ExecuteNonQuery(query, null, connection);
+                Console.WriteLine($"[AdoNetDatabaseService] Column '{columnName}' processed regarding table '{tableName}'.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AdoNetDatabaseService] Error adding column: {ex.Message}");
+                throw;
+            }
+        }
+
         public static readonly Dictionary<string, string> PrimaryKeyCache = new Dictionary<string, string>();
 
         public static string GetPrimaryKeyName(string tableName, IDbConnection connection)
