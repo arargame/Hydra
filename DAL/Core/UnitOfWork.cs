@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Transactions;
+
 using Hydra.Core;
 using Hydra.Utils;
 
@@ -38,52 +38,50 @@ namespace Hydra.DAL.Core
 
         public async Task<bool> CommitAsync()
         {
-            bool isCommitted = false;
             int retryCount = 3;
 
-            using (var transaction = new TransactionScope(TransactionScopeOption.RequiresNew, new TransactionOptions
+            while (retryCount > 0)
             {
-                IsolationLevel = IsolationLevel.ReadCommitted,
-                Timeout = TimeSpan.FromSeconds(30)
-            }, TransactionScopeAsyncFlowOption.Enabled))
-            {
-                while (retryCount > 0)
+                await using var transaction = await Context.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.ReadCommitted);
+
+                try
                 {
-                    try
-                    {
-                        await Context.SaveChangesAsync();
+                    await Context.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
-                        transaction.Complete();
+                    return true;
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    retryCount--;
 
-                        isCommitted = true;
+                    await _logService.SaveAsync(
+                        LogFactory.Warning(
+                            category: nameof(UnitOfWork),
+                            name: nameof(CommitAsync),
+                            description: $"Concurrency conflict. Retries left: {retryCount}. Exception: {ex.Message}"),
+                        LogRecordType.Database);
 
-                        break;
-                    }
-                    catch (DbUpdateConcurrencyException ex)
-                    {
-                        retryCount--;
+                    ResolveConcurrencyConflicts(ex);
+                    await transaction.RollbackAsync();
 
-                        await _logService.SaveAsync(new Log(
-                            description: $"Concurrency exception. Retries left: {retryCount}. Exception: {ex.Message}",
-                            logType: LogType.Warning), LogRecordType.Database);
+                    if (retryCount == 0)
+                        return false;
+                }
+                catch (Exception ex)
+                {
+                    var friendlyMessage = SqlExceptionHelper.ToUserFriendlyMessage(ex);
 
-                        ResolveConcurrencyConflicts(ex);
-                    }
-                    catch (Exception ex)
-                    {
-                        var friendlyMessage = SqlExceptionHelper.ToUserFriendlyMessage(ex);
+                    await _logService.SaveAsync(LogFactory.Error(description: $"Commit failed: {friendlyMessage}"),
+                                                LogRecordType.Database);
 
-                        await _logService.SaveAsync(new Log(
-                            description: $"Commit failed: {friendlyMessage}",
-                            logType: LogType.Error), LogRecordType.Database);
-
-                    }
-                    // Reverting to previous logic of swallowing exception (returning false) but with friendly log
-                    break;
+                    await transaction.RollbackAsync();
+                    return false;
                 }
             }
 
-            return isCommitted;
+            return false;
         }
 
 
@@ -91,7 +89,19 @@ namespace Hydra.DAL.Core
         {
             foreach (var entry in ex.Entries)
             {
-                entry.OriginalValues.SetValues(entry.GetDatabaseValues());
+                // Get current database values
+                var databaseValues = entry.GetDatabaseValues();
+
+                if (databaseValues == null)
+                {
+                    // Entity has been deleted from database
+                    entry.State = EntityState.Detached;
+                    continue;
+                }
+
+                // Client Wins strategy: Update OriginalValues to match database
+                // CurrentValues (client changes) remain unchanged
+                entry.OriginalValues.SetValues(databaseValues);
             }
         }
 
