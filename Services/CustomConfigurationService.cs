@@ -73,7 +73,7 @@ namespace Hydra.Services
         public bool TryGet<T>(string key, out T value)
         {
             var val = Get<T>(key);
-            if (val == null || val.Equals(default(T)))
+            if (EqualityComparer<T>.Default.Equals(val, default(T)))
             {
                 value = default!;
                 return false;

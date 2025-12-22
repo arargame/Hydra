@@ -21,13 +21,9 @@ namespace Hydra.Background
 
         public ICollection<AutomatJob> Jobs { get; set; }
 
-        [NotMapped]
-        public List<AutomatJob>? GetUncompletedJobs
+        public List<AutomatJob> GetUncompletedJobs()
         {
-            get
-            {
-                return Jobs?.Where(j => !j.IsCompleted)?.ToList() ?? null;
-            }
+            return Jobs?.Where(j => !j.IsCompleted).ToList() ?? new List<AutomatJob>();
         }
 
         public Automat()
