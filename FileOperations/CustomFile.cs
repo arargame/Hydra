@@ -18,7 +18,7 @@ namespace Hydra.FileOperations
         Unsupported
     }
 
-    public interface ICustomFile : IBaseObject<ICustomFile>
+    public interface ICustomFile : IBaseObject<ICustomFile>, IHasEntityReference
     {
         string? Extension { get; set; }
 
@@ -37,10 +37,6 @@ namespace Hydra.FileOperations
         string? Path { get; set; }
 
         string? ContainerName { get; set; }
-
-        string? EntityType { get; set; }
-
-        Guid? EntityId { get; set; }
 
         FileCategory Category { get; }
 
@@ -84,7 +80,7 @@ namespace Hydra.FileOperations
 
         public string? EntityType { get; set; }
 
-        public Guid? EntityId { get; set; }
+        public string? EntityId { get; set; }
 
         public CustomFile()
         {
@@ -147,14 +143,14 @@ namespace Hydra.FileOperations
             return this;
         }
 
-        public CustomFile SetEntityId(Guid entityId)
+        public CustomFile SetEntityId(string? entityId)
         {
             EntityId = entityId;
             
             return this;
         }
 
-        public CustomFile SetEntityType(string entityType)
+        public CustomFile SetEntityType(string? entityType)
         {
             EntityType = entityType;
 

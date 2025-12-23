@@ -84,7 +84,17 @@ namespace Hydra.Services
 
                 // 3. Connect to Target Database to check/create Tables
                 
-                // Check Log Table
+                // Check if old schema exists (EntityName) and Drop if so (Recreate strategy)
+                var checkEntityNameCol = "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Log]') AND name = 'EntityName'";
+                var hasEntityName = (int)(AdoNetDatabaseService.ExecuteScalar(checkEntityNameCol, null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString)) ?? 0) > 0;
+
+                if (hasEntityName)
+                {
+                     logService.SaveAsync(LogFactory.Warning("Startup", "DbInit", "Old Log Table Schema detected (EntityName). Dropping/Recreating..."), LogRecordType.Console).Wait();
+                     AdoNetDatabaseService.ExecuteNonQuery("DROP TABLE [dbo].[Log]", null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString));
+                }
+
+                // Check Log Table (Again, in case it was dropped)
                 var checkTableQuery = "SELECT COUNT(*) FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Log]') AND type in (N'U')";
                 var tableExistsResult = AdoNetDatabaseService.ExecuteScalar(checkTableQuery, null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString));
                 var tableExists = tableExistsResult != null && (int)tableExistsResult > 0;
@@ -97,7 +107,7 @@ namespace Hydra.Services
                             [Name] [nvarchar](max) NULL,
                             [Description] [nvarchar](max) NULL,
                             [Category] [nvarchar](450) NULL,
-                            [EntityName] [nvarchar](max) NULL,
+                            [EntityType] [nvarchar](max) NULL,
                             [EntityId] [nvarchar](450) NULL,
                             [Type] [nvarchar](50) NOT NULL,
                             [ProcessType] [nvarchar](50) NOT NULL,

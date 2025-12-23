@@ -33,7 +33,7 @@ namespace Hydra.DTOs
 
         public bool HasManyToManyRelationship { get; set; }
 
-        public string ViewDTOTypeName { get; set; }
+        public string? ViewDTOTypeName { get; set; }
 
         //[JsonIgnore]
         //public Type? ViewDTOType

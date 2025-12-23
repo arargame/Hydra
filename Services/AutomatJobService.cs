@@ -22,7 +22,9 @@ namespace Hydra.Services
                                                     bool isContinuous = true,
                                                     bool isPersistent = false)
         {
-            var automatJob = new AutomatJob(name, code, isContinuous);
+            var automatJob = new AutomatJob(name, code);
+            
+            automatJob.SetContinuous(isContinuous);
 
             if (!isPersistent)
                 automatJob.MakeNonPersistent();

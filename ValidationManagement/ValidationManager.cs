@@ -84,7 +84,7 @@ namespace Hydra.ValidationManagement
         // General Regex Validation
         public static ValidationResult RegexMatch(string value, string pattern, string propertyName)
         {
-            if (Regex.IsMatch(value, pattern, RegexOptions.None, TimeSpan.FromSeconds(1)))
+            if (RegexHelper.IsMatch(value, pattern))
             {
                 return ValidationResult.Success!;
             }
@@ -96,7 +96,7 @@ namespace Hydra.ValidationManagement
         public static ValidationResult IsValidEmail(string email, string propertyName)
         {
             const string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            if (Regex.IsMatch(email, emailPattern, RegexOptions.None, TimeSpan.FromSeconds(1)))
+            if (RegexHelper.IsMatch(email, emailPattern))
             {
                 return ValidationResult.Success!;
             }
@@ -109,7 +109,7 @@ namespace Hydra.ValidationManagement
         {
             // Example: Matches formats like (123) 456-7890, 123-456-7890, 123.456.7890, +1234567890
             const string phonePattern = @"^(\+?[1-9]{1,4}[-.●]?)?((\(\d{1,3}\))|\d{1,4})[-.●]?\d{1,4}[-.●]?\d{1,9}$";
-            if (Regex.IsMatch(phoneNumber, phonePattern, RegexOptions.None, TimeSpan.FromSeconds(1)))
+            if (RegexHelper.IsMatch(phoneNumber, phonePattern))
             {
                 return ValidationResult.Success!;
             }

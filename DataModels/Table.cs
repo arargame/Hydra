@@ -28,7 +28,7 @@ namespace Hydra.DataModels
 
         List<IJoinTable> GetAllJoinTables { get; }
 
-        List<IMetaColumn> GetFilteredMetaColumns { get; }
+        List<IMetaColumn> GetFilteredMetaColumns();
 
         List<IMetaColumn> GetSelectedMetaColumnsIncludingJoins { get; }
 
@@ -130,16 +130,13 @@ namespace Hydra.DataModels
         public List<IMetaColumn> GetFilteredMetaColumnsIncludingJoins => GetMetaColumnsWithIncludesJoins(mc => mc.IsFiltered);
         public List<IMetaColumn> GetOrderedMetaColumnsIncludingJoins => GetMetaColumnsWithIncludesJoins(mc => mc.IsOrdered);
 
-        public List<IMetaColumn> GetFilteredMetaColumns
+        public List<IMetaColumn> GetFilteredMetaColumns()
         {
-            get
-            {
-                return MetaColumns.Where(mc => mc.IsFiltered)
-                   .Where(mc =>
-                       (mc.Filter is IsNullFilter || mc.Filter is IsNotNullFilter) ||
-                       (mc.Filter?.Parameters?.Any(p => !string.IsNullOrWhiteSpace(p.Value?.ToString())) ?? false))
-                   .ToList();
-            }
+            return MetaColumns.Where(mc => mc.IsFiltered)
+               .Where(mc =>
+                   (mc.Filter is IsNullFilter || mc.Filter is IsNotNullFilter) ||
+                   (mc.Filter?.Parameters?.Any(p => !string.IsNullOrWhiteSpace(p.Value?.ToString())) ?? false))
+               .ToList();
         }
 
         public bool HasAnySelectedColumnToGroup
@@ -296,12 +293,13 @@ namespace Hydra.DataModels
                 Filter = filter;
             else
             {
-                if (GetFilteredMetaColumns.Any())
+                var filteredColumns = GetFilteredMetaColumns();
+                if (filteredColumns.Any())
                 {
-                    if (GetFilteredMetaColumns.Count == 1)
-                        Filter = GetFilteredMetaColumns.First().Filter;
+                    if (filteredColumns.Count == 1)
+                        Filter = filteredColumns.First().Filter;
                     else
-                        Filter = JoinedFiltersGroup.SetFromColumns(GetFilteredMetaColumns).First();
+                        Filter = JoinedFiltersGroup.SetFromColumns(filteredColumns).First();
                 }
             }
 
@@ -405,7 +403,7 @@ namespace Hydra.DataModels
 
         public IFilter GetFilterByColumnName<C, F>(string columnName) where C : IColumn where F : IFilter
         {
-            return GetFilteredMetaColumns.Where(c => c.IsFiltered 
+            return GetFilteredMetaColumns().Where(c => c.IsFiltered 
                                         && c.GetType().Name == typeof(C).Name 
                                         && c.Filter?.GetType().Name == typeof(F).Name 
                                         && c.Name == columnName)
@@ -415,7 +413,7 @@ namespace Hydra.DataModels
 
         public IFilter GetFilterByColumnName<T>(string columnName) where T : IFilter
         {
-            return GetFilteredMetaColumns.Where(c => c.IsFiltered 
+            return GetFilteredMetaColumns().Where(c => c.IsFiltered 
                                         && c.Filter?.GetType().Name == typeof(T).Name 
                                         && c.Name == columnName)
                             .FirstOrDefault()!

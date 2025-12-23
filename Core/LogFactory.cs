@@ -12,23 +12,23 @@ namespace Hydra.Core
         public static Log Info(string? category,
             string? name,
             string? description,
-            string? entityName=null,
+            string? entityType=null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null)
-                => new Log(category, name, description, LogType.Info, entityName,entityId, processType, sessionInformation);
+                => new Log(category, name, description, LogType.Info, entityType, entityId, processType, sessionInformation);
 
-        public static Log Error(string description, string? entityName = null, string? entityId = null, LogProcessType processType = LogProcessType.Unspecified, SessionInformation? sessionInformation = null)
-            => new Log(description, LogType.Error, entityName, entityId, processType, sessionInformation, 2);
+        public static Log Error(string description, string? entityType = null, string? entityId = null, LogProcessType processType = LogProcessType.Unspecified, SessionInformation? sessionInformation = null)
+            => new Log(description, LogType.Error, entityType, entityId, processType, sessionInformation, 2);
 
         public static Log Warning(string? category,
             string? name,
             string? description,
-            string? entityName = null,
+            string? entityType = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null)
-                => new Log(category, name, description, LogType.Warning,entityName, entityId, processType, sessionInformation);
+                => new Log(category, name, description, LogType.Warning, entityType, entityId, processType, sessionInformation);
 
         public static ILog SetPayload(this Log log, string payload)
         {

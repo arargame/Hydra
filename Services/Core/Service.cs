@@ -117,7 +117,7 @@ namespace Hydra.Services.Core
         {
             if (LogService == null) return;
 
-            var log = LogFactory.Error(description, entityName: TypeName, entityId: entityId?.ToString(), processType: processType);
+            var log = LogFactory.Error(description, entityType: TypeName, entityId: entityId?.ToString(), processType: processType);
             
             await LogService.SaveAsync(log, LogRecordType.Database);
         }
@@ -129,7 +129,7 @@ namespace Hydra.Services.Core
             var log = LogFactory.Info(category: category,
                 name: name,
                 description: description,
-                entityName: TypeName,
+                entityType: TypeName,
                 entityId: entityId?.ToString(),
                 processType: processType,
                 sessionInformation: null);
@@ -141,7 +141,7 @@ namespace Hydra.Services.Core
         {
             if (LogService == null) return;
 
-            var log = LogFactory.Info(category, name, description, entityName: TypeName, entityId: entityId?.ToString(), processType: processType);
+            var log = LogFactory.Info(category, name, description, entityType: TypeName, entityId: entityId?.ToString(), processType: processType);
 
             log.SetLogType(LogType.Warning);
 

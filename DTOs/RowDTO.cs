@@ -39,9 +39,9 @@ namespace Hydra.DTOs
             return this;
         }
 
-        public object GetValueByColumnName(string columnName)
+        public object? GetValueByColumnName(string columnName)
         {
-            return Columns.FirstOrDefault(c => c.Name == columnName).Value;
+            return Columns?.FirstOrDefault(c => c.Name == columnName)?.Value;
         }
 
         public static RowDTO ConvertToRowDTO(IRow row)

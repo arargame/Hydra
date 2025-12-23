@@ -81,5 +81,10 @@ namespace Hydra.Http
         }
     }
 
+    public class ResponseObject<T> : ResponseObject
+    {
+        public new T? Data { get; set; }
+    }
+
 
 }

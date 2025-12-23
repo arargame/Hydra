@@ -83,11 +83,6 @@ namespace Hydra.Background
             SetCode(code);
         }
 
-        public AutomatJob(string name, string code, bool isContinuous = true) : this(name, code)
-        {
-            SetContinuous(isContinuous);
-        }
-
         public override void Initialize()
         {
             base.Initialize();

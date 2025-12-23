@@ -132,7 +132,7 @@ namespace Hydra.DataModels
 
             if (!selectedColumns.Any())
             {
-                var leftTableSelectedColumnList = AdoNetDatabaseService.SelectColumnNames(_table.Name)
+                var leftTableSelectedColumnList = AdoNetDatabaseService.SelectColumnNames(_table.Name, _connection)
                                                             .Select(c => c["COLUMN_NAME"]?.ToString())
                                                             .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(_table))
                                                             .OfType<IMetaColumn>()
@@ -142,7 +142,7 @@ namespace Hydra.DataModels
 
                 foreach (var joinTable in _table.GetAllJoinTables)
                 {
-                    joinTablesSelectedColumnList.AddRange(AdoNetDatabaseService.SelectColumnNames(joinTable.Name)
+                    joinTablesSelectedColumnList.AddRange(AdoNetDatabaseService.SelectColumnNames(joinTable.Name, _connection)
                                                 .Select(c => c["COLUMN_NAME"]?.ToString())
                                                 .Select(columnName => new SelectedColumn(name: columnName, alias: columnName).SetTable(joinTable))
                                                 .OfType<IMetaColumn>());

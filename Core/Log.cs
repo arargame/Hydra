@@ -32,13 +32,9 @@ namespace Hydra.Core
         Logout
     }
 
-    public interface ILog : IBaseObject<ILog>
+    public interface ILog : IBaseObject<ILog>, IHasEntityReference
     {
         string? Category { get; set; }
-
-        string? EntityName {  get; set; }
-
-        string? EntityId { get; set; }
 
         LogType Type { get; set; }
 
@@ -53,7 +49,7 @@ namespace Hydra.Core
 
         ILog SetEntityId(string? entityId);
 
-        ILog SetEntityName(string? entityName);
+        ILog SetEntityType(string? entityType);
 
 
         ILog SetSessionInformation(SessionInformation? sessionInformation);
@@ -76,7 +72,7 @@ namespace Hydra.Core
     {
         public string? Category { get; set; }
 
-        public string? EntityName { get; set; }
+        public string? EntityType { get; set; }
 
         public string? EntityId { get; set; }
 
@@ -104,7 +100,7 @@ namespace Hydra.Core
             string? name,
             string? description,
             LogType logType,
-            string ? entityName = null,
+            string ? entityType = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null)
@@ -123,18 +119,18 @@ namespace Hydra.Core
 
             SetProcessType(processType);
 
-            SetEntityName(entityName);
+            SetEntityType(entityType);
 
             SetSessionInformation(sessionInformation);
         }
 
         public Log(string description,
             LogType logType = LogType.Error,
-            string? entityName = null,
+            string? entityType = null,
             string? entityId = null,
             LogProcessType processType = LogProcessType.Unspecified,
             SessionInformation? sessionInformation = null,
-            int frameIndex = 1) : this(null, null, description, logType, entityName, entityId, processType, sessionInformation)
+            int frameIndex = 1) : this(null, null, description, logType, entityType, entityId, processType, sessionInformation)
         {
             var methodBase = new StackTrace().GetFrame(frameIndex)?.GetMethod();
             var declaringType = methodBase?.DeclaringType;
@@ -209,9 +205,9 @@ namespace Hydra.Core
             return this;
         }
 
-        public ILog SetEntityName(string? entityName)
+        public ILog SetEntityType(string? entityType)
         {
-            EntityName = entityName;
+            EntityType = entityType;
 
             return this;
         }
