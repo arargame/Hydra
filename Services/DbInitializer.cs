@@ -27,9 +27,52 @@ namespace Hydra.Services
                     logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Checking Main Database connection..."), LogRecordType.Console).Wait();
                     
                     var context = services.GetRequiredService<TDbContext>();
-                    var created = context.Database.EnsureCreated();
-                    
-                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", $"Main Database Initialization: {(created ? "CREATED" : "EXISTING")}"), LogRecordType.Console).Wait();
+
+                    //Migration tanımlıysa Migrate() kullan: EnsureCreated() veritabanını bir kez oluşturur
+                    //ve sonraki migration'lar ASLA uygulanmaz (şema drift → "Invalid column name ..." hataları).
+                    var hasMigrations = context.Database.GetMigrations().Any();
+
+                    if (hasMigrations)
+                    {
+                        var canConnect = context.Database.CanConnect();
+                        var hasMigrationHistory = canConnect && context.Database.GetAppliedMigrations().Any();
+
+                        if (canConnect && !hasMigrationHistory)
+                        {
+                            //DB var ama __EFMigrationsHistory yok → daha önce EnsureCreated ile kurulmuş.
+                            //Migrate() bu durumda "table already exists" ile patlar.
+                            var recreate = string.Equals(configuration["Database:RecreateOnStartup"], "true", StringComparison.OrdinalIgnoreCase);
+
+                            if (recreate)
+                            {
+                                logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "RecreateOnStartup=true → dropping and re-creating Main Database via migrations..."), LogRecordType.Console).Wait();
+
+                                context.Database.EnsureDeleted();
+                                context.Database.Migrate();
+
+                                logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Main Database RECREATED via migrations."), LogRecordType.Console).Wait();
+                            }
+                            else
+                            {
+                                logService.SaveAsync(LogFactory.Info("Startup", "DbInit",
+                                    "WARNING: Database exists WITHOUT migration history (EnsureCreated legacy). " +
+                                    "Schema may be out of date. Set \"Database:RecreateOnStartup\": \"true\" in appsettings " +
+                                    "(DEV only) to rebuild it via migrations, or update the schema manually."), LogRecordType.Console).Wait();
+                            }
+                        }
+                        else
+                        {
+                            context.Database.Migrate();
+
+                            logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Main Database migrations applied (up to date)."), LogRecordType.Console).Wait();
+                        }
+                    }
+                    else
+                    {
+                        var created = context.Database.EnsureCreated();
+
+                        logService.SaveAsync(LogFactory.Info("Startup", "DbInit", $"Main Database Initialization: {(created ? "CREATED" : "EXISTING")}"), LogRecordType.Console).Wait();
+                    }
 
                     // 3. Initialize Platform Table (Main Database)
                     var mainDbConnectionString = context.Database.GetDbConnection().ConnectionString;
