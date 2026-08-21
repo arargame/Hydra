@@ -46,9 +46,15 @@ namespace Hydra.DTOs
 
         public static RowDTO ConvertToRowDTO(IRow row)
         {
+            //Use the real entity id (primary key from database or the selected "Id" column).
+            //row.Id is a randomly generated Guid of the Row object itself and must not leak to clients.
+            var idValue = row.PrimaryKey ?? row.GetColumnByName(nameof(IHasId.Id))?.Value;
+
+            var id = Guid.TryParse(idValue?.ToString(), out var parsedId) ? parsedId : row.Id;
+
             var rowDTO = new RowDTO()
             {
-                Id = row.Id,
+                Id = id,
                 TableName = row.Table?.Name,
                 Columns = row.Columns.Select(c => DataColumnDTO.ConvertToDataColumnDTO(c)).ToList()
             };

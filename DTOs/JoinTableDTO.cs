@@ -86,10 +86,13 @@ namespace Hydra.DTOs
 
         public static IJoinTable ConvertToJoinTable(JoinTableDTO joinTableDTO, ITable? leftTable)
         {
+            //ÖNEMLİ: SetLeftTable, On'dan ÖNCE çağrılmalı. On() sol kolonun Table referansını
+            //o anki LeftTable'dan alır; LeftTable null iken ON koşulu ".RequestCategoryId" gibi
+            //boş alias'lı SQL üretir ("multi-part identifier could not be bound").
             IJoinTable joinTable = new JoinTable(joinTableDTO.Name, joinTableDTO.Alias, joinTableDTO.JoinType)
+                                        .SetLeftTable(leftTable)
                                         .On(joinTableDTO.LeftTableColumnName, joinTableDTO.RightTableColumnName)
                                         .SetMetaColumns(joinTableDTO.MetaColumns.Select(mc => MetaColumnDTO.ConvertToColumn(mc)).Where(mc => mc != null).ToArray())
-                                        .SetLeftTable(leftTable)
                                         .SetRelationType(joinTableDTO.RelationType)
                                         .SetDepth(joinTableDTO.Depth);
 
@@ -105,6 +108,10 @@ namespace Hydra.DTOs
                 Id = joinTable.Id,
 
                 Name = joinTable.Name,
+
+                //Alias korunmalı: aynı tabloya birden fazla join (ör. CreatedByEmployee/OwnerEmployee)
+                //alias üzerinden ayrışır; taşınmazsa round-trip'te çakışırlar.
+                Alias = joinTable.Alias,
 
                 //LeftTable = TableDTO.FromTableToDTO(joinTable.LeftTable),
 

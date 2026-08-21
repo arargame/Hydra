@@ -400,7 +400,7 @@ namespace Hydra.DTOs
         {
             if (column.BelongsToJoins)
             {
-                var joinTable = GetAllJoinTableDTOs.FirstOrDefault(jt => jt.Name == column.NavigationColumnInfoDTO.RightTableName);
+                var joinTable = GetAllJoinTableDTOs.FirstOrDefault(jt => (jt.Alias ?? jt.Name) == column.NavigationColumnInfoDTO.EffectiveRightTableAlias);
 
                 if (joinTable != null)
                 {
@@ -622,6 +622,9 @@ namespace Hydra.DTOs
                                                     string rightTableName,
                                                     MetaColumnDTO? traceColumnToJoin = null)
         {
+            //Aynı tabloya birden fazla join alias ile ayrışır (ör. Employee → CreatedByEmployee/OwnerEmployee).
+            alias = string.IsNullOrEmpty(alias) ? tableName : alias;
+
             var createNewJoinTable = new Func<JoinTableDTO>(() =>
             {
                 return new JoinTableDTO(name: tableName,
@@ -659,7 +662,7 @@ namespace Hydra.DTOs
                     }
                 }
 
-                joinTable = leftTable.GetAllJoinTableDTOs.FirstOrDefault(jt => jt.Name == rightTableName);
+                joinTable = leftTable.GetAllJoinTableDTOs.FirstOrDefault(jt => jt.Name == rightTableName && (jt.Alias ?? jt.Name) == alias);
 
                 if (joinTable == null)
                 {
@@ -672,7 +675,7 @@ namespace Hydra.DTOs
             }
             else
             {
-                joinTable = GetAllJoinTableDTOs.FirstOrDefault(jt => jt.LeftTableName == leftTableName && jt.Name == rightTableName);
+                joinTable = GetAllJoinTableDTOs.FirstOrDefault(jt => jt.LeftTableName == leftTableName && jt.Name == rightTableName && (jt.Alias ?? jt.Name) == alias);
 
                 if (joinTable == null)
                 {
@@ -690,7 +693,7 @@ namespace Hydra.DTOs
                                                             MetaColumnDTO traceColumnToJoin = null)
         {
             return GetOrCreateJoinTableDTO(tableName: navigationMetaColumn.NavigationColumnInfoDTO.RightTableName,
-                                        alias: null,
+                                        alias: navigationMetaColumn.NavigationColumnInfoDTO.EffectiveRightTableAlias,
                                         leftTableName: navigationMetaColumn.NavigationColumnInfoDTO.LeftTableName,
                                         leftTableKeyName: navigationMetaColumn.NavigationColumnInfoDTO.LeftTableKeyName,
                                         joinType: JoinType.Left,
@@ -719,7 +722,7 @@ namespace Hydra.DTOs
                     JoinTableDTO joinTable = GetJoinTableDTOByMetaColumnDTO(navigationMetaColumn: sampleNavigationColumnToGetJoinTable,
                                                                             traceColumnToJoin: traceColumnToJoin);
 
-                    foreach (var selectedColumnDTO in selectedColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName))
+                    foreach (var selectedColumnDTO in selectedColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName && c.NavigationColumnInfoDTO.EffectiveRightTableAlias == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.EffectiveRightTableAlias))
                     {
                         if (!joinTable.GetSelectedMetaColumns.Any(mc => mc.Name == selectedColumnDTO.NavigationColumnInfoDTO.NameToDisplay))
                         {
@@ -731,7 +734,7 @@ namespace Hydra.DTOs
                         }
                     }
 
-                    foreach (var filteredColumnDTO in filteredColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName))
+                    foreach (var filteredColumnDTO in filteredColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName && c.NavigationColumnInfoDTO.EffectiveRightTableAlias == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.EffectiveRightTableAlias))
                     {
                         if (!joinTable.GetFilteredMetaColumns.Any(mc => mc.Name == filteredColumnDTO.NavigationColumnInfoDTO.NameToDisplay))
                         {
@@ -743,7 +746,7 @@ namespace Hydra.DTOs
                         }
                     }
 
-                    foreach (var orderedColumnDTO in orderedColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName))
+                    foreach (var orderedColumnDTO in orderedColumnDTOs.Where(c => c.NavigationColumnInfoDTO.LeftTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.LeftTableName && c.NavigationColumnInfoDTO.RightTableName == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.RightTableName && c.NavigationColumnInfoDTO.EffectiveRightTableAlias == sampleNavigationColumnToGetJoinTable.NavigationColumnInfoDTO.EffectiveRightTableAlias))
                     {
                         if (!joinTable.GetOrderedMetaColumns.Any(mc => mc.Name == orderedColumnDTO.NavigationColumnInfoDTO.NameToDisplay))
                         {

@@ -18,6 +18,15 @@ namespace Hydra.DataModels
 
         public string? RightTableName { get; set; }
 
+        /// <summary>
+        /// Aynı tabloya birden fazla join yapılacaksa (ör. Request → Employee hem CreatedBy hem Owner)
+        /// join'i ve flatten edilen property önekini ayrıştıran alias.
+        /// Null ise RightTableName kullanılır.
+        /// </summary>
+        public string? RightTableAlias { get; set; }
+
+        public string EffectiveRightTableAlias => string.IsNullOrEmpty(RightTableAlias) ? RightTableName ?? string.Empty : RightTableAlias!;
+
         public Guid? RightTableKeyValue { get; set; }
 
         public string? NameToDisplay { get; set; }
@@ -25,7 +34,7 @@ namespace Hydra.DataModels
         public bool SetAsLink { get; set; }
 
         public NavigationColumnInfo() { }
-        public NavigationColumnInfo(string leftTableName, string leftTableKeyName, string rightTableKeyName, string rightTableName, string columnNameToDisplay, bool setAsLink = false)
+        public NavigationColumnInfo(string leftTableName, string leftTableKeyName, string rightTableKeyName, string rightTableName, string columnNameToDisplay, bool setAsLink = false, string? rightTableAlias = null)
         {
             LeftTableName = leftTableName;
 
@@ -36,6 +45,8 @@ namespace Hydra.DataModels
             RightTableKeyName = rightTableKeyName;
 
             RightTableName = rightTableName;
+
+            RightTableAlias = rightTableAlias;
 
             SetAsLink = setAsLink;
         }

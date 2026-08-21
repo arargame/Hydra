@@ -21,6 +21,11 @@ namespace Hydra.DTOs
 
         public string RightTableName { get; set; }
 
+        /// <summary>Aynı tabloya çoklu join için ayrıştırıcı alias (null → RightTableName).</summary>
+        public string? RightTableAlias { get; set; }
+
+        public string EffectiveRightTableAlias => string.IsNullOrEmpty(RightTableAlias) ? RightTableName : RightTableAlias!;
+
         public Guid? RightTableKeyValue { get; set; }
 
         public bool SetAsLink { get; set; }
@@ -30,7 +35,7 @@ namespace Hydra.DTOs
 
         }
 
-        public NavigationColumnInfoDTO(string leftTableName, string leftTableKeyName, string rightTableKeyName, string rightTableName, string nameToDisplay, bool setAsLink = false)
+        public NavigationColumnInfoDTO(string leftTableName, string leftTableKeyName, string rightTableKeyName, string rightTableName, string nameToDisplay, bool setAsLink = false, string? rightTableAlias = null)
         {
             LeftTableName = leftTableName;
 
@@ -39,6 +44,8 @@ namespace Hydra.DTOs
             RightTableKeyName = rightTableKeyName;
 
             RightTableName = rightTableName;
+
+            RightTableAlias = rightTableAlias;
 
             NameToDisplay = nameToDisplay;
 
@@ -57,6 +64,7 @@ namespace Hydra.DTOs
                 LeftTableKeyName = navigationColumnInfo.LeftTableKeyName,
                 RightTableKeyName = navigationColumnInfo.RightTableKeyName,
                 RightTableName = navigationColumnInfo.RightTableName,
+                RightTableAlias = navigationColumnInfo.RightTableAlias,
                 RightTableKeyValue = navigationColumnInfo.RightTableKeyValue,
                 NameToDisplay = navigationColumnInfo.NameToDisplay,
                 SetAsLink = navigationColumnInfo.SetAsLink
@@ -75,7 +83,8 @@ namespace Hydra.DTOs
                 rightTableKeyName: navigationColumnInfoDTO.RightTableKeyName,
                 rightTableName: navigationColumnInfoDTO.RightTableName,
                 columnNameToDisplay: navigationColumnInfoDTO.NameToDisplay,
-                setAsLink: navigationColumnInfoDTO.SetAsLink)
+                setAsLink: navigationColumnInfoDTO.SetAsLink,
+                rightTableAlias: navigationColumnInfoDTO.RightTableAlias)
             {
                 LeftTableKeyValue = navigationColumnInfoDTO.LeftTableKeyValue,
                 RightTableKeyValue = navigationColumnInfoDTO.RightTableKeyValue
