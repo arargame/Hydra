@@ -233,13 +233,20 @@ namespace Hydra.DTOs.ViewDTOs
                                                     navigation: navigation);
         }
 
+        /// <param name="rightTableAlias">
+        /// Aynı tabloya birden fazla join için ayrıştırıcı alias (ör. Request→Employee için
+        /// "CreatedByEmployee" ve "OwnerEmployee"). Flatten property önekleri ve FK property adı
+        /// bu alias ile aranır: "{alias}Id", "{alias}_{display}", "{alias}_Id".
+        /// Null ise rightTableName kullanılır.
+        /// </param>
         public ViewDTO SetConfigurationsForNavigations(string leftTableKeyName,
                                                         string rightTableName,
                                                         string rightTableKeyName = "Id",
                                                         string? displayName = null,
                                                         string? columnNameToDisplay = null,
                                                         bool setAsLink = true,
-                                                        string? leftTableName = null)
+                                                        string? leftTableName = null,
+                                                        string? rightTableAlias = null)
         {
             columnNameToDisplay = columnNameToDisplay ?? nameof(IHasId.Id);
 
@@ -247,36 +254,38 @@ namespace Hydra.DTOs.ViewDTOs
 
             leftTableName = string.IsNullOrEmpty(leftTableName) ? ControllerName! : leftTableName;
 
+            var aliasPrefix = string.IsNullOrEmpty(rightTableAlias) ? rightTableName : rightTableAlias;
+
             var foreignKeyPropertyInfo = ReflectionHelper.GetPropertyOf(type: GetType(),
-                                                            propertyName: $"{rightTableName}Id");
+                                                            propertyName: $"{aliasPrefix}Id");
 
             var selectedPropertyInfo = ReflectionHelper.GetPropertyOf(type: GetType(),
-                                                            propertyName: $"{rightTableName}_{columnNameToDisplay}");
+                                                            propertyName: $"{aliasPrefix}_{columnNameToDisplay}");
 
             PropertyInfo? idPropertyInfo = null;
 
-            var isSelectingIdField = selectedPropertyInfo?.Name == $"{rightTableName}_Id";
+            var isSelectingIdField = selectedPropertyInfo?.Name == $"{aliasPrefix}_Id";
 
             if (isSelectingIdField)
                 idPropertyInfo = selectedPropertyInfo;
             else
                 idPropertyInfo = ReflectionHelper.GetPropertyOf(type: GetType(),
-                                                            propertyName: $"{rightTableName}_Id");
+                                                            propertyName: $"{aliasPrefix}_Id");
 
 
             //if (foreignKeyPropertyInfo == null)
             //{
-            //    throw new Exception($"The property({rightTableName}Id) has not found inside {GetType().Name}.cs");
+            //    throw new Exception($"The property({aliasPrefix}Id) has not found inside {GetType().Name}.cs");
             //}
 
             if (selectedPropertyInfo == null)
             {
-                throw new Exception($"The property({rightTableName}_{columnNameToDisplay}) has not found inside {GetType().Name}.cs");
+                throw new Exception($"The property({aliasPrefix}_{columnNameToDisplay}) has not found inside {GetType().Name}.cs");
             }
 
             if (idPropertyInfo == null)
             {
-                throw new Exception($"The property({rightTableName}_Id) has not found inside {GetType().Name}.cs");
+                throw new Exception($"The property({aliasPrefix}_Id) has not found inside {GetType().Name}.cs");
             }
 
             if (foreignKeyPropertyInfo != null)
@@ -292,7 +301,8 @@ namespace Hydra.DTOs.ViewDTOs
                                                         leftTableKeyName: leftTableKeyName,
                                                         rightTableKeyName: rightTableKeyName,
                                                         rightTableName: rightTableName,
-                                                        columnNameToDisplay: columnNameToDisplay));
+                                                        columnNameToDisplay: columnNameToDisplay,
+                                                        rightTableAlias: rightTableAlias));
 
             SetConfigurationsViaPropertyInfo(propertyInfo: selectedPropertyInfo,
                configurations: new List<IConfiguration>()
@@ -308,7 +318,8 @@ namespace Hydra.DTOs.ViewDTOs
                                                     rightTableKeyName: rightTableKeyName,
                                                     rightTableName: rightTableName,
                                                     columnNameToDisplay: columnNameToDisplay,
-                                                    setAsLink: setAsLink));
+                                                    setAsLink: setAsLink,
+                                                    rightTableAlias: rightTableAlias));
 
 
             SetConfigurationsViaPropertyInfo(propertyInfo: idPropertyInfo,
@@ -324,7 +335,8 @@ namespace Hydra.DTOs.ViewDTOs
                                                     leftTableKeyName: leftTableKeyName,
                                                     rightTableKeyName: rightTableKeyName,
                                                     rightTableName: rightTableName,
-                                                    columnNameToDisplay: nameof(IHasId.Id)));
+                                                    columnNameToDisplay: nameof(IHasId.Id),
+                                                    rightTableAlias: rightTableAlias));
 
             return this;
 
@@ -441,18 +453,9 @@ namespace Hydra.DTOs.ViewDTOs
 
                }, displayName: "Active");
 
-            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.IsHidden),
-               configurations: new List<IConfiguration>()
-               {
-                   new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(EqualFilter)),
-                                            toOrder:new AttributeToOrder(isOrderable:true),
-                                            elementType:HtmlElementType.DropdownList),
-
-                   new EditViewConfiguration(),
-
-                   new DetailsViewConfiguration(),
-
-               }, displayName: "Hidden");
+            //NOT: IsHidden sadece ViewDTO üzerinde yaşayan bir UI alanıdır; BaseObject entity'lerinde
+            //karşılığı (DB kolonu) yoktur. Konfigüre edilirse SELECT'e girer ve
+            //"Invalid column name 'IsHidden'" SQL hatası üretir. Bu yüzden burada konfigüre edilmez.
 
             return this;
         }
