@@ -98,7 +98,7 @@ namespace Hydra.Services.Core
             return GetByIdAsync(id, false, includes);
         }
 
-        public async Task<(TableDTO FinalDTO, TResult? Result)> GetDetailsAsync<TResult>(Guid id) where TResult : class
+        public async Task<(TableDTO FinalDTO, TResult? Result)> GetDetailsAsync<TResult>(Guid id, Type? viewDTOTypeToPrepareUsingConfigurations = null) where TResult : class
         {
             var externalMetaColumns = new List<MetaColumnDTO>
             {
@@ -107,6 +107,7 @@ namespace Hydra.Services.Core
 
             var (finalDTO, results) = await SelectWithTableAsync<TResult>(
                 viewType: ViewType.DetailsView,
+                viewDTOTypeToPrepareUsingConfigurations: viewDTOTypeToPrepareUsingConfigurations,
                 externalMetaColumns: externalMetaColumns
             );
 
@@ -257,22 +258,26 @@ namespace Hydra.Services.Core
         public async Task<(TableDTO TableDTO,List<TResult> Results)> SelectWithTableAsync<TResult>(
                 TableDTO? tableDTO = null,
                 ViewType? viewType = null,
-                Type? viewDTOType = null,
+                Type? viewDTOTypeToPrepareUsingConfigurations = null,
                 List<MetaColumnDTO>? externalMetaColumns = null
             ) where TResult : class
         {
-            var table = tableDTO != null
-                ? TableDTO.ConvertToTable(tableDTO)
-                : GetTable(pageSize: 10, pageNumber: 1).SetViewType(viewType ?? ViewType.None);
+            var viewDTOType = viewDTOTypeToPrepareUsingConfigurations;
 
-            if (tableDTO == null)
+            tableDTO ??= TableDTO.FromTableToDTO(GetTable(pageSize: 10, pageNumber: 1)
+                                                    .SetViewType(viewType ?? ViewType.None));
+
+            if (viewType != null)
             {
-                tableDTO = TableDTO.FromTableToDTO(table);
+                tableDTO.SetViewType(viewType.Value);
+            }
 
-                if (viewDTOType != null)
-                {
-                    tableDTO.PrepareUsingConfigurations(viewDTOType);
-                }
+            //Apply the ViewDTO configurations BEFORE executing the query.
+            //This also covers "bare" TableDTOs sent by clients (only Name + ViewType),
+            //which otherwise would not contain any selected column and produce invalid SQL.
+            if (viewDTOType != null)
+            {
+                tableDTO.PrepareUsingConfigurations(viewDTOType);
             }
 
             if (externalMetaColumns != null)
@@ -283,17 +288,14 @@ namespace Hydra.Services.Core
                 }
             }
 
-            if (viewType != null)
-            {
-                tableDTO.SetViewType(viewType.Value);
-            }
+            var table = TableDTO.ConvertToTable(tableDTO);
 
-            table = TableDTO.ConvertToTable(tableDTO);
+            var results = await SelectWithTableAsync<TResult>(table);
 
-            var results = await SelectWithTableAsync<TResult>(table); 
+            var viewDTOTypeName = viewDTOType?.Name ?? tableDTO.ViewDTOTypeName ?? typeof(TResult).Name;
 
             tableDTO = TableDTO.FromTableToDTO(table)
-                               .SetViewDTOTypeName(typeof(TResult).Name);
+                               .SetViewDTOTypeName(viewDTOTypeName);
 
             if (viewDTOType != null)
             {
