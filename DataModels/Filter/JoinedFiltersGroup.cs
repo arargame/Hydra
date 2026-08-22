@@ -9,40 +9,49 @@ namespace Hydra.DataModels.Filter
 {
     public interface IJoinFilter : IQueryableFilter
     {
-        IFilter LeftFilter { get; set; }
+        //NOT: Operandlar IFilter değil IQueryableFilter'dır. Bir JoinedFiltersGroup'un kendisi de
+        //IQueryableFilter olduğu için, bir grup başka bir grubun operandı olabilir — yani filtreler
+        //istenildiği kadar iç içe geçebilir. (Eskiden bunlar IFilter idi ve grup IFilter'ı
+        //uygulamadığı için iç içe geçemiyordu; bu yüzden 3. filtre için AnotherFilter diye ayrı bir
+        //alan eklenmişti ve 4.'sünde "3'ten fazla filtre bağlanamaz" hatası alınıyordu.)
+        IQueryableFilter LeftFilter { get; set; }
 
-        IFilter RightFilter { get; set; }
+        IQueryableFilter RightFilter { get; set; }
 
         IQueryableFilter? AnotherFilter { get; set; }
-
-        //IQueryableFilter? RootFilter { get; set; }
 
         FilterJoinType JoinTypeForAnother { get; set; }
 
         FilterJoinType JoinType { get; set; }
-
-        //List<IFilterParameter> Parameters { get; set; }
-
-        //IFilter SetRootFilter(IQueryableFilter filter);
     }
 
+    /// <summary>
+    /// İki filtreyi (And/Or ile) birleştiren bileşik filtre. Kendisi de bir IQueryableFilter
+    /// olduğundan operand olarak kullanılabilir; N filtre, sola yaslı bir ağaç hâlinde birleştirilir:
+    ///
+    ///     (((f0 And f1) And f2) And f3) ...
+    ///
+    /// Parametre numaralandırması kökten aşağı yayılır (bkz. SetStartParameterIndex), Parameters
+    /// listesi ise çocukların parametrelerinin aynı sırayla düzleştirilmiş hâlidir. Listedeki
+    /// nesneler çocuklarınkiyle AYNI referanslardır; bu yüzden kökte yapılan numaralandırma
+    /// yapraklara da yansır ve üretilen SQL ile parametre sözlüğü tutarlı olur.
+    /// </summary>
     public class JoinedFiltersGroup : QueryableFilter, IJoinFilter
     {
-        public IFilter LeftFilter { get; set; }
+        public IQueryableFilter LeftFilter { get; set; }
 
-        public IFilter RightFilter { get; set; }
+        public IQueryableFilter RightFilter { get; set; }
 
+        /// <summary>
+        /// Eski API ile uyumluluk için korunan üçüncü operand. Artık SetFromColumns bunu
+        /// kullanmıyor (iç içe gruplar bu ihtiyacı ortadan kaldırdı), ancak elle kurulan
+        /// filtre ağaçları için çalışmaya devam eder.
+        /// </summary>
         public IQueryableFilter? AnotherFilter { get; set; } = null;
-
-        //public IQueryableFilter? RootFilter { get; set; } = null;
 
         public FilterJoinType JoinTypeForAnother { get; set; }
 
         public FilterJoinType JoinType { get; set; }
-
-        //public int StartParameterIndex { get; set; }
-
-
 
         public int Priority { get; set; }
 
@@ -56,12 +65,13 @@ namespace Hydra.DataModels.Filter
             }
         }
 
-        public JoinedFiltersGroup(IFilter leftFilter, IFilter rightFilter, FilterJoinType joinType) : this(leftFilter, rightFilter)
+        public JoinedFiltersGroup(IQueryableFilter leftFilter, IQueryableFilter rightFilter, FilterJoinType joinType)
+            : this(leftFilter, rightFilter)
         {
             JoinType = joinType;
         }
 
-        private JoinedFiltersGroup(IFilter leftFilter, IFilter rightFilter)
+        private JoinedFiltersGroup(IQueryableFilter leftFilter, IQueryableFilter rightFilter)
         {
             LeftFilter = leftFilter;
 
@@ -70,29 +80,49 @@ namespace Hydra.DataModels.Filter
             Initialize();
         }
 
-
         public override void Initialize()
         {
             Parameters = new List<IFilterParameter>();
+
+            //DİKKAT: Bu metot İKİ kez çalışır.
+            //1) BaseObject'in constructor'ı virtual Initialize()'ı çağırır. C#'ta taban sınıfın
+            //   constructor'ı türetilmiş sınıfınkinden ÖNCE koştuğu için o an LeftFilter/RightFilter
+            //   henüz atanmamıştır (null). Eskiden burada NullReferenceException atılıyordu ve
+            //   ikiden fazla filtre uygulanan her sorgu patlıyordu.
+            //2) Türetilmiş constructor alanları atadıktan sonra Initialize()'ı tekrar çağırır —
+            //   parametreleri asıl dolduran çağrı budur.
+            if (LeftFilter == null || RightFilter == null)
+                return;
 
             Parameters.AddRange(LeftFilter.Parameters);
 
             Parameters.AddRange(RightFilter.Parameters);
 
-            LeftFilter.SetStartParameterIndex(0);
-
-            RightFilter.SetStartParameterIndex(LeftFilter.FinishParameterIndex);
+            //Kendi başlangıç indeksimizden itibaren ağacı yeniden numaralandır. Kök grup için bu
+            //0'dır; iç içe kurulumda kök, en dıştaki grup tarafından tekrar numaralandırılır.
+            SetStartParameterIndex(StartParameterIndex);
         }
 
-        //public void SetRootFiltersParameters(IFilter? root)
-        //{
-        //    if (root == null)
-        //        return;
+        /// <summary>
+        /// Numaralandırmayı çocuklara yayar: sol operand bu grubun başlangıcından, sağ operand ise
+        /// solun bittiği yerden başlar. Çocuk da bir grup ise aynı mantık özyinelemeli sürer.
+        /// </summary>
+        public override IQueryableFilter SetStartParameterIndex(int index)
+        {
+            StartParameterIndex = index;
 
-        //    root.GetParameters.AddRangeIfNotNull(AnotherFilter?.Parameters);
+            if (LeftFilter == null || RightFilter == null)
+                return this;
 
-        //    SetRootFiltersParameters(root.RootFilter);
-        //}
+            LeftFilter.SetStartParameterIndex(index);
+
+            RightFilter.SetStartParameterIndex(LeftFilter.FinishParameterIndex);
+
+            if (AnotherFilter != null)
+                AnotherFilter.SetStartParameterIndex(RightFilter.FinishParameterIndex);
+
+            return this;
+        }
 
         public JoinedFiltersGroup Bind(IQueryableFilter anotherFilter, FilterJoinType joinTypeForAnother)
         {
@@ -103,25 +133,11 @@ namespace Hydra.DataModels.Filter
 
             JoinTypeForAnother = joinTypeForAnother;
 
-            AnotherFilter.SetStartParameterIndex(RightFilter.FinishParameterIndex);
-
             AnotherFilter.SetRootFilter(this);
 
             Parameters.AddRange(AnotherFilter.Parameters);
 
-            //SetRootFiltersParameters(RootFilter);
-
-            if (AnotherFilter is JoinedFiltersGroup)
-            {
-                var anotherJoinedFiltersGroup = AnotherFilter as JoinedFiltersGroup;
-
-                if(anotherJoinedFiltersGroup!=null)
-                {
-                    anotherJoinedFiltersGroup.LeftFilter.SetStartParameterIndex(anotherJoinedFiltersGroup.StartParameterIndex);
-
-                    anotherJoinedFiltersGroup.RightFilter.SetStartParameterIndex(anotherJoinedFiltersGroup.LeftFilter.FinishParameterIndex);
-                }
-            }
+            SetStartParameterIndex(StartParameterIndex);
 
             return this;
         }
@@ -136,51 +152,42 @@ namespace Hydra.DataModels.Filter
             return queryString;
         }
 
+        /// <summary>
+        /// Filtreli kolonlardan sola yaslı bir filtre ağacı kurar ve kökü döner.
+        /// Filtre sayısı için bir üst sınır yoktur.
+        ///
+        /// Tek filtre varsa liste BOŞ döner — o durumda çağıran taraf zaten kolonun kendi
+        /// filtresini doğrudan kullanır (bkz. QueryBuilder.SetTableFilter / Table.SetFilter).
+        /// </summary>
         public static List<JoinedFiltersGroup> SetFromColumns(List<IMetaColumn> filteredColumns)
         {
             var joinedFiltersGroupList = new List<JoinedFiltersGroup>();
 
-            if (filteredColumns.Any())
+            var filters = filteredColumns?.Where(c => c?.Filter != null)
+                                          .Select(c => (IQueryableFilter)c.Filter!)
+                                          .ToList()
+                          ?? new List<IQueryableFilter>();
+
+            if (filters.Count < 2)
+                return joinedFiltersGroupList;
+
+            //Sola yaslı katla: ((f0 And f1) And f2) And f3 ...
+            //Her adımda oluşan grup bir sonrakinin sol operandı olur.
+            IQueryableFilter current = filters[0];
+
+            for (var i = 1; i < filters.Count; i++)
             {
-                var pagination = new Pagination(1, 2, filteredColumns.Count);
-
-                for (int i = 0; i < pagination.TotalPagesCount; i++)
-                {
-                    pagination.SetPageNumber(i + 1);
-
-                    var skip = pagination.Start > 0 ? pagination.Start - 1 : 0;
-
-                    var filteredColumnList = filteredColumns.Skip(skip).Take(pagination.PageSize).ToList();
-
-                    JoinedFiltersGroup? joinedFiltersGroup = null;
-
-                    if (filteredColumnList.Count == 2)
-                    {
-                        joinedFiltersGroup = new JoinedFiltersGroup(filteredColumnList[0].Filter!, filteredColumnList[1].Filter!, FilterJoinType.And);
-
-                        if (joinedFiltersGroupList.Any())
-                            joinedFiltersGroupList.Last().Bind(joinedFiltersGroup, FilterJoinType.And);
-                        else
-                            joinedFiltersGroupList.Add(joinedFiltersGroup);
-                    }
-                    else if (filteredColumnList.Count == 1)
-                    {
-                        if (joinedFiltersGroupList.Any() && filteredColumnList.First().Filter != null)
-                        {
-                            joinedFiltersGroupList.Last().Bind(filteredColumnList.First().Filter!, FilterJoinType.And);
-                        }
-                    }
-                }
+                current = new JoinedFiltersGroup(current, filters[i], FilterJoinType.And);
             }
 
+            var root = (JoinedFiltersGroup)current;
+
+            //Kök 0'dan başlar; numaralandırma bütün ağaca yayılır.
+            root.SetStartParameterIndex(0);
+
+            joinedFiltersGroupList.Add(root);
 
             return joinedFiltersGroupList;
         }
-        //public IJoinFilter SetRootFilter(IQueryableFilter filter)
-        //{
-        //    RootFilter = filter;
-
-        //    return this;
-        //}
     }
 }

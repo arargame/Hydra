@@ -54,7 +54,17 @@ namespace Hydra.DataModels.Filter
             return this;
         }
 
-        public IQueryableFilter SetStartParameterIndex(int index)
+        /// <summary>
+        /// Bu filtrenin parametrelerini, kök filtrenin düzleştirilmiş parametre listesindeki
+        /// konumlarına göre numaralandırır. Üretilen SQL metni parametreleri bu numaralarla
+        /// adlandırır (ör. EqualFilter → "@{StartParameterIndex}"), Table.SetQueryParameters ise
+        /// sözlüğü kök filtrenin Parameters listesindeki SIRAYA göre kurar; iki tarafın
+        /// tutarlı olması bu numaralandırmaya bağlıdır.
+        ///
+        /// Gruplar (JoinedFiltersGroup) bunu override edip çağrıyı çocuklarına yayar; böylece
+        /// iç içe filtre ağaçlarında da numaralandırma kökten aşağı doğru tutarlı kalır.
+        /// </summary>
+        public virtual IQueryableFilter SetStartParameterIndex(int index)
         {
             StartParameterIndex = index;
 
