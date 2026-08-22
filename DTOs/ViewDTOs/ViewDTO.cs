@@ -151,15 +151,22 @@ namespace Hydra.DTOs.ViewDTOs
         public ViewDTO SetConfigurationsViaEnumPropertyInfo(PropertyInfo? propertyInfo,
                                                 string? displayName = null,
                                                 NavigationColumnInfo? navigation = null,
-                                                object? defaultValue = null)
+                                                object? defaultValue = null,
+                                                bool useToCreateCollectionViewConfiguration = true,
+                                                bool useToCreateLookupViewConfiguration = true)
         {
             var configurations = new List<IConfiguration>()
             {
                    new CreateViewConfiguration(elementType: HtmlElementType.DropdownList,defaultValue:defaultValue),
 
+                   //Enum kolonları da string/boolean kolonlar gibi CollectionView ve LookupView
+                   //konfigürasyonu üretmeli; aksi halde bir entity'nin master-detail sekmesinde
+                   //(CollectionView) durum/tip gibi enum kolonları hiç görünmez.
                    new ListViewConfiguration(toFilter: new AttributeToFilter(priority: 0, typeName: nameof(EqualFilter)),
                                             toOrder: new AttributeToOrder(isOrderable: true),
-                                            elementType: HtmlElementType.DropdownList),
+                                            elementType: HtmlElementType.DropdownList)
+                        .AlsoUseToCreateCollectionViewConfiguration(useToCreateCollectionViewConfiguration)
+                        .AlsoUseToCreateLookupViewConfiguration(useToCreateLookupViewConfiguration),
 
                    new EditViewConfiguration(elementType: HtmlElementType.DropdownList),
 
