@@ -14,6 +14,7 @@ you would otherwise have to rediscover.
 | [enum-and-value-display.md](enum-and-value-display.md) | Why grids used to show `0`/`1`/`2`, how enum labels are resolved, where to put a label and where not to |
 | [database-routing.md](database-routing.md) | Running a table against a different database (the `Log` case) |
 | [theming.md](theming.md) | The component kit emits semantic classes only; how a host application supplies the look |
+| [idempotency.md](idempotency.md) | Planned idempotency design for create commands: response semantics, persistent keys, concurrency and rollout |
 
 ## The one-paragraph model
 
