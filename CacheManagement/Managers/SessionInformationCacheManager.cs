@@ -1,4 +1,4 @@
-﻿using Hydra.AccessManagement;
+using Hydra.AccessManagement;
 using Hydra.IdentityAndAccess;
 using Hydra.Services.Cache;
 using Microsoft.Extensions.Caching.Memory;
@@ -22,8 +22,11 @@ namespace Hydra.CacheManagement.Managers
             _sessionTimeout = sessionTimeout;
         }
 
-        public bool Login(SessionInformation session)
+        public bool Login(SessionInformation? session)
         {
+            if (session == null)
+                return false;
+
             _cache.Set(session.SystemUserId, session, _sessionTimeout);
 
             return true;

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Hydra Pluggable Mail Management WebApi Controllers Library</Description>
+    <PackageId>Hydra.MailManagement.WebApi</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hydra.MailManagement\Hydra.MailManagement.csproj" />
+    <ProjectReference Include="..\..\Hydra.WebApi\Hydra.WebApi.csproj" />
+  </ItemGroup>
+
+</Project>

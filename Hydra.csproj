@@ -11,6 +11,7 @@
     <Company>Arar Game</Company>
     <Description>Hydra Core Library</Description>
     <PackageId>Hydra</PackageId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Hydra.MailManagement\**;Hydra.MailManagement.WebApi\**</DefaultItemExcludes>
   </PropertyGroup>
 
 
@@ -21,6 +22,15 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0" />
     <PackageReference Include="Oracle.ManagedDataAccess" Version="23.6.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Hydra.MailManagement\**" />
+    <Compile Remove="Hydra.MailManagement.WebApi\**" />
+    <EmbeddedResource Remove="Hydra.MailManagement\**" />
+    <EmbeddedResource Remove="Hydra.MailManagement.WebApi\**" />
+    <None Remove="Hydra.MailManagement\**" />
+    <None Remove="Hydra.MailManagement.WebApi\**" />
   </ItemGroup>
 
 </Project>
