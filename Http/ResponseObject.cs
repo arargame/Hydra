@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +13,19 @@ namespace Hydra.Http
         bool Success { get; }
         object? Data { get; set; }
         List<ResponseObjectMessage> Messages { get; set; }
+
+        /// <summary>
+        /// Optional HTTP status code carried INSIDE the envelope.
+        ///
+        /// The envelope contract is unchanged — every endpoint still returns a ResponseObject
+        /// and every existing field means exactly what it meant before. This is purely additive:
+        /// null (the default) means "nobody set a code", which is how every response built by
+        /// older code behaves. When a code IS set, the transport layer mirrors it as the real
+        /// HTTP status code, so a denial is both a proper 403 on the wire AND a readable
+        /// message in the body. See <see cref="HydraStatusCatalog"/> for code → text.
+        /// </summary>
+        int? StatusCode { get; set; }
+
         List<ResponseObjectMessage> GetPositiveMessages { get; }
         List<ResponseObjectMessage> GetNegativeMessages { get; }
         IResponseObject UseDefaultMessages();
@@ -25,6 +38,8 @@ namespace Hydra.Http
         IResponseObject SetSuccess(bool success);
 
         IResponseObject SetData(object? data);
+
+        IResponseObject SetStatusCode(int? statusCode);
     }
 
     public class ResponseObject : IResponseObject
@@ -34,6 +49,9 @@ namespace Hydra.Http
         public bool Success { get; set; }
         public object? Data { get; set; } = null;
         public List<ResponseObjectMessage> Messages { get; set; } = new List<ResponseObjectMessage>();
+
+        /// <inheritdoc cref="IResponseObject.StatusCode"/>
+        public int? StatusCode { get; set; } = null;
 
         public List<ResponseObjectMessage> GetPositiveMessages => Messages.Where(m => m.ShowWhenSuccess).ToList();
         public List<ResponseObjectMessage> GetNegativeMessages => Messages.Where(m => !m.ShowWhenSuccess).ToList();
@@ -77,6 +95,12 @@ namespace Hydra.Http
         public IResponseObject SetData(object? data)
         {
             Data = data;
+            return this;
+        }
+
+        public IResponseObject SetStatusCode(int? statusCode)
+        {
+            StatusCode = statusCode;
             return this;
         }
     }

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Hydra.Core;
+using Hydra.AccessManagement;
+using Hydra.IdentityAndAccess;
+using System.Linq;
 
 namespace Hydra.Services
 {
@@ -25,7 +28,7 @@ namespace Hydra.Services
                 try
                 {
                     logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Checking Main Database connection..."), LogRecordType.Console).Wait();
-                    
+
                     var context = services.GetRequiredService<TDbContext>();
 
                     //Migration tanımlıysa Migrate() kullan: EnsureCreated() veritabanını bir kez oluşturur
@@ -77,11 +80,16 @@ namespace Hydra.Services
                     // 3. Initialize Platform Table (Main Database)
                     var mainDbConnectionString = context.Database.GetDbConnection().ConnectionString;
                     InitializePlatformTable(mainDbConnectionString, logService, configuration);
+
+                    // 4. Seed Default Admin (Role "Admin" + SystemUser "admin@<config domain>" + wildcard Permission).
+                    // Generic across ANY Hydra-based app (Tentacle today, a future vet/pharmacy/ERP app tomorrow) —
+                    // see Hydra Academy "05-Access-Management-Story/05-default-admin-seed.md" for the full design note.
+                    SeedDefaultAdmin(context, services, logService);
                 }
                 catch (Exception ex)
                 {
                     logService.SaveAsync(LogFactory.Error($"Main DB Error: {ex.Message}"), LogRecordType.Console).Wait();
-                    
+
                     var logger = services.GetRequiredService<ILogger<DbInitializerLogger>>();
                     logger.LogError(ex, "An error occurred creating the DB.");
                 }
@@ -95,7 +103,7 @@ namespace Hydra.Services
         {
             // 1. Get Connection String
             var fullConnectionString = configuration.GetConnectionString("LogDbConnection");
-            if (string.IsNullOrEmpty(fullConnectionString)) 
+            if (string.IsNullOrEmpty(fullConnectionString))
             {
                 // Fallback
                 fullConnectionString = configuration["LogDbConnection"];
@@ -126,7 +134,7 @@ namespace Hydra.Services
                 }
 
                 // 3. Connect to Target Database to check/create Tables
-                
+
                 // Check if old schema exists (EntityName) and Drop if so (Recreate strategy)
                 var checkEntityNameCol = "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Log]') AND name = 'EntityName'";
                 var hasEntityName = (int)(AdoNetDatabaseService.ExecuteScalar(checkEntityNameCol, null, ConnectionFactory.CreateConnection(ConnectionType.MsSql, fullConnectionString)) ?? 0) > 0;
@@ -240,7 +248,7 @@ namespace Hydra.Services
                     var parameters = new Dictionary<string, object?>
                     {
                         { "@Id", platformId },
-                        { "@Name", projectName }, 
+                        { "@Name", projectName },
                         { "@Description", "Auto-Seeded Service from Config" },
                         { "@ProjectType", 1 }, // Default to WebApi
                         { "@FrameworkVersion", ".NET Core" },
@@ -256,6 +264,131 @@ namespace Hydra.Services
             catch (Exception ex)
             {
                 logService.SaveAsync(LogFactory.Error($"Platform DB Error: {ex.Message}"), LogRecordType.Console).Wait();
+            }
+        }
+
+        /// <summary>
+        /// Generic, config-driven "first boot" seed: creates one Role, one SystemUser and one
+        /// wildcard Permission so that ANY Hydra-based application (Tentacle today; a future
+        /// veterinary/pharmacy/ERP app tomorrow) can log in and navigate its dashboard the very
+        /// first time it runs against an empty database — without any app-specific code.
+        ///
+        /// Deliberately generic: only SystemUser / Role / Permission (+ the RoleSystemUser /
+        /// RolePermission bridge rows) are touched. No Position / Employee / OrganizationUnit —
+        /// those are ERP-domain concepts and do not belong in generic Access Management seeding.
+        ///
+        /// Idempotency gate mirrors InitializePlatformTable's "check the natural key, skip if it
+        /// already exists" pattern — but since there is no fixed GUID to check against for a
+        /// per-app admin, the check is "does a Role named &lt;Hydra:DefaultAdmin:RoleName&gt; already
+        /// exist?". Uses the already-open EF Core `context` (not raw ADO SQL like Platform/Log) so
+        /// that the FK wiring between Role/SystemUser/Permission and their bridge rows is handled
+        /// by EF's change tracker instead of hand-written multi-table INSERT statements.
+        ///
+        /// See Hydra Academy "05-Access-Management-Story/05-default-admin-seed.md" for the full
+        /// design write-up, including the honest caveat that the wildcard Permission row is a data
+        /// scaffold today — no runtime authorization code reads Permission/RolePermission yet.
+        /// </summary>
+        private static void SeedDefaultAdmin(DbContext context, IServiceProvider services, ILogService logService)
+        {
+            try
+            {
+                var configService = services.GetRequiredService<ICustomConfigurationService>();
+
+                var enabledRaw = configService.Get("Hydra:DefaultAdmin:Enabled", "true");
+                var enabled = !string.Equals(enabledRaw, "false", StringComparison.OrdinalIgnoreCase);
+
+                if (!enabled)
+                {
+                    logService.SaveAsync(LogFactory.Info("Startup", "DbInit", "Hydra:DefaultAdmin:Enabled=false. Skipping Default Admin Seed."), LogRecordType.Console).Wait();
+                    return;
+                }
+
+                // EmailDomain and Password are intentionally NOT defaulted: a wrong-but-valid
+                // default (e.g. "example.com" / a hardcoded password shipped in shared library
+                // code) is worse than skipping the seed with a clear log message. Every consuming
+                // app must set these two explicitly in its own appsettings.
+                var emailDomain = configService.Get("Hydra:DefaultAdmin:EmailDomain", string.Empty);
+                var password = configService.Get("Hydra:DefaultAdmin:Password", string.Empty);
+
+                if (string.IsNullOrWhiteSpace(emailDomain) || string.IsNullOrWhiteSpace(password))
+                {
+                    logService.SaveAsync(LogFactory.Warning("Startup", "DbInit",
+                        "Hydra:DefaultAdmin:EmailDomain and/or Password not configured. Skipping Default Admin Seed."), LogRecordType.Console).Wait();
+                    return;
+                }
+
+                var emailLocalPart = configService.Get("Hydra:DefaultAdmin:EmailLocalPart", "admin");
+                var roleName = configService.Get("Hydra:DefaultAdmin:RoleName", "Admin");
+                var permissionName = configService.Get("Hydra:DefaultAdmin:PermissionName", "*");
+                var adminEmail = $"{emailLocalPart}@{emailDomain}";
+
+                // Idempotency gate: has this app already been seeded?
+                var alreadySeeded = context.Set<Role>().Any(r => r.Name == roleName);
+                if (alreadySeeded)
+                {
+                    return;
+                }
+
+                // Repository<T>.AddAsync (Hydra/DAL/Core/Repository.Command.cs) is the layer that
+                // normally stamps AddedDate/ModifiedDate for a new BaseObject; HydraDbContext itself
+                // does not do this in SaveChanges. Since this seed calls context.SaveChanges() directly
+                // (bypassing Repository<T>) it must stamp both dates itself, the same way, for every
+                // row below — otherwise they would persist as DateTime.MinValue.
+                var now = DateTime.Now;
+
+                var role = new Role
+                {
+                    Name = roleName,
+                    Description = "Auto-seeded default administrator role (Hydra DbInitializer).",
+                    AddedDate = now,
+                    ModifiedDate = now
+                };
+
+                var permission = new Permission
+                {
+                    Name = permissionName,
+                    Type = PermissionType.ControllerActionBased,
+                    Controller = "*",
+                    Action = "*",
+                    Entity = "*",
+                    Property = "*",
+                    AllowAnonymous = false,
+                    Enabled = true,
+                    Description = "Auto-seeded wildcard permission (Hydra DbInitializer). " +
+                                  "Data scaffold only — no runtime authorization code checks Permission/RolePermission yet.",
+                    AddedDate = now,
+                    ModifiedDate = now
+                };
+
+                var user = new SystemUser
+                {
+                    Name = emailLocalPart,
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    PasswordHash = PasswordHasher.Hash(password),
+                    IsActive = true,
+                    Description = "Auto-seeded default administrator user (Hydra DbInitializer).",
+                    AddedDate = now,
+                    ModifiedDate = now
+                };
+
+                var roleSystemUser = new RoleSystemUser { RoleId = role.Id, UserId = user.Id, AddedDate = now, ModifiedDate = now };
+                var rolePermission = new RolePermission { RoleId = role.Id, PermissionId = permission.Id, AddedDate = now, ModifiedDate = now };
+
+                context.Set<Role>().Add(role);
+                context.Set<Permission>().Add(permission);
+                context.Set<SystemUser>().Add(user);
+                context.Set<RoleSystemUser>().Add(roleSystemUser);
+                context.Set<RolePermission>().Add(rolePermission);
+
+                context.SaveChanges();
+
+                logService.SaveAsync(LogFactory.Info("Startup", "DbInit",
+                    $"Seeded Default Admin: {adminEmail} / Role '{roleName}' / Permission '{permissionName}'."), LogRecordType.Console).Wait();
+            }
+            catch (Exception ex)
+            {
+                logService.SaveAsync(LogFactory.Error($"Default Admin Seed Error: {ex.Message}"), LogRecordType.Console).Wait();
             }
         }
     }

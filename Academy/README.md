@@ -11,7 +11,8 @@ kullanmaz — bir iddia varsa yanında dosya yolu ve satırı vardır.
 
 **Nasıl okunmalı?** Sırayla. Bölüm 1 "ne var" sorusunu cevaplıyor, Bölüm 2 "nasıl
 çalışıyor" sorusunu, Bölüm 3 tek bir alt sistemi mercek altına alıp puanlıyor, Bölüm 4
-ise öğrenilenleri sıfırdan bir örnek üzerinde uyguluyor.
+öğrenilenleri sıfırdan bir örnek üzerinde uyguluyor, Bölüm 5 ise tek bir özelliği
+(yetkilendirme) katman katman değil dikey olarak, core'dan ekrana kadar izliyor.
 
 Her bölümün sonunda ⭐ **İleride Yapılacaklar** başlığı var — bugün doğru olan ama
 gelecekte gözden geçirilmesi gereken kararlar orada toplanıyor. Bu doküman seti canlı;
@@ -35,6 +36,7 @@ mimari değiştikçe güncellenecek, eskiyen iddialar silinecek.
 | 2.1 | [02-Core-Systems/01-table-dto-and-statelessness.md](02-Core-Systems/01-table-dto-and-statelessness.md) | `TableDTO`'nun backend↔frontend arasında taşınma hikayesi; bu mimarinin adı, stateless doğası |
 | 2.2 | [02-Core-Systems/02-components-and-theming.md](02-Core-Systems/02-components-and-theming.md) | Bir Blazor component'i nasıl çalışır; HTML/CSS'i dışarıdan enjekte etme yolları |
 | 2.3 | [02-Core-Systems/03-journey-of-a-value.md](02-Core-Systems/03-journey-of-a-value.md) | *A Journey of a Value* — bir filtre kutusuna yazılan `"a"` harfinin SQL `WHERE`'e kadar giden ve geri dönen tam yolculuğu |
+| 2.4 | [02-Core-Systems/04-service-and-repository-architecture.md](02-Core-Systems/04-service-and-repository-architecture.md) | `Service<T>` ve `Repository<T>` Mimarisi: Generic DAL, CQRS partial ayrışması, derin Change Tracking & Audit Logging, Unit of Work, LRU Cache ve DI Lazy Factory |
 
 ## Bölüm 3 — Alt Sistem İncelemesi: File Management
 
@@ -54,6 +56,23 @@ toplandığı bir "gelecek çalışmalar" bölümü olacak.
 | 4.0 | [04-Sample-Project-Book/00-outline.md](04-Sample-Project-Book/00-outline.md) | Kitabın tam bölüm planı |
 | 4.1 | [04-Sample-Project-Book/01-baseobject-and-first-entities.md](04-Sample-Project-Book/01-baseobject-and-first-entities.md) | `BaseObject` anatomisi + `Product`/`ProductCategory` tanımı |
 | 4.2+ | — | Sıradaki bölümler için bkz. outline — henüz yazılmadı |
+
+## Bölüm 5 — Access Management Story
+
+`SystemUser`/`Role`/`Permission` üçlüsü üzerinden, bir entity tanımının Hydra
+core'dan Tentacle'daki gerçek bir Dashboard ekranına kadar uçtan uca izlendiği
+dikey kesit — Login/JWT akışı dahil.
+
+| # | Doküman | İçerik |
+|---|---|---|
+| 5.0 | [05-Access-Management-Story/00-outline.md](05-Access-Management-Story/00-outline.md) | Bölüm planı |
+| 5.1 | [05-Access-Management-Story/01-core-entities-and-relationships.md](05-Access-Management-Story/01-core-entities-and-relationships.md) | Entity'ler ve üç köprü tablo |
+| 5.2 | [05-Access-Management-Story/02-viewdto-service-controller-layer.md](05-Access-Management-Story/02-viewdto-service-controller-layer.md) | ViewDTO konvansiyonu, Service/Controller katmanı |
+| 5.3 | [05-Access-Management-Story/03-dashboard-pages-and-collection-views.md](05-Access-Management-Story/03-dashboard-pages-and-collection-views.md) | List/Details/Edit/Collection view'ları, eksik collection bağlantısı |
+| 5.4 | [05-Access-Management-Story/04-login-to-dashboard-and-gaps.md](05-Access-Management-Story/04-login-to-dashboard-and-gaps.md) | Login → JWT → Dashboard akışı, bugünkü boşluklar |
+| 5.5 | [05-Access-Management-Story/05-permission-matrix-and-granular-security.md](05-Access-Management-Story/05-permission-matrix-and-granular-security.md) | GedenLines'tan Hydra'ya Permission evrimi, 5 katmanlı yetkilendirme mimarisi (`ControllerActionBased`, `NavMenuBased`, `ViewBased`, `ComponentBased`, `EntityPropertyBased`) ve `TableDTO`/`MetaColumnDTO` ile kolon/property seviyesinde dinamik veri güvenliği |
+| 5.6 | [05-Access-Management-Story/05-default-admin-seed.md](05-Access-Management-Story/05-default-admin-seed.md) | Jenerik, config-driven "Default Admin" seed'i: `DbInitializer.SeedDefaultAdmin`, her Hydra tabanlı uygulamanın ilk açılışta kullanabileceği Role+SystemUser+wildcard Permission |
+| 5.7 | [05-Access-Management-Story/07-permission-enforcement-and-status-codes.md](05-Access-Management-Story/07-permission-enforcement-and-status-codes.md) | 5.5'in 1. katmanının uygulanması: deny-by-default `PermissionAuthorizationFilter`, JWT'nin etkinleştirilmesi, login zincirinin onarımı; ve durum kodu yönetimi — `HydraStatusCatalog`, `/status/{code}` sayfası, satır içi uyarı şeridi |
 
 ---
 

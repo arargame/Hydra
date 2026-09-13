@@ -1,4 +1,4 @@
-﻿using Hydra.Services;
+using Hydra.Services;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -18,13 +18,40 @@ namespace Hydra.AccessManagement.Jwt
 
     public class JwtTokenManager : IJwtTokenManager
     {
+        /// <summary>
+        /// Issuer/audience are fixed across every Hydra-based application, so the token-issuing
+        /// side and the bearer-validation side cannot drift apart.
+        /// </summary>
+        public const string Issuer = "hydra-api";
+        public const string Audience = "hydra-clients";
+
+        /// <summary>
+        /// Config key holding the signing secret. Resolved through ICustomConfigurationService,
+        /// so "Secrets:JwtSecretKey" (secret store / environment) wins over a plain appsettings
+        /// value — the key should not live in appsettings.json in production.
+        /// </summary>
+        public const string SecretKeyConfigName = "JwtSecretKey";
+
+        /// <summary>
+        /// Development-only fallback used when no secret is configured.
+        ///
+        /// It is deliberately long: HMAC-SHA256 requires a key of at least 256 bits, and the
+        /// previous short fallback ("fallback-secret") made token signing throw at runtime rather
+        /// than fall back to anything usable. This value is not a secret and must be overridden
+        /// in any real deployment.
+        /// </summary>
+        public const string DevelopmentFallbackSecret = "hydra-development-only-signing-key-please-override-in-configuration";
+
         private readonly ICustomConfigurationService _config;
         private readonly string _secretKey;
 
         public JwtTokenManager(ICustomConfigurationService config)
         {
             _config = config;
-            _secretKey = _config.Get("JwtSecretKey", "fallback-secret"); // dev için fallback
+            _secretKey = _config.Get(SecretKeyConfigName, DevelopmentFallbackSecret);
+
+            if (string.IsNullOrWhiteSpace(_secretKey))
+                _secretKey = DevelopmentFallbackSecret;
         }
 
         public string GenerateToken(IEnumerable<Claim> claims, TimeSpan? lifetime = null)
@@ -33,8 +60,8 @@ namespace Hydra.AccessManagement.Jwt
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: "hydra-api",
-                audience: "hydra-clients",
+                issuer: Issuer,
+                audience: Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.Add(lifetime ?? TimeSpan.FromHours(1)),
                 signingCredentials: creds);
@@ -53,8 +80,8 @@ namespace Hydra.AccessManagement.Jwt
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidIssuer = "hydra-api",
-                    ValidAudience = "hydra-clients",
+                    ValidIssuer = Issuer,
+                    ValidAudience = Audience,
                     ValidateLifetime = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ClockSkew = TimeSpan.FromMinutes(1)

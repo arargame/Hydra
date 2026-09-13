@@ -68,6 +68,22 @@ Teorik olarak `GET /CustomFile/Get/{id}` genel `Get` endpoint'i üzerinden dosya
   kodun (`FileService.CreateCustomFileFromPath`) yerel diskten okuyup entity
   oluşturması var.
 
+> ✅ **Güncelleme:** GedenLines projesindeki (`Blazor.GedenLines` / `WebApi.GedenLines`)
+> çalışan Upload/Download deseni incelenip Hydra'nın kendi konvansiyonlarına
+> (`MainController<T>`, `Service<T>`, `ApiClient<T>`) uyarlandı:
+> `CustomFileController : MainController<CustomFile>` (`Upload`, `Download/{id:guid}`,
+> `ByEntity/{entityType}/{entityId}`), `CustomFileService`, `FileUploadDTO`/`FileUploadItemDTO`,
+> istemci tarafında `CustomFileClient : ApiClient<CustomFile>` ve genel amaçlı
+> `FileUploadComponent.razor` (InputFile sarmalayıcı). `Download` artık gerçek bir
+> `FileContentResult` (doğru `Content-Type`/`Content-Disposition`) döndürüyor, base64/JSON
+> değil; `Upload` ise `multipart/form-data` yerine GedenLines ile aynı yaklaşımla JSON
+> gövdede base64 taşıyor (basitlik için — büyük dosyalarda gerçek `multipart/IFormFile`'a
+> geçmek ayrı bir iyileştirme). **Not:** bu değişiklik bu ortamda derlenip test edilemedi,
+> kullanıcı kendi makinesinde build/test etmeli. `Category` (serbest metin etiket) alanı
+> GedenLines'ta var ama Hydra'da `CustomFile.Category` hesaplanan bir enum olduğu için
+> bilinçli olarak taşınmadı; `ColumnFieldComponent`'in bağlı olmayan dosya input'u da bu
+> kapsamın dışında bırakıldı (ayrı, daha genel bir senaryo).
+
 **3. Depolama stratejisi kararsız — şema, kod ile çelişiyor.**
 Migration'da (`Tentacle/.../Migrations/20251221011840_RecreateRequestSchema.cs`):
 
@@ -122,22 +138,23 @@ megabaytlarca içeriği **yanlışlıkla** her satırla birlikte sürüklenmiyor
 sisteme baştan düşünülmüş, doğru bir sınır — dosya içeriği yalnızca özel olarak
 istendiğinde gelmeli, listeleme sorgusuna bedavadan binmemeli.
 
-## Puan: 10 üzerinden **3**
+## Puan: 10 üzerinden **3** (Upload/Download eklendikten sonra tahmini **4.5** — derlenip test edilmeyi bekliyor)
 
 | Boyut | Puan /2 | Gerekçe |
 |---|---|---|
 | Veri modeli | 1.5 | `CustomFile` makul tasarlanmış (kategori, boyut hesapları, BaseObject uyumu) ama `Path`/`ContainerName` kullanılmayan alanlar taşıyor. |
 | Depolama stratejisi | 0.5 | DB blob mu, harici storage mu belirsiz; şema iki farklı niyeti aynı anda taşıyor. |
-| API yüzeyi | 0 | Upload/download için hiçbir dedicated endpoint yok. |
-| UI entegrasyonu | 0 | `<input type="file">` bağlı değil, hiçbir ekranda dosya yükleme akışı çalışmıyor. |
-| Doğrulama/güvenlik | 0.5 | Sadece uzantı bazlı kategori sınıflandırması var; boyut/tip/magic-number kontrolü yok. |
+| API yüzeyi | ~~0~~ 1.5 | ✅ `CustomFileController` (Upload/Download/ByEntity) eklendi, GedenLines desenine göre uyarlandı — gerçek dosya yanıtı üretiyor. Eksik kalan: gerçek `multipart/form-data` (bugün JSON+base64) ve sunucu tarafı boyut/tip doğrulaması. |
+| UI entegrasyonu | 0 | Genel amaçlı `FileUploadComponent.razor` artık var ama henüz hiçbir gerçek ekrana bağlanmadı — `<input type="file">` akışı hâlâ hiçbir sayfada uçtan uca çalışmıyor. |
+| Doğrulama/güvenlik | 0.5 | Sadece uzantı bazlı kategori sınıflandırması var; boyut/tip/magic-number kontrolü yok (istemcide sadece `MaxFileSizeInBytes` sınırı var, sunucuda yok). |
 | Sorgu güvenliği (list'e blob sızmaması) | 1.5 | `IsFileColumn` mekanizması iyi düşünülmüş, bugün çalışıyor. |
-| **Toplam** | **3 / 10** | Bir veri modeli ve birkaç yardımcı fonksiyon var; **çalışan bir dosya yönetim sistemi yok.** |
+| **Toplam** | **3 / 10** (kod eklendi, derlenmedi/test edilmedi) | Veri modeli ve sorgu güvenliği zaten sağlamdı; artık bir Upload/Download API yüzeyi de var, ama **UI entegrasyonu ve sunucu taraflı doğrulama hâlâ eksik.** |
 
 Bu düşük puanı olumsuz bir eleştiri olarak değil, net bir başlangıç noktası
 olarak okuyun: bugün burada olan şey "iskelet" — üzerine inşa edilecek doğru
-temeller (entity modeli, sorgudan dışlama) zaten doğru atılmış, eksik olan
-transport/API/UI katmanı.
+temeller (entity modeli, sorgudan dışlama) zaten doğru atılmış; transport/API
+katmanı artık eklendi (yukarı bakın), kalan asıl boşluk UI entegrasyonu ve
+sunucu taraflı doğrulama.
 
 ## `Hydra.FileManagement` olarak ayrıştırma önerisi
 
@@ -146,11 +163,12 @@ DevExpress XAF benzeri "amacına göre ayrı kütüphane" vizyonuna uygun bir
 
 1. **Taşınacaklar (bugün var, sadece yer değiştirir):** `CustomFile`,
    `FileExtensions`, `FileHelper`, `FileService`, `FileInfoDTO`.
-2. **Yeni yazılması gerekenler (bugün yok):**
-   - `CustomFileController : MainController<CustomFile>` + gerçek bir
-     `POST /CustomFile/Upload` (`multipart/form-data`, `IFormFile`) ve
-     `GET /CustomFile/Download/{id}` (doğru `Content-Type`/`Content-Disposition`
-     ile gerçek dosya akışı, JSON zarfı değil).
+2. **Yeni yazılması gerekenler:**
+   - ✅ `CustomFileController : MainController<CustomFile>` + `POST /CustomFile/Upload`
+     ve `GET /CustomFile/Download/{id}` (doğru `Content-Type`/`Content-Disposition`
+     ile gerçek dosya akışı, JSON zarfı değil) — eklendi, bkz. yukarıdaki güncelleme
+     notu. Kalan iyileştirme: `Upload` bugün JSON+base64 taşıyor, gerçek
+     `multipart/form-data`/`IFormFile`'a geçmek büyük dosyalarda daha verimli olurdu.
    - `ColumnFieldComponent`'teki dosya input'una gerçek bir `InputFile`
      (Blazor'ın kendi component'i) bağlanması + yükleme ilerleme göstergesi.
    - Boyut/uzantı/MIME doğrulaması — hem istemci hem sunucu tarafında.

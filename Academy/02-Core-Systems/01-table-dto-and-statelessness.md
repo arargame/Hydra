@@ -42,9 +42,9 @@ korunarak). Aynı zarf, gidiş-dönüş boyunca aynı şekli koruyor.
 sequenceDiagram
     participant UI as Blazor UI<br/>(GenericListView)
     participant Grid as HydraGrid /<br/>FilterBarComponent
-    participant Client as ApiClient&lt;T&gt;
-    participant Ctrl as MainController&lt;T&gt;<br/>(WebApi)
-    participant Svc as Service&lt;T&gt;
+    participant Client as ApiClient<T>
+    participant Ctrl as MainController<T><br/>(WebApi)
+    participant Svc as Service<T>
     participant QB as QueryBuilder +<br/>AdoNetDatabaseService
     participant DB as SQL Server
 

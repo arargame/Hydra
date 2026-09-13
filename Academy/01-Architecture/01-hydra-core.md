@@ -11,8 +11,8 @@ olan bir çekirdek. Kısaca dört katman:
 
 ```mermaid
 graph TD
-    A["BaseObject&lt;T&gt;<br/>(Core/) — her entity'nin ortak iskeleti"] --> B["Repository&lt;T&gt;<br/>(DAL/Core/) — EF Core erişimi"]
-    B --> C["Service&lt;T&gt;<br/>(Services/Core/) — iş kuralları, log, commit"]
+    A["BaseObject<T><br/>(Core/) — her entity'nin ortak iskeleti"] --> B["Repository<T><br/>(DAL/Core/) — EF Core erişimi"]
+    B --> C["Service<T><br/>(Services/Core/) — iş kuralları, log, commit"]
     C --> D["ViewDTO / TableDTO<br/>(DTOs/) — ekrana özel kolon sözleşmesi"]
     D --> E["Filter sistemi<br/>(DataModels/Filter/) — WHERE'e dönüşen ağaç"]
     C --> F["QueryBuilder + AdoNetDatabaseService<br/>(DataModels/, Services/) — ham SQL üretimi"]
@@ -65,7 +65,7 @@ ama dışa açılan bir API'de id'yi "gizli" saymayın).
 **`RowVersion` + `[Timestamp]`.** EF Core'un optimistic concurrency mekanizması —
 iki kullanıcı aynı kaydı aynı anda güncellerse ikinci `UPDATE` `RowVersion` uyuşmadığı
 için `DbUpdateConcurrencyException` fırlatır. Bu, Hydra'nın "son kaydeden kazanır"
-yerine "çakışmayı fark et" tercihi.
+yerine "çakışmayı fark et ve otomatik iyileştir (self-healing retry)" tercihi (Bu sürecin SQL seviyesindeki binary byte'lardan `UnitOfWork` 3x retry ve "Client Wins" çözümüne kadar tam detayları için bkz. [2.4 — Service ve Repository Mimarisi](../02-Core-Systems/04-service-and-repository-architecture.md#3-veri-bütünlüğü-unitofwork-ve-concurrency-çakışma-yönetimi)).
 
 **Kurucu, `virtual Initialize()`'ı çağırıyor.** Küçük ama tehlikeli bir C# detayı:
 temel sınıfın kurucusu, türetilmiş sınıfın alanları henüz atanmadan çalışır. Bunu

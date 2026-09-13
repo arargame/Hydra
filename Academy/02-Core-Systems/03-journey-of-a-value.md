@@ -10,12 +10,12 @@ dönüşüyor?
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Input as &lt;input&gt; (DOM)
+    participant Input as <input> (DOM)
     participant FBC as FilterBarComponent
     participant Col as MetaColumnDTO<br/>(Name kolonu)
-    participant Client as ApiClient&lt;Product&gt;
-    participant Ctrl as MainController&lt;Product&gt;
-    participant Svc as Service&lt;Product&gt;
+    participant Client as ApiClient<Product>
+    participant Ctrl as MainController<Product>
+    participant Svc as Service<Product>
     participant Conv as MetaColumnDTO.ConvertToColumn
     participant QB as QueryBuilder
     participant Ado as AdoNetDatabaseService
@@ -36,7 +36,7 @@ sequenceDiagram
     QB->>Ado: ExecuteQuery(sql, {"@0":"a"}, connection)
     Ado->>DB: parametreli SqlCommand (SQL injection'a kapalı)
     DB-->>Ado: eşleşen satırlar
-    Ado-->>QB: List&lt;Dictionary&lt;string,object?&gt;&gt;
+    Ado-->>QB: List<Dictionary<string,object?>>
     QB-->>Svc: Table.Rows dolu
     Svc-->>Ctrl: TableDTO.FromTableToDTO(table)
     Ctrl-->>Client: ResponseObject.Data = TableDTO
@@ -249,6 +249,64 @@ not edilmişti.
 
 ---
 
+## Ek: İki filtre birden aktifken — `JoinedFiltersGroup`
+
+Yukarıdaki 17 adım **tek** bir filtre (`Name` için `ContainsFilter`) üzerinden
+anlatıldı. Kullanıcı ikinci bir filtre daha eklerse — mesela `Price >= 100` —
+yolculuk 9. adımda dallanıyor: `Svc->>QB: Table.SetTableFilter()` artık tek bir
+`Filter` değil, iki operandı `And`/`Or` ile birleştiren bir
+`JoinedFiltersGroup` üretiyor (composite pattern, bkz.
+[`Hydra/Docs/filters.md`](../../Docs/filters.md)). `Filter` de
+`JoinedFiltersGroup` de aynı `IQueryableFilter` arayüzünü uyguladığı için bir
+grup başka bir grubu operand olarak alabiliyor — N filtre sol-eğilimli bir
+ağaca katlanıyor: `(((f0 And f1) And f2) And f3)`.
+
+Buradaki en kritik nokta, tek filtrede hiç görünmeyen bir şey: **parametre
+numaralama invariant'ı**. SQL metnindeki `@0`/`@1` yer tutucuları ile
+`Table.SetQueryParameters`'ın ürettiği sözlükteki anahtarlar birbirine **pozisyonla**
+bağlı, isimle değil — ikisi de kökün flattened `Parameters` listesindeki sırayı
+esas alıyor:
+
+```mermaid
+graph TB
+    subgraph SC["Senaryo: Name contains 'a' VE Price >= 100 aynı anda aktif"]
+    G["JoinedFiltersGroup (root)<br/>Operator: And<br/>StartParameterIndex = 0<br/>FinishParameterIndex = 2"]
+    L["LeftFilter: ContainsFilter<br/>column: Name<br/>StartParameterIndex = 0<br/>SQL: p.Name like '%'+@0+'%'"]
+    R["RightFilter: GreaterThanFilter<br/>column: Price<br/>StartParameterIndex = 1 (= Left.FinishParameterIndex)<br/>SQL: p.Price >= @1"]
+    G --> L
+    G --> R
+    end
+    PARAMS["Group.Parameters (flattened, aynı referanslar)<br/>[0] Index=0, Value='a'<br/>[1] Index=1, Value=100"]
+    L -. "Parameters[0]" .-> PARAMS
+    R -. "Parameters[1]" .-> PARAMS
+    SETQ["Table.SetQueryParameters<br/>kökün flattened listesini POZİSYONA göre gezer<br/>'@0' -> 'a'<br/>'@1' -> 100"]
+    PARAMS --> SETQ
+    SQL["Üretilen WHERE:<br/>where (p.Name like '%'+@0+'%') And (p.Price >= @1)"]
+    SETQ --> SQL
+```
+
+İki mekanizma bunu doğru tutuyor: `Group.Parameters`, operandlarının parametre
+listelerinin **aynı referanslarla** (kopya değil) birleştirilmiş hali —
+kökten yapılan bir renumbering yapraklara kadar ulaşıyor. Ve
+`JoinedFiltersGroup.SetStartParameterIndex` (base `QueryableFilter`'da
+`virtual`) bunu cascade ediyor: sol operand grubun kendi index'inden
+başlıyor, sağ operand solun bittiği yerden — `Left.FinishParameterIndex`. Bir
+filtre kendi `PrepareQueryString`'inde placeholder adını kendi sayacından değil
+`StartParameterIndex`'ten (ya da kendi parametresinin `Index`'inden) türetmezse
+bu invariant sessizce bozulur.
+
+Bu satırların neden bu kadar dikkatli yazıldığını da not etmek gerek:
+`JoinedFiltersGroup`'un kurucusu ilk yazıldığında `BaseObject`'in temel
+kurucu-sınıf tuzağına düştü — `Initialize()`, `LeftFilter`/`RightFilter` henüz
+atanmadan (base kurucudan) çağrılıyordu ve `NullReferenceException`
+fırlatıyordu (bkz.
+[`Hydra/Docs/filters.md#the-base-constructor-trap`](../../Docs/filters.md#the-base-constructor-trap)).
+Hata, uygulamada hiçbir ekran aynı anda iki filtre uygulamadığı için uzun süre
+fark edilmedi; onu ilk tetikleyen, `EntityType`+`EntityId` üzerinden select
+yapan otomatik Logs sekmesi oldu.
+
+---
+
 ## ⭐ İleride Yapılacaklar / Not Edilenler
 
 - `MetaColumnDTO.ConvertToColumn`'daki filtre-tipi switch'i, yeni bir `Filter`
@@ -257,7 +315,6 @@ not edilmişti.
   ortadan kaldırabilir — bugün 15 filtre tipi var, unutulan bir `case` sessizce
   o filtrenin hiç uygulanmamasına yol açar (`column` `null` kalır, `break` ile
   çıkılır, hata fırlatılmaz).
-- Bu dokümanın "tekil filtre" versiyonu; aynı yolculuğun **iki filtre birden
-  aktifken** (`JoinedFiltersGroup` devredeyken) nasıl değiştiğini gösteren bir
-  ek şema faydalı olurdu — bugün bu bilgi `Hydra/Docs/filters.md`'de metin
-  olarak var ama görselleştirilmedi.
+- ✅ **Eklendi:** bu dokümanın "tekil filtre" versiyonunun iki filtre birden
+  aktifken (`JoinedFiltersGroup`) nasıl değiştiğini gösteren şema — yukarıdaki
+  "İki filtre birden aktifken" bölümüne bakın.
