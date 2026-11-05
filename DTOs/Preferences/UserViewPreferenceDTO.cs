@@ -1,3 +1,4 @@
+using Hydra.AccessManagement;
 using Hydra.DataModels;
 using Hydra.DataModels.Filter;
 using Hydra.DTOs.ViewConfigurations;
@@ -46,10 +47,9 @@ namespace Hydra.DTOs.Preferences
                 htmlElementTypeInCreationAndEdit: HtmlElementType.TextArea
             );
 
-            SetConfigurationsForNavigations(
-                leftTableKeyName: nameof(SystemUserId),
-                rightTableName: "SystemUser",
-                columnNameToDisplay: "Name",
+            SetConfigurationsForNavigations<UserViewPreferenceDTO, SystemUser>(
+                currentDto => currentDto.SystemUserId!,
+                systemUser => systemUser.Name!,
                 displayName: "User"
             );
 

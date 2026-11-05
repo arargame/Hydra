@@ -240,6 +240,56 @@ namespace Hydra.DTOs.ViewDTOs
                                                     navigation: navigation);
         }
 
+        /// <summary>
+        /// İki tablo arasındaki navigation (ilişki) konfigürasyonunu tip-güvenli lambda ifadeleri ile kurar.
+        /// </summary>
+        public ViewDTO SetConfigurationsForNavigations<TTargetEntity>(
+            Expression<Func<ViewDTO, object>> foreignKeySelector,
+            Expression<Func<TTargetEntity, object>> targetDisplayColumnSelector,
+            string? displayName = null,
+            string? rightTableAlias = null,
+            bool setAsLink = true) where TTargetEntity : class
+        {
+            var foreignKeyName = ReflectionHelper.GetMemberName(foreignKeySelector);
+            var targetTableName = typeof(TTargetEntity).Name;
+            var displayColumnName = ReflectionHelper.GetMemberName(targetDisplayColumnSelector);
+
+            return SetConfigurationsForNavigations(
+                leftTableKeyName: foreignKeyName,
+                rightTableName: targetTableName,
+                columnNameToDisplay: displayColumnName,
+                displayName: displayName ?? displayColumnName,
+                rightTableAlias: rightTableAlias,
+                setAsLink: setAsLink
+            );
+        }
+
+        /// <summary>
+        /// Hem kaynak DTO'nun hem hedef Entity'nin tip-güvenli olduğu tam generic navigation overload'ı.
+        /// </summary>
+        public ViewDTO SetConfigurationsForNavigations<TSourceDto, TTargetEntity>(
+            Expression<Func<TSourceDto, object>> foreignKeySelector,
+            Expression<Func<TTargetEntity, object>> targetDisplayColumnSelector,
+            string? displayName = null,
+            string? rightTableAlias = null,
+            bool setAsLink = true)
+            where TSourceDto : class
+            where TTargetEntity : class
+        {
+            var foreignKeyName = ReflectionHelper.GetMemberName(foreignKeySelector);
+            var targetTableName = typeof(TTargetEntity).Name;
+            var displayColumnName = ReflectionHelper.GetMemberName(targetDisplayColumnSelector);
+
+            return SetConfigurationsForNavigations(
+                leftTableKeyName: foreignKeyName,
+                rightTableName: targetTableName,
+                columnNameToDisplay: displayColumnName,
+                displayName: displayName ?? displayColumnName,
+                rightTableAlias: rightTableAlias,
+                setAsLink: setAsLink
+            );
+        }
+
         /// <param name="rightTableAlias">
         /// Aynı tabloya birden fazla join için ayrıştırıcı alias (ör. Request→Employee için
         /// "CreatedByEmployee" ve "OwnerEmployee"). Flatten property önekleri ve FK property adı
