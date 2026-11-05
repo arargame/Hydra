@@ -12,6 +12,7 @@ namespace Hydra.DTOs.Preferences
     {
         public Guid? SystemUserId { get; set; }
         public string? SystemUser_Name { get; set; }
+        public Guid? SystemUser_Id { get; set; }
         public string ViewKey { get; set; } = string.Empty;
         public string? PresetName { get; set; }
         public bool IsDefault { get; set; }
