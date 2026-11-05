@@ -1,6 +1,7 @@
 using Hydra.AccessManagement;
 using Hydra.IdentityAndAccess;
 using Hydra.Core;
+using Hydra.Core.Preferences;
 using Hydra.Core.HumanResources;
 using Hydra.Core.DTOs;
 using Hydra.Services;
@@ -38,6 +39,7 @@ namespace Hydra.DAL.Contexts
         public DbSet<Position> Position { get; set; }
         public DbSet<Employee> Employee { get; set; }
         public DbSet<Platform> Platform { get; set; }
+        public DbSet<UserViewPreference> UserViewPreference { get; set; }
         
         //public DbSet<Log> Log { get; set; }
 
