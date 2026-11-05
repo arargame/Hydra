@@ -30,7 +30,9 @@ namespace Hydra.DTOs.ViewConfigurations
              HtmlInputType inputType = HtmlInputType.text,
              string? displayName = null,
              object? defaultValue = null,
-             bool setToCreateResultViewFromThis = true)
+             bool setToCreateResultViewFromThis = true,
+             bool isVisibleInListView = true,
+             bool isVisibleInColumnChooser = true)
              : base(viewType: ViewType.ListView,
                    viewName: ViewType.ListView.ToString(),
                    toSelect: toSelect,
@@ -43,7 +45,8 @@ namespace Hydra.DTOs.ViewConfigurations
                    defaultValue: defaultValue,
                    setToCreateResultViewFromThis: setToCreateResultViewFromThis)
         {
-
+            IsVisibleInListView = isVisibleInListView;
+            IsVisibleInColumnChooser = isVisibleInColumnChooser;
         }
 
         public ListViewConfiguration(
@@ -55,7 +58,9 @@ namespace Hydra.DTOs.ViewConfigurations
                 HtmlInputType inputType = HtmlInputType.text,
                 string? displayName = null,
                 object? defaultValue = null,
-                bool setToCreateResultViewFromThis = true)
+                bool setToCreateResultViewFromThis = true,
+                bool isVisibleInListView = true,
+                bool isVisibleInColumnChooser = true)
                 : base(viewType: ViewType.ListView,
                       viewName: ViewType.ListView.ToString(),
                       toSelect: new AttributeToSelect(priority),
@@ -68,7 +73,8 @@ namespace Hydra.DTOs.ViewConfigurations
                       defaultValue: defaultValue,
                       setToCreateResultViewFromThis: setToCreateResultViewFromThis)
         {
-
+            IsVisibleInListView = isVisibleInListView;
+            IsVisibleInColumnChooser = isVisibleInColumnChooser;
         }
 
         public static ListViewConfiguration GetForNavigation(

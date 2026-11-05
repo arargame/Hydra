@@ -498,6 +498,8 @@ namespace Hydra.DTOs
 
             var orderedColumnDTOs = configuredMetaColumns.Where(c => c.TypeName == nameof(OrderedColumn));
 
+            var candidateColumnDTOs = configuredMetaColumns.Where(c => c.TypeName == nameof(MetaColumn));
+
 
             foreach (var selectedColumnDTO in selectedColumnDTOs)
             {
@@ -524,6 +526,15 @@ namespace Hydra.DTOs
 
                 if (!GetOrderedMetaColumns.Any(mc => mc.Name == orderedColumnDTO.Name))
                     AlterOrAddMetaColumn(orderedColumnDTO);
+            }
+
+            foreach (var candidateColumnDTO in candidateColumnDTOs)
+            {
+                if (candidateColumnDTO.BelongsToJoins)
+                    continue;
+
+                if (!MetaColumns.Any(mc => mc.Name == candidateColumnDTO.Name && mc.TypeName == nameof(MetaColumn)))
+                    AlterOrAddMetaColumn(candidateColumnDTO);
             }
 
             ConfigureJoinTables(configuredMetaColumns.Where(cmc => cmc.BelongsToJoins).ToList());
@@ -577,7 +588,8 @@ namespace Hydra.DTOs
                 {
                     var toSelect = configuration.ToSelect;
 
-                    var selectedColumn = configuration.ToColumnDTO(nameof(SelectedColumn));
+                    string columnType = configuration.IsVisibleInListView ? nameof(SelectedColumn) : nameof(MetaColumn);
+                    var selectedColumn = configuration.ToColumnDTO(columnType);
 
                     selectedColumns.Add(selectedColumn);
                 }
@@ -587,6 +599,11 @@ namespace Hydra.DTOs
                     var toFilter = configuration.ToFilter;
 
                     var filteredColumn = configuration.ToColumnDTO(nameof(FilteredColumn));
+
+                    if (!configuration.IsVisibleInListView && filteredColumn.FilterDTO != null)
+                    {
+                        filteredColumn.FilterDTO.CreateFilterComponentFromThis = false;
+                    }
 
                     filteredColumns.Add(filteredColumn);
                 }

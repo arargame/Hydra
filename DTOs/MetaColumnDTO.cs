@@ -70,6 +70,10 @@ namespace Hydra.DTOs
 
         public bool CreateResultViewFromThis { get; set; }
 
+        public bool IsVisibleInListView { get; set; } = true;
+
+        public bool IsVisibleInColumnChooser { get; set; } = true;
+
 
         public bool BelongsToMainTable
         {

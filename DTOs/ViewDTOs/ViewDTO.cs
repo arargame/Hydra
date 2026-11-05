@@ -471,6 +471,15 @@ namespace Hydra.DTOs.ViewDTOs
             return this;
         }
 
+        public virtual ViewDTO SetConfigurationsForBaseObjectMembers<T>(params Expression<Func<T, object>>[] excludeProperties) where T : ViewDTO
+        {
+            var excludedMemberNames = excludeProperties != null && excludeProperties.Length > 0
+                ? new HashSet<string>(excludeProperties.Select(e => ReflectionHelper.GetMemberName(e)))
+                : new HashSet<string>();
+
+            return SetConfigurationsForBaseObjectMembersWithNames(inheritingTableName: null, excludedMemberNames);
+        }
+
         public virtual ViewDTO SetConfigurationsForBaseObjectMembers(params Expression<Func<ViewDTO, object>>[] excludeProperties)
         {
             return SetConfigurationsForBaseObjectMembers(inheritingTableName: null, excludeProperties);
@@ -478,11 +487,16 @@ namespace Hydra.DTOs.ViewDTOs
 
         public virtual ViewDTO SetConfigurationsForBaseObjectMembers(string? inheritingTableName = null, params Expression<Func<ViewDTO, object>>[]? excludeProperties)
         {
-            bool isInherited = !string.IsNullOrEmpty(inheritingTableName);
-
             var excludedMemberNames = excludeProperties != null && excludeProperties.Length > 0
                 ? new HashSet<string>(excludeProperties.Select(e => ReflectionHelper.GetMemberName(e)))
                 : new HashSet<string>();
+
+            return SetConfigurationsForBaseObjectMembersWithNames(inheritingTableName, excludedMemberNames);
+        }
+
+        protected virtual ViewDTO SetConfigurationsForBaseObjectMembersWithNames(string? inheritingTableName, HashSet<string> excludedMemberNames)
+        {
+            bool isInherited = !string.IsNullOrEmpty(inheritingTableName);
 
             if (!excludedMemberNames.Contains(nameof(Description)))
             {
@@ -496,49 +510,49 @@ namespace Hydra.DTOs.ViewDTOs
                    }, displayName: "Description");
             }
 
-            if (!excludedMemberNames.Contains(nameof(AddedDate)))
-            {
-                SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.AddedDate),
-                   configurations: new List<IConfiguration>()
-                   {
-                       new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(BetweenFilter)),
-                                                    toOrder:new AttributeToOrder(isOrderable:true))
-                       .AlsoUseToCreateCollectionViewConfiguration(),
+            bool isAddedDateInListView = !excludedMemberNames.Contains(nameof(AddedDate));
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.AddedDate),
+               configurations: new List<IConfiguration>()
+               {
+                   new ListViewConfiguration(toFilter: new AttributeToFilter(nameof(BetweenFilter)),
+                                                toOrder: new AttributeToOrder(isOrderable: true),
+                                                isVisibleInListView: isAddedDateInListView,
+                                                isVisibleInColumnChooser: true)
+                   .AlsoUseToCreateCollectionViewConfiguration(),
 
-                       new DetailsViewConfiguration()
-                   },
-                   displayName: "Added Date");
-            }
+                   new DetailsViewConfiguration()
+               },
+               displayName: "Added Date");
 
-            if (!excludedMemberNames.Contains(nameof(ModifiedDate)))
-            {
-                SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.ModifiedDate),
-                   configurations: new List<IConfiguration>()
-                   {
-                       new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(BetweenFilter)),
-                                                    toOrder:new AttributeToOrder(isOrderable:true)),
+            bool isModifiedDateInListView = !excludedMemberNames.Contains(nameof(ModifiedDate));
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.ModifiedDate),
+               configurations: new List<IConfiguration>()
+               {
+                   new ListViewConfiguration(toFilter: new AttributeToFilter(nameof(BetweenFilter)),
+                                                toOrder: new AttributeToOrder(isOrderable: true),
+                                                isVisibleInListView: isModifiedDateInListView,
+                                                isVisibleInColumnChooser: true),
 
-                       new DetailsViewConfiguration(),
+                   new DetailsViewConfiguration(),
 
-                   }, displayName: "Modified Date");
-            }
+               }, displayName: "Modified Date");
 
-            if (!excludedMemberNames.Contains(nameof(IsActive)))
-            {
-                SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.IsActive),
-                   configurations: new List<IConfiguration>()
-                   {
-                        new ListViewConfiguration(toFilter:new AttributeToFilter(nameof(EqualFilter)),
-                                                    toOrder:new AttributeToOrder(isOrderable:true),
-                                                    elementType:HtmlElementType.DropdownList)
-                                                    .AlsoUseToCreateCollectionViewConfiguration(),
+            bool isActiveInListView = !excludedMemberNames.Contains(nameof(IsActive));
+            SetConfigurationsViaPropertyInfo(propertyInfo: ReflectionHelper.GetPropertyOf<ViewDTO>(o => o.IsActive),
+               configurations: new List<IConfiguration>()
+               {
+                    new ListViewConfiguration(toFilter: new AttributeToFilter(nameof(EqualFilter)),
+                                                toOrder: new AttributeToOrder(isOrderable: true),
+                                                elementType: HtmlElementType.DropdownList,
+                                                isVisibleInListView: isActiveInListView,
+                                                isVisibleInColumnChooser: true)
+                                                .AlsoUseToCreateCollectionViewConfiguration(),
 
-                        new EditViewConfiguration(),
+                    new EditViewConfiguration(),
 
-                        new DetailsViewConfiguration(),
+                    new DetailsViewConfiguration(),
 
-                   }, displayName: "Active");
-            }
+               }, displayName: "Active");
 
             //NOT: IsHidden sadece ViewDTO üzerinde yaşayan bir UI alanıdır; BaseObject entity'lerinde
             //karşılığı (DB kolonu) yoktur. Konfigüre edilirse SELECT'e girer ve

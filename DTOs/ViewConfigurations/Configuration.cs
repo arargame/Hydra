@@ -44,6 +44,14 @@ namespace Hydra.DTOs.ViewConfigurations
 
         bool CreateResultViewFromThis { get; set; }
 
+        bool IsVisibleInListView { get; set; }
+
+        bool IsVisibleInColumnChooser { get; set; }
+
+        IConfiguration SetIsVisibleInListView(bool isVisible);
+
+        IConfiguration SetIsVisibleInColumnChooser(bool isVisible);
+
         IConfiguration SetPropertyInfo(PropertyInfo? propertyInfo);
 
         IConfiguration SetDisplayName(string? displayName);
@@ -100,6 +108,22 @@ namespace Hydra.DTOs.ViewConfigurations
         public bool IsForeignKey { get; set; }
 
         public bool CreateResultViewFromThis { get; set; }
+
+        public bool IsVisibleInListView { get; set; } = true;
+
+        public bool IsVisibleInColumnChooser { get; set; } = true;
+
+        public IConfiguration SetIsVisibleInListView(bool isVisible)
+        {
+            IsVisibleInListView = isVisible;
+            return this;
+        }
+
+        public IConfiguration SetIsVisibleInColumnChooser(bool isVisible)
+        {
+            IsVisibleInColumnChooser = isVisible;
+            return this;
+        }
 
 
         public NavigationColumnInfo? Navigation { get; set; } = null;
@@ -344,7 +368,9 @@ namespace Hydra.DTOs.ViewConfigurations
                 TableName = TableName,
                 ViewType = ViewType,
                 IsDisabled = ToFilter != null ? ToFilter.IsDisabled : false,
-                CreateResultViewFromThis = CreateResultViewFromThis
+                CreateResultViewFromThis = CreateResultViewFromThis,
+                IsVisibleInListView = IsVisibleInListView,
+                IsVisibleInColumnChooser = IsVisibleInColumnChooser
             };
 
             if (columnDTO.DefaultValue != null)
