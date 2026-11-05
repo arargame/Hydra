@@ -1,4 +1,4 @@
-﻿using Hydra.DataModels.Filter;
+using Hydra.DataModels.Filter;
 using Hydra.DataModels;
 using Hydra.DTOs.ViewDTOs;
 using Hydra.FileOperations;
@@ -442,7 +442,9 @@ namespace Hydra.DTOs
 
         public static MetaColumnDTO CreateColumnDTOWithContainsFilter(string name, string alias, object value, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
         {
-            return CreateColumnDTOWithFilter(name: name, alias: alias, priority: priority, filterTypeName: typeof(ContainsFilter).Name, createFilterComponentFromThis: useFilterToCreateViewComponent, filterPriority: filterPriority, values: new List<object>() { value });
+            var col = CreateColumnDTOWithFilter(name: name, alias: alias, priority: priority, filterTypeName: typeof(ContainsFilter).Name, createFilterComponentFromThis: useFilterToCreateViewComponent, filterPriority: filterPriority, values: new List<object>() { value });
+            col.ValueType = ColumnValueType.String;
+            return col;
         }
 
         public static MetaColumnDTO CreateColumnDTOWithInFilter(string name, string alias, List<object> values, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
