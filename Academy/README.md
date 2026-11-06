@@ -38,6 +38,7 @@ mimari değiştikçe güncellenecek, eskiyen iddialar silinecek.
 | 2.3 | [02-Core-Systems/03-journey-of-a-value.md](02-Core-Systems/03-journey-of-a-value.md) | *A Journey of a Value* — bir filtre kutusuna yazılan `"a"` harfinin SQL `WHERE`'e kadar giden ve geri dönen tam yolculuğu |
 | 2.4 | [02-Core-Systems/04-service-and-repository-architecture.md](02-Core-Systems/04-service-and-repository-architecture.md) | `Service<T>` ve `Repository<T>` Mimarisi: Generic DAL, CQRS partial ayrışması, derin Change Tracking & Audit Logging, Unit of Work, LRU Cache ve DI Lazy Factory |
 | 2.5 | [02-Core-Systems/05-validation-and-secure-error-handling.md](02-Core-Systems/05-validation-and-secure-error-handling.md) | Uçtan uca validasyon ve güvenli hata yönetimi: çok katmanlı doğrulama, CWE-209 güvenlik kalkanı, `ValidationManager`, `IValidatableObject` ve Blazor form motoru |
+| 2.6 | [02-Core-Systems/06-create-story-lifecycle.md](02-Core-Systems/06-create-story-lifecycle.md) | *Create Story* — Bir varlığın Blazor UI formundan SQL Server'a, oradan response zarfı ile arayüze dönüşüne kadarki uçtan uca yaşam döngüsü ve sahte hata (false failure) post-mortemi |
 
 ## Bölüm 3 — Alt Sistem İncelemesi: File Management
 

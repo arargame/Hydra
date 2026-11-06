@@ -42,6 +42,7 @@ namespace Hydra.Services.Core
 
                 if (response.Success)
                 {
+                    response.SetId(entity.Id).SetData(entity);
                     await SaveRepositoryLogsAsync();
                 }
                 else if (!isCommitted && _unitOfWork.LastErrorSafeMessage != null)
@@ -146,6 +147,7 @@ namespace Hydra.Services.Core
 
                 if (response.Success)
                 {
+                    response.SetData(true);
                     await SaveRepositoryLogsAsync();
                 }
                 else if (!isCommitted && _unitOfWork.LastErrorSafeMessage != null)
@@ -255,7 +257,10 @@ namespace Hydra.Services.Core
                 }
 
                 if (updateResponse.Success)
+                {
+                    updateResponse.SetId(entity.Id).SetData(entity);
                     await SaveRepositoryLogsAsync();
+                }
             }
             catch (Exception ex)
             {
