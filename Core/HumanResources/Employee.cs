@@ -10,6 +10,11 @@ namespace Hydra.Core.HumanResources
 {
     public class Employee : BaseObject<Employee>
     {
+        public string? Surname { get; set; }
+
+        [NotMapped]
+        public string FullName => $"{Name} {Surname}".Trim();
+
         public Guid PositionId { get; set; }
         
         [ForeignKey("PositionId")]
@@ -38,7 +43,10 @@ namespace Hydra.Core.HumanResources
                 yield return result;
 
             if (string.IsNullOrWhiteSpace(Name))
-                yield return ValidationManager.Required(nameof(Name), "Full Name");
+                yield return ValidationManager.Required(nameof(Name), "First Name");
+
+            if (string.IsNullOrWhiteSpace(Surname))
+                yield return ValidationManager.Required(nameof(Surname), "Surname");
 
             if (PositionId == Guid.Empty)
                 yield return ValidationManager.MustBeSelected(nameof(PositionId), "Position");

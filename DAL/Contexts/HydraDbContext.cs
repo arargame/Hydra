@@ -82,11 +82,21 @@ namespace Hydra.DAL.Contexts
                 .HasForeignKey(x => x.ParentId)
                 .OnDelete(DeleteBehavior.Restrict);
                 
-            modelBuilder.Entity<Employee>()
-                .HasOne(e => e.Position)
-                .WithMany(p => p.Employees)
-                .HasForeignKey(e => e.PositionId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasOne(e => e.Position)
+                    .WithMany(p => p.Employees)
+                    .HasForeignKey(e => e.PositionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Surname)
+                    .IsRequired()
+                    .HasMaxLength(100);
+            });
         }
     }
 }
