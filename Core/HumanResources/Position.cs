@@ -12,7 +12,7 @@ namespace Hydra.Core.HumanResources
         public Guid OrganizationUnitId { get; set; }
         
         [ForeignKey("OrganizationUnitId")]
-        public OrganizationUnit OrganizationUnit { get; set; } = null!;
+        public OrganizationUnit? OrganizationUnit { get; set; }
 
         // Upper position (IT Manager > Software Developer)
         public Guid? ParentId { get; set; }

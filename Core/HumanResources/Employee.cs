@@ -11,7 +11,7 @@ namespace Hydra.Core.HumanResources
         public Guid PositionId { get; set; }
         
         [ForeignKey("PositionId")]
-        public Position Position { get; set; } = null!;
+        public Position? Position { get; set; }
 
         // Hydra SystemUser (0–1)
         public Guid? SystemUserId { get; set; }
@@ -19,6 +19,15 @@ namespace Hydra.Core.HumanResources
         [ForeignKey("SystemUserId")]
         public SystemUser? SystemUser { get; set; }
 
-        public bool IsActiveEmployee { get; set; } = true;
+        private bool _isActiveEmployee = true;
+        public bool IsActiveEmployee
+        {
+            get => IsActive;
+            set
+            {
+                _isActiveEmployee = value;
+                IsActive = value;
+            }
+        }
     }
 }
