@@ -17,12 +17,14 @@ namespace Hydra.DAL.Core
     public interface IUnitOfWork : IDisposable
     {
         DbContext Context { get; }
+        string? LastErrorSafeMessage { get; }
         Task<bool> CommitAsync();
     }
     public class UnitOfWork : IUnitOfWork
     {
         private bool _disposed;
         public DbContext Context { get; }
+        public string? LastErrorSafeMessage { get; private set; }
         private readonly ILogService _logService;
 
         public UnitOfWork(DbContext context, ILogService logService)
@@ -71,10 +73,15 @@ namespace Hydra.DAL.Core
                 }
                 catch (Exception ex)
                 {
-                    var friendlyMessage = SqlExceptionHelper.ToUserFriendlyMessage(ex);
+                    var technicalDetails = SqlExceptionHelper.ToTechnicalDetails(ex);
+                    LastErrorSafeMessage = SqlExceptionHelper.ToSafeUserMessage(ex);
 
-                    await _logService.SaveAsync(LogFactory.Error(description: $"Commit failed: {friendlyMessage}"),
-                                                LogRecordType.Database);
+                    await _logService.SaveAsync(
+                        LogFactory.Error(
+                            description: $"Commit failed: {technicalDetails}",
+                            entityType: nameof(UnitOfWork),
+                            processType: LogProcessType.Unspecified),
+                        LogRecordType.Database);
 
                     await transaction.RollbackAsync();
                     return false;

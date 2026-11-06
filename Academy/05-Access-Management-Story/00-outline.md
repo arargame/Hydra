@@ -26,6 +26,7 @@ yaptığı gibi ama bir SQL sorgusu yerine bütün bir CRUD özelliği ölçeği
 | 5.5 | [05-permission-matrix-and-granular-security.md](05-permission-matrix-and-granular-security.md) | GedenLines'tan Hydra'ya Permission evrimi, 5 katmanlı yetkilendirme mimarisi (`ControllerActionBased`, `NavMenuBased`, `ViewBased`, `ComponentBased`, `EntityPropertyBased`) ve `TableDTO`/`MetaColumnDTO` ile kolon/property seviyesinde veri güvenliği |
 | 5.6 | [05-default-admin-seed.md](05-default-admin-seed.md) | Boş bir veritabanıyla ilk açılışta gezinebilmek için Hydra core seviyesinde, config-driven bir Role+SystemUser+wildcard Permission seed'i (`DbInitializer.SeedDefaultAdmin`) — her Hydra tabanlı uygulamada yeniden kullanılabilir |
 | 5.7 | [07-permission-enforcement-and-status-codes.md](07-permission-enforcement-and-status-codes.md) | 5.5'in 1. katmanının (`ControllerActionBased`) gerçekten uygulanması: deny-by-default `PermissionAuthorizationFilter`, JWT şemasının etkinleştirilmesi, login zincirindeki beş kırık halkanın onarımı, ve reddedilen bir isteğin kullanıcıya nasıl döndüğü (401/403 + `HydraStatusCatalog` + `/status/{code}` sayfası) |
+| 5.8 | [08-completing-the-five-layers.md](08-completing-the-five-layers.md) | Kalan dört katmanın uygulanması (sayfa/buton/kolon izinleri), uç izinlerini keşfeden tarayıcı, köprü ekranları ve GedenLines'tan portlanan Link/Unlink toplu seçim akışı |
 
 Bu bölüm boyunca kullanılan tüm kod örnekleri gerçek dosyalardan alınmıştır;
 bir iddia varsa yanında dosya yolu vardır. Proje-özel "şunu şöyle bağla"
@@ -36,8 +37,10 @@ adımları için (bu bölümün 5.4'ü genel mekaniği anlatıyor) bkz.
 
 ## ⭐ İleride Yapılacaklar / Not Edilenler
 
-- `Role`/`Permission` detay ekranlarına `CollectionViewSection` eklenmedi —
-  bkz. [5.3](03-dashboard-pages-and-collection-views.md).
+- ~~`Role`/`Permission` detay ekranlarına `CollectionViewSection` eklenmedi~~ →
+  [5.8](08-completing-the-five-layers.md)'de eklendi; üstelik Link/Unlink toplu
+  seçimiyle (bkz. [5.3](03-dashboard-pages-and-collection-views.md)'teki
+  "tek FK filtresi" kısıtı cross-table moduyla aşıldı).
 - Backend kimlik doğrulama ve uç yetkilendirmesi [5.7](07-permission-enforcement-and-status-codes.md)'de
   bağlandı; **Blazor tarafı henüz bağlı değil** (Login.razor gerçek giriş
   yapmıyor, rota koruması yok) — bkz. [5.4](04-login-to-dashboard-and-gaps.md)
@@ -48,6 +51,9 @@ adımları için (bu bölümün 5.4'ü genel mekaniği anlatıyor) bkz.
 - ~~`Default Admin` seed'inin yazdığı wildcard `Permission` bir veri iskeleti~~ →
   [5.7](07-permission-enforcement-and-status-codes.md) ile `PermissionEvaluator`
   tarafından gerçekten okunuyor.
-- [5.5](05-permission-matrix-and-granular-security.md)'in 2–5. katmanları
-  (`NavMenuBased`, `ViewBased`, `ComponentBased`, `EntityPropertyBased`) henüz
-  uygulanmadı — sadece 1. katman çalışıyor.
+- ~~[5.5](05-permission-matrix-and-granular-security.md)'in 2–5. katmanları henüz
+  uygulanmadı~~ → beşi de [5.8](08-completing-the-five-layers.md)'de tamamlandı.
+- **Geçici admin bypass'ı hâlâ duruyor** (`LoginAsync` içinde şifresiz giriş) —
+  sistem fiilen herkese açık, bkz. [5.8](08-completing-the-five-layers.md).
+- 5.7 ve 5.8'deki kodun hiçbiri çalıştırılmadı; NuGet ortamdan bloklu olduğu
+  için yalnızca sözdizimi taraması yapıldı.

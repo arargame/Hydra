@@ -65,7 +65,7 @@ namespace Hydra.Core
         }
     }
 
-    public abstract class BaseObject<T> : IBaseObject<T> where T : BaseObject<T>
+    public abstract class BaseObject<T> : IBaseObject<T>, IValidatableObject where T : BaseObject<T>
     {
         public Guid Id { get; set; }
 
@@ -85,6 +85,11 @@ namespace Hydra.Core
 
         [NotMapped]
         public bool IsPersistent = true;
+
+        public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
 
         public BaseObject()
         {

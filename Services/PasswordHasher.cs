@@ -34,6 +34,37 @@ namespace Hydra.Services
             return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
         }
 
+        /// <summary>
+        /// Is this value already one of our stored hashes, rather than a plaintext password?
+        ///
+        /// The user-editing screen posts the password through the same field the hash is stored
+        /// in, so a value that is already hashed must be left alone and a plaintext one must be
+        /// hashed. Without this check, saving a user twice would hash the hash and lock them out.
+        /// </summary>
+        public static bool IsHashed(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var parts = value.Split('.', 3);
+
+            return parts.Length == 3
+                   && int.TryParse(parts[0], out var iterations)
+                   && iterations > 0
+                   && IsBase64(parts[1])
+                   && IsBase64(parts[2]);
+        }
+
+        private static bool IsBase64(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            Span<byte> buffer = stackalloc byte[value.Length];
+
+            return Convert.TryFromBase64String(value, buffer, out _);
+        }
+
         public static bool Verify(string password, string? hashedValue)
         {
             if (string.IsNullOrEmpty(hashedValue) || string.IsNullOrEmpty(password))

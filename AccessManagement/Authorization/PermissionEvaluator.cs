@@ -50,6 +50,20 @@ namespace Hydra.AccessManagement.Authorization
         /// those granted directly. Used for the endpoint check and for building login claims.
         /// </summary>
         Task<List<Permission>> GetEffectivePermissionsAsync(Guid userId);
+
+        /// <summary>
+        /// Which properties of <paramref name="entityName"/> this caller must NOT see.
+        ///
+        /// Opt-in by design, unlike endpoint authorization: a property is protected only when
+        /// somebody created an EntityPropertyBased permission row naming it. Endpoints are a
+        /// countable set, so closing all of them by default is workable; properties are not —
+        /// deny-by-default there would mean writing a permission row for every column of every
+        /// entity before anyone could see anything at all.
+        ///
+        /// So: no row for a column means the column is public. A row makes it sensitive, and then
+        /// only holders of that permission (or of the global "*") see it.
+        /// </summary>
+        Task<IReadOnlyCollection<string>> GetDeniedPropertiesAsync(Guid? userId, string? entityName);
     }
 
     /// <summary>
@@ -150,6 +164,51 @@ namespace Hydra.AccessManagement.Authorization
                 effective[permission.Id] = permission;
 
             return effective.Values.Where(p => p.Enabled).ToList();
+        }
+
+        public async Task<IReadOnlyCollection<string>> GetDeniedPropertiesAsync(Guid? userId, string? entityName)
+        {
+            var empty = Array.Empty<string>();
+
+            if (string.IsNullOrWhiteSpace(entityName))
+                return empty;
+
+            var permissionService = _injector.GetServiceLazy<PermissionService>().Value;
+
+            var propertyPermissions = await permissionService.SelectThenCache(
+                p => p.Enabled && p.Type == PermissionType.EntityPropertyBased);
+
+            // Which properties of this entity has anyone declared sensitive?
+            var protectedProperties = propertyPermissions
+                .Where(p => SegmentMatches(p.Entity, entityName) && !string.IsNullOrWhiteSpace(p.Property) && !IsWildcard(p.Property))
+                .Select(p => p.Property!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // Nothing is marked sensitive — the common case, and it costs one cached read.
+            if (protectedProperties.Count == 0)
+                return empty;
+
+            if (userId is null || userId == Guid.Empty)
+                return protectedProperties;
+
+            var effective = await GetEffectivePermissionsAsync(userId.Value);
+
+            if (effective.Any(p => p.Name == Wildcard))
+                return empty;
+
+            var allowed = effective
+                .Where(p => p.Type == PermissionType.EntityPropertyBased && SegmentMatches(p.Entity, entityName))
+                .Select(p => p.Property)
+                .ToList();
+
+            // A property permission with a wildcard property unlocks every column of the entity.
+            if (allowed.Any(IsWildcard))
+                return empty;
+
+            return protectedProperties
+                   .Where(property => !allowed.Any(a => string.Equals(a, property, StringComparison.OrdinalIgnoreCase)))
+                   .ToList();
         }
 
         private async Task<PermissionDecision> EvaluateAnonymousAsync(string? controller, string? action)

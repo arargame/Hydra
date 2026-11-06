@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Hydra.Core;
 using Hydra.Core.Interfaces;
-
-using System.ComponentModel.DataAnnotations.Schema;
+using Hydra.ValidationManagement;
 
 namespace Hydra.Core.HumanResources
 {
@@ -23,5 +24,17 @@ namespace Hydra.Core.HumanResources
 
         // Employees in this position
         public List<Employee> Employees { get; set; } = new();
+
+        public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            foreach (var result in base.Validate(validationContext))
+                yield return result;
+
+            if (string.IsNullOrWhiteSpace(Name))
+                yield return ValidationManager.Required(nameof(Name), "Position Title");
+
+            if (OrganizationUnitId == Guid.Empty)
+                yield return ValidationManager.MustBeSelected(nameof(OrganizationUnitId), "Organization Unit");
+        }
     }
 }

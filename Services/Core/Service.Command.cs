@@ -41,7 +41,13 @@ namespace Hydra.Services.Core
                 response.SetSuccess(isDone && isCommitted);
 
                 if (response.Success)
+                {
                     await SaveRepositoryLogsAsync();
+                }
+                else if (!isCommitted && _unitOfWork.LastErrorSafeMessage != null)
+                {
+                    response.Fail("Save Failed", _unitOfWork.LastErrorSafeMessage);
+                }
 
             }
             catch (Exception ex)
@@ -139,7 +145,13 @@ namespace Hydra.Services.Core
                 response.SetSuccess(isDone && isCommitted);
 
                 if (response.Success)
+                {
                     await SaveRepositoryLogsAsync();
+                }
+                else if (!isCommitted && _unitOfWork.LastErrorSafeMessage != null)
+                {
+                    response.Fail("Delete Failed", _unitOfWork.LastErrorSafeMessage);
+                }
             }
             catch (Exception ex)
             {
@@ -238,6 +250,8 @@ namespace Hydra.Services.Core
 
                     if (isCommitted && HasCache)
                         CacheService?.TryRefresh(entity.Id, entity);
+                    else if (!isCommitted && _unitOfWork.LastErrorSafeMessage != null)
+                        updateResponse.Fail("Update Failed", _unitOfWork.LastErrorSafeMessage);
                 }
 
                 if (updateResponse.Success)
