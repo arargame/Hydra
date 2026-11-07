@@ -184,7 +184,8 @@ namespace Hydra.DAL.Core
                 }
                 else
                 {
-                   Result.AddErrorMessage(title: "Nothing changed", text: "This record has no modified field");
+                    // No properties were modified; the record already matches the desired state (idempotent success).
+                    isUpdated = true;
                 }
             }
             catch (Exception ex)
