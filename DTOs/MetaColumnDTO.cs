@@ -422,7 +422,16 @@ namespace Hydra.DTOs
 
         public static MetaColumnDTO CreateColumnDTOWithEqualFilter(string name, string? alias, object value, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
         {
-            return CreateColumnDTOWithFilter(name: name, alias: alias, priority: priority, filterTypeName: typeof(EqualFilter).Name, createFilterComponentFromThis: useFilterToCreateViewComponent, filterPriority: filterPriority, values: new List<object>() { value });
+            var col = CreateColumnDTOWithFilter(name: name, alias: alias, priority: priority, filterTypeName: typeof(EqualFilter).Name, createFilterComponentFromThis: useFilterToCreateViewComponent, filterPriority: filterPriority, values: new List<object>() { value });
+
+            if (value is Guid) col.ValueType = ColumnValueType.Guid;
+            else if (value is string) col.ValueType = ColumnValueType.String;
+            else if (value is bool) col.ValueType = ColumnValueType.Boolean;
+            else if (value is int or long or short) col.ValueType = ColumnValueType.Int;
+            else if (value is double or float or decimal) col.ValueType = ColumnValueType.Double;
+            else if (value is DateTime or DateTimeOffset) col.ValueType = ColumnValueType.DateTime;
+
+            return col;
         }
 
         public static MetaColumnDTO CreateColumnDTOWithNotEqualFilter(string name, string alias, object value, int priority = 0, int filterPriority = 0, bool useFilterToCreateViewComponent = true)
